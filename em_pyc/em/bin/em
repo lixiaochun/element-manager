@@ -1,0 +1,126 @@
+#!/bin/sh
+#
+#EM resource-agent
+#
+# Copyright(c) 2016 Nippon Telegraph and Telephone Corporation
+
+#######################################
+#             setting             #
+# EM Control Shell Install Full Path
+# ex. /msf/em/em_ctl.sh
+EM_CONTROL_SHELL_PATH="/var/opt/msf/em/em_ctl.sh"
+#######################################
+
+
+
+#######################################################################
+# Initialization
+
+: ${OCF_FUNCTIONS=/lib/ocf/resource.d/heartbeat/.ocf-shellfuncs}
+. ${OCF_FUNCTIONS}
+: ${__OCF_ACTION=$1}
+
+: ${OCF_RESKEY_EM_CONTROL_SHELL=$EM_CONTROL_SHELL_PATH}
+
+#######################################################################
+
+#meta_data
+meta_data() {
+        cat <<END
+<?xml version="1.0"?>
+<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
+<resource-agent name="EM Resource Agent">
+<version>0.1</version>
+<longdesc lang="en">
+    This script manages EM as an OCF resource in a high-availability setup.
+</longdesc>
+<shortdesc lang="en">Manages a highly available EM instance</shortdesc>
+
+<parameters>
+    <parameter name="EM_CONTROL_SHELL" unique="0" required="0">
+        <longdesc lang="en">
+            Full path to the em control shell
+            For example, "/msf/em/em_ctl.sh".
+        </longdesc>
+        <shortdesc lang="en">Full path to the em conttol shell</shortdesc>
+        <content type="string" default="$EM_CONTROL_SHELL_PATH" />
+    </parameter>
+</parameters>
+
+<actions>
+    <action name="start"   timeout="30s" />
+    <action name="stop"    timeout="30s" />
+    <action name="monitor" depth="0"  timeout="60s" interval="10s" />
+    <action name="meta-data"  timeout="5s" />
+</actions>
+</resource-agent>
+END
+}
+#######################################################################
+
+em_usage() {
+    USAGE="Usage: $0 {start|stop|monitor|meta-data}"
+    echo "$USAGE" >&2
+}
+
+em_start() {
+    echo $OCF_RESKEY_EM_CONTROL_SHELL
+    bash $OCF_RESKEY_EM_CONTROL_SHELL start
+    result=$?
+    if [ $result = $OCF_SUCCESS ]; then
+        ocf_log info "EM START SUCCESSFULLY"
+    else
+        ocf_log warn "EM START FAILURE"
+        result=$OCF_ERR_GENERIC
+    fi
+    return $result
+}
+
+em_stop() {
+    bash $OCF_RESKEY_EM_CONTROL_SHELL stop
+    result=$?
+    if [ $result = $OCF_SUCCESS ]; then
+        ocf_log info "EM STOP SUCCESSFULLY"
+    else
+        ocf_log warn "EM STOP FAILURE"
+        result=$OCF_ERR_GENERIC
+    fi
+    return $result
+}
+
+em_monitor() {
+    bash $OCF_RESKEY_EM_CONTROL_SHELL status
+    result=$?
+    if [ $result = $OCF_SUCCESS ]; then
+        ocf_log info "EM MONITOR SUCCESSFULLY"
+    elif [ $result = $OCF_NOT_RUNNING ]; then
+        ocf_log info "EM RESOURCE NOT RUNNING"
+    else
+        ocf_log err "EM MONITOR FAILURE"
+        result=$OCF_ERR_GENERIC
+    fi
+    return $result
+}
+
+case $__OCF_ACTION in
+meta-data)
+    meta_data
+    exit $OCF_SUCCESS
+    ;;
+start)
+    em_start
+    ;;
+stop)
+    em_stop
+    ;;
+monitor)
+    em_monitor
+    ;;
+usage|help)
+    em_usage
+    exit $OCF_SUCCESS
+    ;;
+*)
+    em_usage
+    exit $OCF_ERR_UNIMPLEMENTED
+esac
