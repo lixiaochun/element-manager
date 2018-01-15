@@ -28,13 +28,15 @@ Element Manager(EM) is one of the software components of Multi-Service Fabric(MS
 
 ## How to use
 - installation
-  - [installation manual(English)](doc/Element_Manager_Installation_Manual_en.pdf) (PDF)
-  - [configuration specifications(English)](doc/Element_Manager_Configuration_Specifications_en.pdf) (PDF)
-  - [installation manual(Japanese)](doc/Element_Manager_Installation_Manual_ja.pdf)   (PDF)
-  - [configuration specifications(Japanese)](doc/Element_Manager_Configuration_Specifications_ja.pdf) (PDF)
-- Executable file `/em_pyc`
-- source code `/EmModule`
+ - [installation manual](doc/element_manager_installation_manual.md)
+ - [configuration specifications](doc/element_manager_configuration_specifications.md)
+- build
+ - [building manual](doc/element_manager_building_guide.md)
 
+## Development
+The following document describes the interface specifications and the points to be noted in order to newly develop a network driver for adding a switch that can be controlled by the EM.
+
+- [API guide](doc/element_manager_api_specifications.md)
 
 ## Hardware
 The following conditions are the minimum operation environment.

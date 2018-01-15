@@ -1,0 +1,165 @@
+## Element Manager Configuration Specifications
+
+**Version 1.0**
+**December 26, 2017**
+**Copyright(c) 2017 Nippon Telegraph and Telephone Corporation**
+
+### Configuration Definitions
+
+Configurations are classified and defined by their usage. Also, they are distributed into separate files according to the usage. The table below is a list of them.
+
+|Namae   |Description            |
+|:---------|:---------------|
+|conf_if_process.conf|It defines the Netconf server address, port number, host key information and Capability information, which are necessary for operating the  I/F Process Part. |
+|conf_if_process_rest.conf|It defines the REST server address, port number, host key information and Capability information, which are necessary for operating the  I/F Process Part.|
+|conf_scenario.conf|It defines the files to be started for each service type and operation type that is needed for operating Scenario Individual part.|
+|conf_scenario_rest.conf|It defines the files to be started for each URI that is needed for operating REST Scenario Individual Part.|
+|conf_driver.conf|It defines the files to be started for each platform name, OS and firmware version that is required for operating Driver Individual Part.|
+|conf_sys_common.conf|It defines the common configuration items (DB server address, port number, Data Base name, DB access user name, DB access user password, configured value for confirm-timeout, etc.) that are necessary for EM.|
+|conf_separate_driver_cisco.conf|Configurations that are used in the Individual Driver (cisco) but not used in the Configuration Management Function. It defines the detailed information of the variable parameters that are necessary for injecting data to Cisco devices.|
+
+### Rules of Description for Configurations
+
+There are some rules to describe definitions in configuration files with KEY_VALUE method as follows.
+
+|No.  |Rule of Description|
+|:---------|:---------------|
+|1|Character Code: UTF-8|
+|2|Line Feed Code: LF|
+|3|Delimiter between Key and Value: =|
+|4|A line feed must be inserted just after each pair of key and value.|
+|5|If a line is started with "#", it is a comment line (and will not be imported).|
+|6|Half-width space and TAB characters are prohibited to be used (even in front or behind of "=" sign) except in comments.|
+|7|Full-width characters (incl. all Japanese characters) are prohibited to be used except in comments.|
+|8|Characters "=" and "#" are prohibited to be used in keys and values.|
+
+Description Example (case of `conf_if_process.conf`)
+
+~~~console
+#Netconf Server Address
+Netconf_server_address=0.0.0.0
+#Port Number
+Port_number=8080
+~~~
+
+### conf_if_process.conf
+
+The table below shows the detail of items which are managed in this configuration file.
+
+|No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
+|:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
+|1|Netconf Server Address|Netconf_server_address|I/F Process Part Definition: Netconf Server Address|Yes|0.0.0.0|Text|Process cannot be started.|-|
+|2|Port Number|Port_number|I/F Process Part Definition: Port Number|Yes|8080|Numeral|Process cannot be started.|-|
+|3|Account Name|Account|Set the certificate account name which is used in the I/F Process Part.|Yes|-|Text|SSH connection from EC cannot be established.|-|
+|4|Password|Password|Set the certificate password which is used in the I/F Process Part.|Yes|-|Text|SSH connection from EC cannot be established.|-|
+|5|Capability Information 1|Capability1|Capability information 1 of HELLO to be sent to EC|Yes|-|Text|Capability exchange of HELLO cannot be performed.|-|
+|6|Capability Information 2|Capability2|Capability information 2 of HELLO to be sent to EC|Yes|-|Text|Ditto.|-|
+
+**Append lines each time when Capability Information is added in the future.**
+
+### conf_if_process_rest.conf
+
+The table below shows the detail of items which are managed in this configuration file.
+
+|No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
+|:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
+|1|REST Server Address|Rest_server_address|I/F Process Part Definition: REST Server Address|Yes|0.0.0.0|Text|Process cannot be started.|-|
+|2|Port Number|Rest_port_number|I/F Process Part Definition: Port Number|Yes|8080|Numeral|Process cannot be started.|-|
+|3|Controller Status Acquisition Shell Script Path|Statusget_shell_file_path|I/F Process Part Definition: Path for Controller Status Acquisition Shell Script|Yes|'../bin/controller_status.sh|Text|Process for acquiring controller status fails|-|
+
+### conf_scenario.conf
+
+This file specifies the configuration of each scenario performed by EM. Parameters set in each scenario are as follows.
+
+For the clear description, please refer to the following file.
+
+`conf/conf_scenario.conf`
+
+|No.|Item Name|Key|Description|Required?|Type|
+|:----|:-----|:----|:-----|:----|:----|
+|1|Scenario Key Name|Scenario_key**_n_**|The service type to run each scenario individual process from Order Flow Control|Yes|Test|
+|2|Order Type|Scenario_order**_n_**|The order type to run each scenario individual process from Order Flow Control|Yes|Text|
+|3|Individual Scenario Startup Name|Scenario_name**_n_**|The scenario name (Spine enhanced) to run each scenario individual process from Order Flow Control|Yes|Text|
+|4|Waiting Time of Order Request for each scenario|Scenario_Timer_Order_Wait**_n_**|The guard timer (ms) for each scenario. It watches that the time between the order reception and the configuration completion of all devices does not exceed the specified value.|Yes|Numeral|
+|5|Service Transaction ID for each scenario|Scenario_Service_Transaction_No**_n_**|An ID (Service Type) which is used by transaction management in Order Flow Control|Yes|Numeral|
+|6|Order Transaction ID for each scenario|Scenario_Order_Transaction_No**_n_**|The service type to run each scenario individual process from Order Flow Control|Yes|Numeral|
+
+### conf_scenario_rest.conf
+
+The table below shows the detail of items which are managed in this configuration file.
+
+|No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
+|:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
+|1|Scenario URI 1|Scenario_uri1|URI to start each scenario individual process from REST server|Yes|/v1/internal/em_ctrl/statusget|Text|Process cannot be started.|-|
+|2|Individual Scenario Start Name 1|Scenario_name1|A scenario name (controller status acquisition) to start each scenario individual process from REST server|Yes|ControllerStatusGet|Text|Ditto.|-|
+|3|Scenario URI 2|Scenario_uri2|URI to start each scenario individual process from REST server|Yes|/v1/internal/em_ctrl/log|Text|Ditto.|-|
+|4|Individual Scenario Start Name 2|Scenario_name2|A scenario name (controller status acquisition) to start each scenario individual process from REST server|Yes|ControllerLogGet|Text|Ditto.|-|
+
+### conf_driver.conf
+
+The table below shows the detail of items which are managed in this configuration file.
+
+|No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
+|:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
+|1|Platform Name 1|Platform_name1|platform name of the target device|Yes|-|Text|driver selection failure|-|
+|2|Driver OS 1|Driver_os1|OS of the target device|Yes|-|Text|Ditto.|-|
+|3|Firmware Version 1|Firmware_ver1|firmware version of the target device|Yes|-|Text|Ditto.|-|
+|4|Individual Driver Startup Name 1|Driver_name1|name of the driver which is started at the time of control request of the target device<br>* specified in absolute path|Yes|-|Text|Ditto.|-|
+|5|Individual Driver Class Name 1|Driver_class1|name of the class which is started at the time of control request of the target device|Yes|-|Text|Ditto.|-|
+|6|Platform Name 2|Platform_name2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|7|Driver OS 2|Driver_os2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|8|Firmware Version 2|Firmware_ver2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|9|Individual Driver Startup Name 2|Driver_name2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|10|Individual Driver Class Name 2|Driver_class2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+
+**Append lines each time when devices are added in the future.**
+
+### conf_sys_common.conf
+
+The table below shows the detail of items which are managed in this configuration file.
+
+|No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
+|:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
+|1|DB Server Address|DB_server_address|DB server address|Yes|0.0.0.0|Text|-|-|
+|2|DB Access Port Number|DB_access_port|DB access port number|Yes|5432|Numeral|-|-|
+|3|DB Access User Name|DB_user|DB access user name|Yes|-|Text|-|-|
+|4|DB Access Password|DB_access_pass|DB access password|Yes|-|Text|-|-|
+|5|DB Access Table|DB_access_table|DB access table|Yes|-|Text|-|-|
+|6|Timer Value: confirmed-commit Configuration Time (ms)|Timer_confirmed-commit|the timer value (ms) set in confirmed-commit|Yes|30000|Numeral|-|-|
+|7|Timer Value: confirmed-commit EM Internal Adjustment Time (ms)|Timer_confirmed-commit_em_offset|EM internal adjustment value (ms) for confirmed-commit<br>Both positive and negative vales are allowed.|Yes|0|Numeral|-|The sum of this value and that of Timer_confirmed-commit is set to the timer.|
+|8|Timer Value: Netconf Protocol Timer Configuration Time (ms)|Timer_netconf_protocol|NETCONF protocol timer value (ms)|Yes|60000|Numeral|The default value is set.|-|
+|9|Timer Value: Signal Reception Waiting Timer Configuration Time (ms)|Timer_signal_rcv_wait|signal reception waiting timer value (ms)|Yes|1000|Numeral|The default value is set.|-|
+|10|Timer Value: Thread Stop Monitoring Timer Configuration Time (ms)|Timer_thread_stop_watch|thread stop monitoring timer value (ms)|Yes|200|Numeral|The default value is set.|-|
+|11|Timer Value: Transaction End Monitoring Timer Configuration Time (ms)|Timer_transaction_stop_watch|transaction end monitoring timer value (ms)|Yes|200|Numeral|The default value is set.|-|
+|12|Timer Value: Transaction DB Monitoring Timer Configuration Time (ms)|Timer_transaction_db_watch|transaction DB monitoring timer value (ms)|Yes|100|Numeral|The default value is set.|-|
+|13|Timer Value: Connection Retry Time (ms)|Timer_connection_retry|connection retry timer value (ms)|Yes|5000|Numeral|The default value is set.|-|
+|14|The Number of Connection Retries|Connection_retry_num|the number of connection retries|Yes|5|Numeral|The default value is set.|-|
+|15|Log File|Em_log_file_path|Specify the log file path of EM.|Yes|-|Text|Log cannot be saved correctly.|-|
+|16|Log Level|Em_log_level|Specify the log level of EM|Yes|DEBUG|Text|-|-|
+|17|IP Address of EM's REST Server|Em_Rest_server_address|Specify the IP address of EM's REST server|Yes|0.0.0.0|Text|-|-|
+|18|Port Number of EM's REST Server|Em_port_number|Specify the port number of EM's REST server|Yes|8080|Text|-|-|
+|19|The Number of REST Requests Average Time|Rest_request_average|The unit time (sec) for calculating the number of REST requests|Yes|3600|Numeral|The default value is set.||
+|20|IP Address of EM's Management I/F|Controller_management_address|Specify the IP address of EM's management I/F|Yes|0.0.0.0|Text|-|-|
+|21|IP Address of EC's REST Server|Ec_rest_server_address|Specify the IP address of EC's REST server|Yes|0.0.0.0|Text|-|-|
+|22|Port Number of EC's REST Server|Ec_port_number|Specify the port number of EC's REST server|Yes|18080|Numeral|-|-|
+|23|The Number of REST Notification Retries|Ec_rest_retry_num|Specify the number of REST notification retries|Yes|1|Numeral|-|-|
+|24|Interval of REST Notification Retry|Ec_rest_retry_interval|Specify the time interval of REST notification retry|Yes|1|Numeral|-|-|
+
+### conf_separate_driver_cisco.conf
+
+The table below shows the detail of items which are managed in this configuration file.
+
+|No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
+|:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
+|1|I/F Name Prefix 1|IF_Name1|conventional prefix of the corresponding I/F name|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>TenGigE|
+|2|mtu owner Value 1|IF_Owner_Name1|the corresponding I/F's mtu owner value which is to be injected to the device|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>TenGigE|
+|3|Tracking Object Prefix 1|IF_TrackingObject_Name1|the initial of tracking object|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>TG|
+|4|I/F Name Prefix 2|IF_Name2|conventional prefix of the corresponding I/F name|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>HundredGigE|
+|5|mtu owner Value 2|IF_Owner_Name2|the corresponding I/F's mtu owner value which is to be injected to the device|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>HundredGigE|
+|6|Tracking Object Prefix 2|IF_TrackingObject_Name2|the initial of tracking object|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>HG|
+|7|I/F Name Prefix 3|IF_Name3|conventional prefix of the corresponding I/F name|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>Bundle-Ether|
+|8|mtu owner Value 3|IF_Owner_Name3|the corresponding I/F's mtu owner value which is to be injected to the device|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>etherbundle|
+|9|Tracking Object Prefix 3|IF_TrackingObject_Name3|the initial of tracking object|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>EB|
+
+**Append lines each time when the patterns to be registered are increased in the future.
+**
