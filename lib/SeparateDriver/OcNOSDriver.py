@@ -35,7 +35,7 @@ class OcNOSDriver(EmSeparateDriver):
         self.net_protocol = EmCLIProtocol()
         self.net_protocol.error_recv_message = ["%"]
         self._comm_ok_non_enable_mode = ">"
-        self._comm_ok_enable_mode = "
+        self._comm_ok_enable_mode = "#"
         self.list_enable_service = [self.name_spine,
                                     self.name_leaf,
                                     self.name_l2_slice,
