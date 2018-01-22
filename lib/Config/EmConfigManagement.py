@@ -395,7 +395,7 @@ class EmConfigManagement(object):
             return False, None
         return_list = []
         for value in conf_list:
-            if not(value.startswith('
+            if not(value.startswith('#')) and self.__SPLITSTR in value:
                 tmp_line = value.strip()
                 tmp_line = tmp_line.replace(BOM_UTF8, '')
                 return_list.append(tmp_line)
