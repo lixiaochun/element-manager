@@ -32,7 +32,7 @@ class CiscoDriver(EmSeparateDriver):
     def connect_device(self,
                        device_name, device_info, service_type, order_type):
         '''
-        Driver individual section connection control. 
+        Driver individual section connection control.
             Launch from the common section on driver, conduct device connection control to protocol processing section.
             Parameter:
             device_name : Device name
@@ -64,20 +64,20 @@ class CiscoDriver(EmSeparateDriver):
                                    'conf_separate_driver_cisco.conf')
         try:
             with open(config_path, 'r') as open_file:
-                conf_list = open_file.readlines()    
+                conf_list = open_file.readlines()
         except IOError:
             raise
 
         tmp_list = []
         for value in conf_list:
-            if not(value.startswith('
+            if not(value.startswith('#')) and splitter_conf in value:
                 tmp_line = value.strip()
                 tmp_line = tmp_line.replace(BOM_UTF8, '')
                 tmp_list.append(tmp_line)
 
-        conf_dict_owner = {}  
-        conf_dict_track_obj = {}  
-        tmp_value_list = []   
+        conf_dict_owner = {}
+        conf_dict_track_obj = {}
+        tmp_value_list = []
         index = 0
         for item in tmp_list:
             tmp = item.split(splitter_conf)[1]
@@ -225,14 +225,13 @@ class CiscoDriver(EmSeparateDriver):
                    "nsmap": self._XC_NS_MAP}
         return etree.fromstring(xml_str % str_map)
 
-
     @decorater_log
     def _gen_spine_fix_message(self, xml_obj, operation):
         '''
         Fixed value to create message (Spine) for Netconf.
-            Called out when creating message for Spine.    
+            Called out when creating message for Spine.
         Parameter:
-            xml_obj : xml object 
+            xml_obj : xml object
             operation : Designate "delete" when deleting.
         Return value.
             Creation result : Boolean
@@ -246,7 +245,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _gen_leaf_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (Leaf) for Netconf.  
+        Fixed value to create message (Leaf) for Netconf.
             Called out when creating message for Leaf.
         Parameter:
             xml_obj : xml object
@@ -284,7 +283,7 @@ class CiscoDriver(EmSeparateDriver):
     def _gen_l3_slice_fix_message(self, xml_obj, operation):
         '''
         Fixed value to create message (L3Slice) for Netconf.
-            Called out when creating message for L3Slice.  
+            Called out when creating message for L3Slice.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -302,8 +301,8 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _gen_l3_slice_merge_fix_message(self, xml_obj):
         '''
-        Fixed value to create message (add L3Slice) for Netconf. 
-            Called out when adding L3Slice.  
+        Fixed value to create message (add L3Slice) for Netconf.
+            Called out when adding L3Slice.
         Parameter:
             xml_obj : xml object
         Return value.
@@ -324,7 +323,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _gen_l3_slice_replace_fix_message(self, xml_obj):
         '''
-        Fixed value to create message (update L3Slice) for Netconf. 
+        Fixed value to create message (update L3Slice) for Netconf.
             Called out when updating L3Slice (staticCP add/delete).
         Parameter:
             xml_obj : xml object
@@ -337,7 +336,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _gen_l3_slice_delete_fix_message(self, xml_obj):
         '''
-        Fixed value to create message (delete L3Slice) for Netconf.  
+        Fixed value to create message (delete L3Slice) for Netconf.
             Called out when deleting L3Slice.
         Parameter:
             xml_obj : xml object
@@ -405,8 +404,8 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _gen_ce_lag_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (CeLag) for Netconf. 
-            Called out when creating message for CeLag. 
+        Fixed value to create message (CeLag) for Netconf.
+            Called out when creating message for CeLag.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -419,15 +418,14 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _gen_internal_link_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (InternalLink) for Netconf. 
-            Called out when creating message for InternalLink. 
+        Fixed value to create message (InternalLink) for Netconf.
+            Called out when creating message for InternalLink.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
         Return value.
             Creation result : Boolean
         '''
-
 
         self._set_ospf_infra_plane(xml_obj, self.name_internal_link)
 
@@ -438,8 +436,8 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _gen_breakout_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (breakout) for Netconf. 
-            Called out when creating message for breakout. 
+        Fixed value to create message (breakout) for Netconf.
+            Called out when creating message for breakout.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -451,8 +449,8 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _gen_cluster_link_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (cluster-link) for Netconf.  
-            Called out when creating message for cluster-link. 
+        Fixed value to create message (cluster-link) for Netconf.
+            Called out when creating message for cluster-link.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -461,7 +459,6 @@ class CiscoDriver(EmSeparateDriver):
         '''
         return False
 
-
     @decorater_log
     def _gen_spine_variable_message(self,
                                     xml_obj,
@@ -469,7 +466,7 @@ class CiscoDriver(EmSeparateDriver):
                                     ec_message,
                                     operation):
         '''
-        Variable value to create message (Spine) for Netconf. 
+        Variable value to create message (Spine) for Netconf.
             Called out when creating message for Spine. (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
@@ -545,7 +542,7 @@ class CiscoDriver(EmSeparateDriver):
                                    ec_message,
                                    operation):
         '''
-        Variable value to create message (Leaf) for Netconf. 
+        Variable value to create message (Leaf) for Netconf.
             Called out when creating message for Leaf. (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
@@ -679,7 +676,7 @@ class CiscoDriver(EmSeparateDriver):
                                        ec_message,
                                        operation):
         '''
-        Variable value to create message (L3Slice) for Netconf. 
+        Variable value to create message (L3Slice) for Netconf.
             Called out when creating message for L3Slice. (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
@@ -716,8 +713,8 @@ class CiscoDriver(EmSeparateDriver):
                                            device_info,
                                            ec_message):
         '''
-        Variable value to create message (create L3Slice) for Netconf. 
-            Called out when adding CeLag. 
+        Variable value to create message (create L3Slice) for Netconf.
+            Called out when adding CeLag.
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -1360,8 +1357,8 @@ class CiscoDriver(EmSeparateDriver):
                                            device_info,
                                            ec_message):
         '''
-        Variable value to create message (L3Slice) for Netconf. 
-            Called out when adding CeLag. 
+        Variable value to create message (L3Slice) for Netconf.
+            Called out when adding CeLag.
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -1993,7 +1990,7 @@ class CiscoDriver(EmSeparateDriver):
                                                device_info,
                                                ec_message):
         '''
-        Variable value to create message (update L3Slice) for Netconf.  
+        Variable value to create message (update L3Slice) for Netconf.
             Called out when adding CeLag.
         Parameter:
             xml_obj : xml object
@@ -2070,7 +2067,7 @@ class CiscoDriver(EmSeparateDriver):
                                      ec_message,
                                      operation):
         '''
-        Variable value to create message (CeLag) for Netconf. 
+        Variable value to create message (CeLag) for Netconf.
             Called out when creating message for CeLag. (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
@@ -2093,7 +2090,7 @@ class CiscoDriver(EmSeparateDriver):
                                          xml_obj,
                                          ec_message):
         '''
-        Variable value to create message (create CeLag) for Netconf. 
+        Variable value to create message (create CeLag) for Netconf.
             Called out when adding CeLag.
         Parameter:
             xml_obj : xml object
@@ -2131,8 +2128,8 @@ class CiscoDriver(EmSeparateDriver):
                                          ec_message,
                                          device_info):
         '''
-        Variable value to create message (delete CeLag) for Netconf. 
-            Called out when deleting CeLag. 
+        Variable value to create message (delete CeLag) for Netconf.
+            Called out when deleting CeLag.
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2175,7 +2172,7 @@ class CiscoDriver(EmSeparateDriver):
                                             ec_message,
                                             operation):
         '''
-        Variable value to create message (InternalLag) for Netconf.  
+        Variable value to create message (InternalLag) for Netconf.
             Called out when creating message for InternalLag. (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
@@ -2200,7 +2197,7 @@ class CiscoDriver(EmSeparateDriver):
                                                device_info):
         '''
         Variable value to create message (add Link for internal use) for Netconf.
-            Called out when adding Link for internal use. 
+            Called out when adding Link for internal use.
         Parameter:
             xml_obj : xml object
             ec_message : EC message
@@ -2266,8 +2263,8 @@ class CiscoDriver(EmSeparateDriver):
                                                ec_message,
                                                device_info):
         '''
-        Variable value to create message (delete Link for internal use) for Netconf. 
-            Called out when deleting Link for internal use.  
+        Variable value to create message (delete Link for internal use) for Netconf.
+            Called out when deleting Link for internal use.
         Parameter:
             xml_obj : xml object
             ec_message : EC message
@@ -2354,7 +2351,7 @@ class CiscoDriver(EmSeparateDriver):
                                        ec_message,
                                        operation):
         '''
-        Variable value to create message (breakout) for Netconf. 
+        Variable value to create message (breakout) for Netconf.
             Called out when creating message for breakout. (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
@@ -2393,7 +2390,7 @@ class CiscoDriver(EmSeparateDriver):
                                            ec_message,
                                            operation):
         '''
-        Variable value to create message (cluster-link) for Netconf. 
+        Variable value to create message (cluster-link) for Netconf.
            Called out when creating message for cluster-link. (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
@@ -2469,7 +2466,7 @@ class CiscoDriver(EmSeparateDriver):
     def _comparsion_sw_db_l3_slice(self, message, db_info):
         '''
         SW-DB comparison process (check for information matching) (L3Slice).
-            Called out when checking information matching of L3Slice.  
+            Called out when checking information matching of L3Slice.
         Parameter:
             message : Response message
             db_info : DB information
@@ -2954,7 +2951,6 @@ class CiscoDriver(EmSeparateDriver):
                         break
         return is_return
 
-
     @decorater_log
     def _get_device_from_ec(self, device_mes, service=None):
         '''
@@ -3019,7 +3015,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _get_breakout_data_in_db(self, db_info, if_name):
         '''
-        Obtain breakout IF data stored in DB. 
+        Obtain breakout IF data stored in DB.
         '''
         for tmp_if in db_info.get("breakout_info", {}).get("interface", ()):
             if tmp_if.get("base-interface") == if_name:
@@ -3065,7 +3061,7 @@ class CiscoDriver(EmSeparateDriver):
                             operation=None,
                             db_info=None):
         '''
-        Obtain EC message information regarding LAG for CE. 
+        Obtain EC message information regarding LAG for CE.
         '''
         lag_ifs = []
         lag_mem_ifs = []
@@ -3135,7 +3131,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _get_internal_link_addr_in_db(self, db_info, if_name):
         '''
-        Obtain internal Link's address which is stored in DB.  
+        Obtain internal Link's address which is stored in DB.
         '''
         for tmp_if in db_info["internal-link"]:
             if tmp_if.get("if_name") == if_name:
@@ -3148,7 +3144,7 @@ class CiscoDriver(EmSeparateDriver):
                                        operation=None,
                                        db_info=None):
         '''
-        Obtain EC message/DB information regarding internal Link (LAG) for deletion. 
+        Obtain EC message/DB information regarding internal Link (LAG) for deletion.
         '''
         inner_ifs = []
 
@@ -3195,7 +3191,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _get_internal_if_info(self, if_info, if_type=None):
         '''
-        Obtain information of internal Link from EC message. (regardless of physical or LAG) 
+        Obtain information of internal Link from EC message. (regardless of physical or LAG)
         '''
 
         op_node_type = None
@@ -3220,7 +3216,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _get_vrf_name_from_db(self, db_info, slice_name):
         '''
-        Obtain VRF name from DB based on Slice name. 
+        Obtain VRF name from DB based on Slice name.
         '''
         if_name = None
         vlan_id = None
@@ -3270,7 +3266,7 @@ class CiscoDriver(EmSeparateDriver):
     def _get_db_static_count(self, if_name, vlan_id, db_info):
         '''
         Count static route inside the applicable CP (IF name,vlan_id) (inside DB).
-        But, do not check whether slice is the same or not. 
+        But, do not check whether slice is the same or not.
         '''
         count = 0
         for tmp_cp in db_info.get("static_detail", ()):
@@ -3299,13 +3295,12 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _get_lag_mem_if_info(self, lag_if, lag_mem_if):
         '''
-        Obtain LAG member information from EC message. 
+        Obtain LAG member information from EC message.
         '''
         tmp = {
             "IF-NAME": lag_mem_if.get("name"),
             "LAG-IF-NAME": lag_if["name"].lstrip("Bundle-Ether")}
         return tmp
-
 
     @decorater_log
     def _set_host_name(self, xml_obj, host_name=None):
@@ -3323,7 +3318,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_loopback_address(self, xml_obj, address=None, netmask=None):
         '''
-        Set loopback address. 
+        Set loopback address.
         '''
         node_1 = self._set_xml_tag(xml_obj, "interface-configuration")
         self._set_xml_tag(node_1, "active", None, None, "act")
@@ -3343,7 +3338,7 @@ class CiscoDriver(EmSeparateDriver):
 
     def _set_breakout_interfaces(self, xml_ifs, breakout_ifs, operation=None):
         '''
-        Set all breakout IF. 
+        Set all breakout IF.
         '''
         for br_if in breakout_ifs:
             self._set_breakout_interface(xml_ifs,
@@ -3360,7 +3355,7 @@ class CiscoDriver(EmSeparateDriver):
                                 speed,
                                 operation=None):
         '''
-        Conduct breakout IF settings under interfaces.   
+        Conduct breakout IF settings under interfaces.
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
 
@@ -3396,7 +3391,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_ospf_infra_plane(self, xml_obj, service=None):
         '''
-        Set the fixed section of IPv4 OSPF settings on MSF infrastructure side as xml of argument. 
+        Set the fixed section of IPv4 OSPF settings on MSF infrastructure side as xml of argument.
         '''
         node_1 = self._set_xml_tag(xml_obj,
                                    "ospf",
@@ -3426,7 +3421,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_infra_ldp(self, xml_obj, router_id=None, service=None):
         '''
-        Set the LDP settings on MSF infrastructure side as xml of argument.  
+        Set the LDP settings on MSF infrastructure side as xml of argument.
         '''
         node_1 = self._set_xml_tag(xml_obj,
                                    "mpls-ldp",
@@ -3447,7 +3442,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_if_confs(self, xml_obj):
         '''
-        Set interface-configurations and return its object.  
+        Set interface-configurations and return its object.
         '''
         return self._set_xml_tag(xml_obj,
                                  "interface-configurations",
@@ -3482,7 +3477,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_bgp_global_af(self, xml_obj):
         '''
-        Set global-af of MP-BGP settings under global-afs.   
+        Set global-af of MP-BGP settings under global-afs.
         '''
         node_8 = self._set_xml_tag(xml_obj, "global-af")
         self._set_xml_tag(node_8, "af-name", None, None, "vp-nv4-unicast")
@@ -3491,7 +3486,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_bgp_commmon(self, xml_obj, as_number=None):
         '''
-        Set BGP common section and return its object. 
+        Set BGP common section and return its object.
         '''
         node_1 = self._set_xml_tag(xml_obj,
                                    "bgp",
@@ -3511,7 +3506,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_merge_slice_vrf(self, xml_obj, vrf_name=None, rt=None):
         '''
-        Set VRF of L3Slice.  
+        Set VRF of L3Slice.
         '''
         node_1 = self._set_xml_tag(xml_obj,
                                    "vrfs",
@@ -3566,7 +3561,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_router_static_common(self, xml_obj, vrf_name=None):
         '''
-        Set common section for router-static.  
+        Set common section for router-static.
         '''
         node_1 = self._set_xml_tag(xml_obj,
                                    "router-static",
@@ -3583,7 +3578,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_slice_bgp(self, xml_obj, **params):
         '''
-        Shuld be set in case that VLANIF uses BGP. 
+        Shuld be set in case that VLANIF uses BGP.
         Argument.
             params : Variable argument (parameter group necessary for bgp settings )
                 vrf_name     : VRF name
@@ -3603,7 +3598,7 @@ class CiscoDriver(EmSeparateDriver):
 
     def _set_bgp_vrf_global(self, xml_obj, rd=None, router_id=None):
         '''
-        Conduct vrf-global settings inside bgp. 
+        Conduct vrf-global settings inside bgp.
         '''
         node_7 = self._set_xml_tag(xml_obj, "vrf-global")
         self._set_xml_tag(node_7, "exists")
@@ -3619,7 +3614,7 @@ class CiscoDriver(EmSeparateDriver):
 
     def _set_bgp_vrf_global_af(self, xml_obj, ip_version=4):
         '''
-        Conduct af settings of vrf-global inside bgp. 
+        Conduct af settings of vrf-global inside bgp.
         '''
         af_name = "ipv%(ip_ver)d-unicast" % {"ip_ver": ip_version}
         policy = "v%(ip_ver)d_Redist_To_BGP_in_VRF" % {"ip_ver": ip_version}
@@ -3638,7 +3633,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_slice_vrrp(self, xml_obj, **params):
         '''
-        Shuld be set in case that VLANIF uses VRRP.   
+        Shuld be set in case that VLANIF uses VRRP.
         Argument.
             params : variable argument (parameter group necessary for bgp settings )
                 vrf_name     : VRF name
@@ -3658,7 +3653,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _get_owner(self, if_name):
         '''
-        Obtain the value to be set to the owner from IF name.  
+        Obtain the value to be set to the owner from IF name.
         '''
         return_val = None
         for ownernameKey in CiscoDriver.__cisco_proper_config.keys():
@@ -3683,7 +3678,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_internal_link(self, if_node, if_info, if_type):
         '''
-        Conduct IF settings of internal Link.  
+        Conduct IF settings of internal Link.
         '''
         if if_type == self._if_type_phy:
             node_2 = self._set_xml_tag(if_node, "interface-configuration")
@@ -3743,6 +3738,7 @@ class CiscoDriver(EmSeparateDriver):
         '''
         Check whether it is the breakoutIF which will be newly set when IF name is edit-config.
         Conduct IF settings of internal Link.
+        '''
         for breakout_prefix in self._base_breakout_if_prefixs:
             if breakout_prefix + "/" in if_name:
                 return True
@@ -3949,7 +3945,7 @@ class CiscoDriver(EmSeparateDriver):
                             is_lb=False,
                             operation=None):
         '''
-        Set each area of IPv4 OSPF settings on MSF infrastructure side. (including IF settings of internal Link) 
+        Set each area of IPv4 OSPF settings on MSF infrastructure side. (including IF settings of internal Link)
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
 
@@ -4012,7 +4008,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_mp_bgp_neighbor(self, nbrs_node, rr_addr, as_number):
         '''
-        Set the neighbor of MP-BGP. 
+        Set the neighbor of MP-BGP.
         '''
         node_8 = self._set_xml_tag(nbrs_node, "neighbor")
         self._set_xml_tag(node_8,
@@ -4047,7 +4043,7 @@ class CiscoDriver(EmSeparateDriver):
                             is_last_static=False,
                             operation=None):
         '''
-        Set the router-static and below.  
+        Set the router-static and below.
         '''
         if operation == self._DELETE and is_last_cp:
             self._set_xml_tag(xml_obj,
@@ -4078,7 +4074,7 @@ class CiscoDriver(EmSeparateDriver):
     @decorater_log
     def _set_static_routes(self, family_node, cps, ip_ver=4, operation=None):
         '''
-        Set the vrfipv4 and below of StaticCP.  
+        Set the vrfipv4 and below of StaticCP.
         '''
         vrfip_name = "vrfipv4"
         static_ip_name = "STATIC"
