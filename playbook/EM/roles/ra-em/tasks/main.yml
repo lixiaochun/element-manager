@@ -1,0 +1,12 @@
+# Setting RA
+  - include: getrpm.yml
+    when: download_flag
+  - name: RA data set 1
+    lineinfile: >-
+      dest='{{ em_path }}/{{ folder_name }}/em'
+      state=present
+      backrefs=yes
+      regexp='EM_CONTROL_SHELL_PATH=.*'
+      line='EM_CONTROL_SHELL_PATH="{{ em_path }}/bin/em_ctl.sh"'
+  - shell: cp -f {{ em_path }}/{{ folder_name }}/em /lib/ocf/resource.d/heartbeat/
+  - shell: chmod 755 /lib/ocf/resource.d/heartbeat/em

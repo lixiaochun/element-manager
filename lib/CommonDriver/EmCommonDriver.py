@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmCommonDriver.py
 
 '''
@@ -25,23 +25,24 @@ class EmCommonDriver(object):
     '''
     Driver common section module.
     '''
-    __db_utility = None  
+    __db_utility = None
 
-    __driver_path = ''  
-    __target_module = None  
-    __target_driver_class_ins = None  
+    __driver_path = ''
+    __target_module = None
+    __target_driver_class_ins = None
 
     @decorater_log
     def write_em_info(self, device_name, service_type,
                       order_type, ec_message, is_write_force=False):
         '''
         EM information update.
-            Gets launched through individual processing of each scenario, launches the writing of the EM designated information 
+            Gets launched through individual processing of each scenario,
+            launches the writing of the EM designated information
             on the common utility (DB) across the systems.
         Argument:
             device_name: str equipment name
             service_type: str type of service
-            order_type: str type of order 
+            order_type: str type of order
             ec_message: str EC message (xml)
         Return value:
             boolean method results.
@@ -49,7 +50,7 @@ class EmCommonDriver(object):
                 false: Abnormal
 
         '''
-        db_control_order = "UPDATE"  
+        db_control_order = "UPDATE"
         if order_type == "delete":
             db_control_order = "DELETE"
         elif (order_type == "merge") or (order_type == "replace"):
@@ -73,29 +74,32 @@ class EmCommonDriver(object):
     def start(self, device_name, ec_message=None):
         '''
         Start control on the common section of the driver.
-            Gets launched through individual processing of each scenario, obtains information about equipment from the common utility (DB) across the system or the EC message.
-            Then, based on such information, launches individual driver from the config. 
-        Argument: 
-            device_name: str equipment name 
+            Gets launched through individual processing of each scenario,
+            obtains information about equipment from
+            the common utility (DB) across the system or the EC message.
+            Then, based on such information,
+            launches individual driver from the config.
+        Argument:
+            device_name: str equipment name
             ec_message: str (JSON style) EC mesage
-        Return value: 
+        Return value:
             boolean method results
                 true: Normal
-                false: Abnormal 
+                false: Abnormal
         '''
         GlobalModule.EM_LOGGER.debug("******    Start Getting Registered Info")
 
         result_db, table_info =\
             GlobalModule.EMSYSCOMUTILDB.read_separate_driver_info(device_name)
 
-        table_info_dict = {}  
+        table_info_dict = {}
 
-        if result_db is False:  
+        if result_db is False:
             GlobalModule.EM_LOGGER.warning(
                 "206011    Driver Definition Reading Error")
             return False
         else:
-            if table_info != "" and table_info is not None:  
+            if table_info != "" and table_info is not None:
                 GlobalModule.EM_LOGGER.debug(
                     "******    Getting Registered Info Success")
                 try:
@@ -108,12 +112,12 @@ class EmCommonDriver(object):
                     GlobalModule.EM_LOGGER.warning(
                         "206011    Driver Definition Reading Error")
                     return False
-            elif ec_message is not None:  
+            elif ec_message is not None:
                 GlobalModule.EM_LOGGER.debug(
                     "******    Driver Definition Read from EC Message")
                 try:
                     ec_message_copy = copy.deepcopy(ec_message)
-                    ec_message_copy = json.loads(ec_message_copy)  
+                    ec_message_copy = json.loads(ec_message_copy)
                     table_info_dict = ec_message_copy["device"]["equipment"]
                     res_conf, self.__driver_path, driver_class =\
                         GlobalModule.EM_CONFIG.read_driver_conf(
@@ -124,7 +128,7 @@ class EmCommonDriver(object):
                     GlobalModule.EM_LOGGER.warning(
                         "206011    Driver Definition Reading Error")
                     return False
-            else:  
+            else:
                 GlobalModule.EM_LOGGER.warning(
                     "206011    Driver Definition Reading Error")
                 return False
@@ -135,7 +139,7 @@ class EmCommonDriver(object):
             return False
         else:
             self.__driver_path = path.normpath(
-                self.__driver_path)  
+                self.__driver_path)
             path_py, name = path.split(self.__driver_path)
 
             GlobalModule.EM_LOGGER.info(
@@ -182,18 +186,27 @@ class EmCommonDriver(object):
                        order_type=None, ec_message=None):
         '''
         Connection control over the equipment.
-             Gets launched through individual processing of each scenario, obtains information about equipment from the common utility (DB) across the system or the EC message.
-             Then, based on such information, launches connection control of the equipment over the individual section of the driver.
+             Gets launched through individual processing of each scenario,
+             obtains information about equipment from the common utility (DB)
+             across the system or the EC message.
+             Then, based on such information,
+             launches connection control of the equipment over the individual
+             section of the driver.
         Argument:
             device_name: str equipment name
             ec_message: str (JSON style) EC message
-            order_type: str type of order  
+            order_type: str type of order
             service_type: str type of service
         Return value:
             int method results
-                1(COM_CONNECT_OK): Normal (Take over the responding action over the individual section of the driver) 
-                2(COM_CONNECT_NG): Connection of equipment NG(Take over the responding action over the individual section of the driver)
-                3(COM_CONNECT_NO_RESPONSE): No response from equipment (Take over the responding action over the individual section of the driver)
+                1(COM_CONNECT_OK): Normal (Take over the responding action over
+                                        the individual section of the driver)
+                2(COM_CONNECT_NG): Connection of equipment NG
+                                        (Take over the responding action over
+                                         the individual section of the driver)
+                3(COM_CONNECT_NO_RESPONSE): No response from equipment
+                                        (Take over the responding action over
+                                         the individual section of the driver)
         '''
         GlobalModule.EM_LOGGER.debug(
             "******    Start Getting Registered info")
@@ -201,13 +214,13 @@ class EmCommonDriver(object):
             GlobalModule.EMSYSCOMUTILDB.read_device_registered_info(
                 device_name)
 
-        if result_info is False:  
+        if result_info is False:
             GlobalModule.EM_LOGGER.debug(
                 "******    DB Access Failed at DB Info Reading")
             GlobalModule.EM_LOGGER.warning(
                 "206004    Driver Individual Connecting Control Error")
             return GlobalModule.COM_CONNECT_NO_RESPONSE
-        else:  
+        else:
             if table_info != "" and table_info is not None:
                 table_info_dict = {}
                 for element in table_info:
@@ -231,14 +244,14 @@ class EmCommonDriver(object):
                     GlobalModule.EM_LOGGER.warning(
                         "206004    Driver Individual Connecting Control Error")
                     return GlobalModule.COM_CONNECT_NO_RESPONSE
-            else:  
+            else:
                 GlobalModule.EM_LOGGER.debug(
                     "******    Reading Info from EC Message...\
                     (getting registered info)")
                 try:
                     table_info_dict = {}
                     ec_message_copy = copy.deepcopy(ec_message)
-                    json_data = json.loads(ec_message_copy)  
+                    json_data = json.loads(ec_message_copy)
                     element = json_data["device"]["equipment"]
                     table_info_dict.update(element)
                     element = json_data["device"]["management-interface"]
@@ -276,8 +289,9 @@ class EmCommonDriver(object):
     def update_device_setting(self, device_name, service_type,
                               order_type, diff_info):
         '''
-        Update control of settings on equipment.  
-            Gets launched through individual processing of each scenario, launches the update control of settings on equipment 
+        Update control of settings on equipment.
+            Gets launched through individual processing of each scenario,
+            launches the update control of settings on equipment
             over the individual section of the driver.
         Argument:
             device_name: str equipment name
@@ -286,7 +300,7 @@ class EmCommonDriver(object):
             deiff_info: str information about the difference (JSON style）
         Return value:
             int method results
-                1(COM_UPDATE_OK): Update successful 
+                1(COM_UPDATE_OK): Update successful
                 2(COM_UPDATE_VALICHECK_NG): validation check NG
                 3(COM_UPDATE_NG): Update unsuccessful
 
@@ -309,18 +323,19 @@ class EmCommonDriver(object):
                               order_type, diffrence_info):
         '''
         Delete comtrol of settings on equipment.
-            Gets launched through individual processing of each scenario, launches the delete control of settings on equipment 
-            over the individual section of the driver. 
+            Gets launched through individual processing of each scenario,
+            launches the delete control of settings on equipment
+            over the individual section of the driver.
         Argument:
             device_name: str equipment name
             service_type: str type of service
-            order_type: str type of order  
+            order_type: str type of order
             diffrence_info: str information about the difference (JSON style)
         Return value:
             int method results
-                1(COM_DELETE_OK): Deletion successful 
+                1(COM_DELETE_OK): Deletion successful
                 2(COM_DELETE_VALICHECK_NG): Validation check NG
-                3(COM_DELETE_NG): Deletion unsuccessful 
+                3(COM_DELETE_NG): Deletion unsuccessful
 
         '''
         result = self.__target_driver_class_ins.delete_device_setting(
@@ -339,11 +354,12 @@ class EmCommonDriver(object):
                                order_type):
         '''
         Reservation control of settings on equipment.
-            Gets launched through individual processing of each scenario, launches the reservation control of settings on equipment 
+            Gets launched through individual processing of each scenario,
+            launches the reservation control of settings on equipment
             over the individual section of the driver.
         Argument:
             device_name: str equipment name
-            service_type: str type of service  
+            service_type: str type of service
             order_type: str type of order
         Return value:
             boolean method results
@@ -365,15 +381,16 @@ class EmCommonDriver(object):
     def enable_device_setting(self, device_name, service_type, order_type):
         '''
         Validation control of settings on equipment.
-            Gets launched through individual processing of each scenario, launches the validation control of settings on equipment 
+            Gets launched through individual processing of each scenario,
+            launches the validation control of settings on equipment
             over the individual section of the driver.
         Argument:
             device_name: str equipment name
-            service_type: str type of service 
-            order_type: str type of order 
-        Return value: 
-            boolean method results 
-                True: Normal 
+            service_type: str type of service
+            order_type: str type of order
+        Return value:
+            boolean method results
+                True: Normal
                 False: Abnormal
         '''
         result = self.__target_driver_class_ins.enable_device_setting(
@@ -392,16 +409,17 @@ class EmCommonDriver(object):
                           service_type, order_type):
         '''
         Disconnection control on equipment.
-            Gets launched through individual processing of each scenario, launches the disconnection control on equipment 
-            over the individual section of the driver. 
-        Argument: 
+            Gets launched through individual processing of each scenario,
+            launches the disconnection control on equipment
+            over the individual section of the driver.
+        Argument:
             device_name: str equipment name
-            service_type: str type of service  
-            order_type: str type of order  
-        Return value: 
+            service_type: str type of service
+            order_type: str type of order
+        Return value:
             boolean method results
                 True: Normal
-                False: Abnormal   
+                False: Abnormal
         '''
         result = self.__target_driver_class_ins.disconnect_device(
             device_name, service_type, order_type)
@@ -418,18 +436,19 @@ class EmCommonDriver(object):
     def get_device_setting(self, device_name, service_type, order_type):
         '''
         Acquisition control of settings on equipment.
-            Gets launched through individual processing of each scenario, launches the acquisition control of settings on equipment 
+            Gets launched through individual processing of each scenario,
+            launches the acquisition control of settings on equipment
             over the individual section of the driver.
 
         Argument:
             device_name: str equipment name
             service_type: str type of service
             order_type: str type of order
-        Return value: 
+        Return value:
             boolean method results
                 True: Normal
-                False: Abnormal  
-            str type of response  
+                False: Abnormal
+            str type of response
         '''
         result, responce = self.__target_driver_class_ins.get_device_setting(
             device_name, service_type, order_type)
@@ -444,20 +463,22 @@ class EmCommonDriver(object):
 
     @decorater_log
     def compare_to_db_info(self, device_name, service_type,
-                           order_type, ec_message):
+                            order_type, ec_message):
         '''
-        EC-DB informatio matching. 
-            Gets launched through individual processing of each scenario, launches the reading of EM designated information on common utility (DB) across the system.
+        EC-DB informatio matching.
+            Gets launched through individual processing of each scenario,
+            launches the reading of EM designated information
+            on common utility (DB) across the system.
             Then, matches the obtained information with the EC message.
-        Argument: 
+        Argument:
             device_name: str equipment name
-            service_type: str type of service  
+            service_type: str type of service
             ec_message: str EC message (xml)
-            order_type: str type of order 
-        Return value: 
-            int method results 
+            order_type: str type of order
+        Return value:
+            int method results
                 1(COM_COMPARE_MATCH): Match
-                2(COM_COMPARE_UNMATCH): Unmatch  
+                2(COM_COMPARE_UNMATCH): Unmatch
                 3(COM_COMPARE_NO_INFO): No information about equipment
 
         '''
@@ -484,16 +505,19 @@ class EmCommonDriver(object):
     def compare_to_device_setting(self, device_name, service_type,
                                   order_type, device_signal):
         '''
-        SW-DB information matching.  
-            Gets launched through individual processing of each scenario, launches the matching control of 
+        SW-DB information matching.
+            Gets launched through individual processing of each scenario,
+            launches the matching control of
             the individual section on the driver's individual section.
         Argument:
             device_name: str equipment name
             service_type: str type of service
             order type: str type of order
-            device_signal: str equipment signal (Take over the response signal obtained through the acquisition control over the common section of the driver.)
-        Return value: 
-            boolean method results 
+            device_signal: str equipment signal (Take over the response
+            signal obtained through the acquisition
+            control over the common section of the driver.)
+        Return value:
+            boolean method results
                 True: Normal
                 False: Abnormal
         '''
@@ -519,13 +543,16 @@ class EmCommonDriver(object):
     @decorater_log
     def __comp_db_info_in_each_table(self, ec_message, table_info):
         '''
-        Function for preparation used when comparing EC-DB (divided for each table). 
-        In case that DB table information of single equipment unit contains information from multiple tables, 
+        Function for preparation used
+        when comparing EC-DB (divided for each table).
+        In case that DB table information of single equipment unit
+        contains information from multiple tables,
         comparison should be conducted for each table.
         Argument
             ec_message: dict EC message
-            table_info: table's information carrying data as much as single equipment unit taken out by tuple DB control
-                        stored in the shape of 
+            table_info: table's information carrying data as much as
+                        single equipment unit taken out by tuple DB control
+                        stored in the shape of
                         (({key: value,key2: value2, ......},{another table}),
                         (Information about different genre tgable)).
         Return value:
@@ -536,12 +563,12 @@ class EmCommonDriver(object):
         ec_xml = xmltodict.parse(ec_message)
         if table_info is None:
             return False
-        if len(table_info) == 1:  
+        if len(table_info) == 1:
             if isinstance(ec_xml["device-leaf"]["cp"], list):
                 return False
             return self. __comp_db_info_in_table(
                 ec_xml, table_info[0], 0)
-        else:  
+        else:
             table_num = 0
             for element in table_info:
                 result =\
@@ -550,23 +577,27 @@ class EmCommonDriver(object):
                 if result is False:
                     return False
                 table_num += 1
-            return True  
+            return True
 
     @decorater_log
     def __comp_db_info_in_table(self, ec_xml, table_info, table_num):
         '''
         Comparison of message for EC-DB comparing process.
-            Conduct information matching between information of single table on single equipment unit and EC message.
+            Conduct information matching between information of single table
+            on single equipment unit and EC message.
         Argument:
             ec_xml: dict EC message （parse done xml）
-            table_info: table's information taken out by dict or tuple DB control
+            table_info: table's information taken out
+                        by dict or tuple DB control
                         In case of L2 slice.
-                        stored in the shape of 
+                        stored in the shape of
                             {key: value, key2: value2, ......}.
                         In case of L3 slice.
                         stored in the shape of
-                            ({table information dict},{table information dict}...).
-           table_num: Tells which one it is when there are multiple tables in upper level method
+                            ({table information dict},
+                             {table information dict}...).
+           table_num: Tells which one it is when there are multiple tables
+                      in upper level method
         Return value:
             boolean method results
                 True: Normal
@@ -631,8 +662,8 @@ class EmCommonDriver(object):
                     cp_info_element, "multicast-group"):
                 return False
             return True
-        elif "l3-slice" in service_url:  
-            if table_num == 0:  
+        elif "l3-slice" in service_url:
+            if table_num == 0:
                 table_info = table_info[0]
                 if "vrf" in device_leaf_element:
                     vrf_dict = device_leaf_element["vrf"]
@@ -648,9 +679,9 @@ class EmCommonDriver(object):
                             table_info, "router_id",
                             vrf_dict, "router-id"):
                         return False
-                else:  
+                else:
                     return False
-            elif table_num == 1:  
+            elif table_num == 1:
                 ec1 = 3
                 db1 = table_info[0]["slice_type"]
                 if ec1 != db1:
@@ -665,20 +696,21 @@ class EmCommonDriver(object):
                     return False
                 for cp_info_element in device_leaf_element["cp"]:
                     cp_loop_flag = True
-                    if not isinstance(device_leaf_element["cp"], list):  
+                    if not isinstance(device_leaf_element["cp"], list):
                         cp_info_element = device_leaf_element["cp"]
-                        if len(table_info) != 1:  
+                        if len(table_info) != 1:
                             GlobalModule.EM_LOGGER.debug(
                                 "Not detected target CP in DB.")
                             return False
                         cp_loop_flag = False
-                        table_info_elem = table_info[0]  
-                    else:  
+                        table_info_elem = table_info[0]
+                    else:
                         cp_len = len(device_leaf_element["cp"])
                         db_len = len(table_info)
-                        if cp_len != db_len:  
+                        if cp_len != db_len:
                             GlobalModule.EM_LOGGER.debug(
-                                "Not matching number of target cps and number of cps in DB.")
+                                "Not matching number of target " +
+                                "cps and number of cps in DB.")
                             return False
                         table_info_elem = None
                         for table_element in table_info:
@@ -746,7 +778,7 @@ class EmCommonDriver(object):
                         elif not self.__compare_dict_elements(
                                 table_info_elem, "mtu_size", ce_i_dict, "mtu"):
                             return False
-                    else:  
+                    else:
                         return False
                     if table_info_elem["vrrp_flag"] is not None:
                         if "vrrp" in cp_info_element:
@@ -759,7 +791,7 @@ class EmCommonDriver(object):
                             GlobalModule.EM_LOGGER.debug(
                                 "VRRPFLUG matching is NG@CP")
                             return False
-                    else:  
+                    else:
                         return False
                     if table_info_elem["static_flag"] is not None:
                         if "static" in cp_info_element:
@@ -772,7 +804,7 @@ class EmCommonDriver(object):
                             GlobalModule.EM_LOGGER.debug(
                                 "STATICFLUG matching is NG@CP")
                             return False
-                    else:  
+                    else:
                         return False
                     if table_info_elem["ospf_flag"] is not None:
                         if "ospf" in cp_info_element:
@@ -786,14 +818,14 @@ class EmCommonDriver(object):
                             db13 = table_info_elem["ospf_flag"]
                             if ec13 != db13:
                                 return False
-                    else:  
+                    else:
                         return False
                     if not cp_loop_flag:
                         break
             else:
                 if len(table_info) == 0:
                     pass
-                elif "address_type"in table_info[0]:  
+                elif "address_type"in table_info[0]:
                     check_num = 0
                     cp_loop_flag = True
                     for cp_info_element in device_leaf_element["cp"]:
@@ -849,7 +881,8 @@ class EmCommonDriver(object):
                                         break
                                 if table_info_elem is None:
                                     GlobalModule.EM_LOGGER.debug(
-                                        "Not found target data in DB@STATIC IPv4")
+                                        "Not found target data in " +
+                                        "DB@STATIC IPv4")
                                     return False
                                 check_num += 1
                                 if not route_roopflag:
@@ -899,7 +932,8 @@ class EmCommonDriver(object):
                                         break
                                 if table_info_elem is None:
                                     GlobalModule.EM_LOGGER.debug(
-                                        "Not found target data in DB@STATIC IPv6")
+                                        "Not found target data in " +
+                                        "DB@STATIC IPv6")
                                     return False
                                 check_num += 1
                                 if not route_roopflag:
@@ -910,7 +944,7 @@ class EmCommonDriver(object):
                         GlobalModule.EM_LOGGER.debug(
                             "Not matching number of cps.")
                         return False
-                elif "remote_as_number" in table_info[0]:  
+                elif "remote_as_number" in table_info[0]:
                     GlobalModule.EM_LOGGER.debug("Start BGP matching.")
                     investigate_flag = False
                     for table_info_elem in table_info:
@@ -919,7 +953,7 @@ class EmCommonDriver(object):
                             cp_info_element = device_leaf_element["cp"]
                             GlobalModule.EM_LOGGER.debug(
                                 "Case of One CP@BGP")
-                        else:  
+                        else:
                             cp_info_element = None
                             for element in device_leaf_element["cp"]:
                                 GlobalModule.EM_LOGGER.debug(
@@ -948,7 +982,8 @@ class EmCommonDriver(object):
                             investigate_flag = False
                         else:
                             GlobalModule.EM_LOGGER.debug(
-                                "Data existed in BGP table, however target data not existed in cp table.")
+                                "Data existed in BGP table, " +
+                                "however target data not existed in cp table.")
                             return False
                         if not self.__compare_dict_elements(
                                 table_info_elem, "remote_as_number",
@@ -998,7 +1033,7 @@ class EmCommonDriver(object):
                             pass
                     if investigate_flag:
                         return False
-                elif "priority" in table_info[0]:  
+                elif "priority" in table_info[0]:
                     investigate_flag = False
                     for table_info_elem in table_info:
                         investigate_flag = True
@@ -1064,9 +1099,9 @@ class EmCommonDriver(object):
                             return False
                     if investigate_flag:
                         return False
-                elif "track_if_name" in table_info[0]:  
+                elif "track_if_name" in table_info[0]:
                     cp_loop_flag = True
-                    check_num = 0  
+                    check_num = 0
                     for cp_info_element in device_leaf_element["cp"]:
                         if not isinstance(device_leaf_element["cp"], list):
                             cp_info_element = device_leaf_element["cp"]
@@ -1115,7 +1150,8 @@ class EmCommonDriver(object):
                             break
                     if check_num != len(table_info):
                         GlobalModule.EM_LOGGER.debug(
-                            "Number of data in xml is not matched number of data in DB. @VRRP TRACK")
+                            "Number of data in xml is not matched " +
+                            "number of data in DB. @VRRP TRACK")
                         return False
             return True
         else:
@@ -1131,7 +1167,7 @@ class EmCommonDriver(object):
             dict1:DB information
             key1:DB search key
             dict2:EC message
-            key2:Message search key 
+            key2:Message search key
         Return value:
             boolean method results
                 True: Normal
@@ -1145,6 +1181,7 @@ class EmCommonDriver(object):
             "Matching detail (data) DB(%s): %s EC(%s): %s",
             key1, target_1, key2, str(target_2))
         GlobalModule.EM_LOGGER.debug(
-            "Matching detail (type) DB: %s, EC:%s", str(type(target_1)), str(type(target_2)))
+            "Matching detail (type) DB: %s, EC:%s",
+            str(type(target_1)), str(type(target_2)))
         return (target_1 is not None) and (target_2 is not None)\
             and(target_1 == target_2)

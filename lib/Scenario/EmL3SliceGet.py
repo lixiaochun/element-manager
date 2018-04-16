@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmL3SliceGet.py
 '''
 Individual scenario for information matching (L3slice).
@@ -16,13 +16,11 @@ class EmL3SliceGet(EmSeparateScenario.EmScenario):
     Class for information matching (L3 slice).
     '''
 
-
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmL3SliceGet, self).__init__()
 
     @decorater_log
@@ -30,7 +28,7 @@ class EmL3SliceGet(EmSeparateScenario.EmScenario):
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conduct information matching (L3 slice) control for each device. 
+        Conduct information matching (L3 slice) control for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -235,11 +233,13 @@ class EmL3SliceGet(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
 
 
@@ -252,7 +252,7 @@ class EmL3SliceGet(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False

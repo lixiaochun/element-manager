@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmRestServer.py
 '''
 Rest Server function.
@@ -57,7 +57,7 @@ def _deco_count_request(func):
 @decorater_log
 def _request_counter(request_date=datetime.now()):
     '''
-    Update request history list. 
+    Update request history list.
     '''
     _request_lock.acquire()
     is_ok, unit_time = (
@@ -79,8 +79,8 @@ def _request_counter(request_date=datetime.now()):
 @_deco_count_request
 def rest_if_statusget():
     '''
-    Controller status acquisition.  
-        Obtain controller status. 
+    Controller status acquisition.
+        Obtain controller status.
     Parameter:
         key : Key
     Return value :
@@ -94,8 +94,8 @@ def rest_if_statusget():
 @_deco_count_request
 def rest_if_logget():
     '''
-    Controller log acquisition. 
-        Obtain controller log. 
+    Controller log acquisition.
+        Obtain controller log.
     Parameter:
         key : Key
     Return value :
@@ -107,7 +107,7 @@ def rest_if_logget():
 @decorater_log
 def _execute_rest_api(rest_uri, *args, **kwargs):
     '''
-    Conduct processing which is common for REST server.  
+    Conduct processing which is common for REST server.
     '''
     GlobalModule.EM_LOGGER.info(
         '110004 Request Received: %s', rest_uri)
@@ -124,7 +124,7 @@ def _execute_rest_api(rest_uri, *args, **kwargs):
 @decorater_log
 def _select_rest_scenario(rest_uri):
     '''
-    Determin REST scenario to launch.   
+    Determin REST scenario to launch.
     '''
     is_result, rest_scnario = (
         GlobalModule.EM_CONFIG.read_scenario_rest_conf(rest_uri))
@@ -144,7 +144,7 @@ def _select_rest_scenario(rest_uri):
 @decorater_log
 def _import_scenario_and_get_instance(rest_scenario_name):
     '''
-    Read scenario, obtain instance applicable to the class. 
+    Read scenario, obtain instance applicable to the class.
     '''
     GlobalModule.EM_LOGGER.debug(
         'startup class name generation:%s', rest_scenario_name)
@@ -170,7 +170,7 @@ def _import_scenario_and_get_instance(rest_scenario_name):
 @decorater_log
 def _execute_scenario(scenario_ins, *arg, **kwargs):
     '''
-    Execute scenario. 
+    Execute scenario.
     '''
     GlobalModule.EM_LOGGER.debug('execute scenario : %s' % (scenario_ins,))
     return scenario_ins.execute(*arg, **kwargs)

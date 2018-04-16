@@ -1,0 +1,5 @@
+# Getting python rpm
+- name: wget rpm
+  shell: wget --no-check-certificate --no-cookies {{ item.url }} -O {{ rpm_path }}/{{ item.file_name }}
+  with_items:
+    - "{{ file_list }}"

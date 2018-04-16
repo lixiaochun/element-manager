@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: GlobalModule.py
 '''
 Set the PATH(PYTHONPATH) to be used for EM.

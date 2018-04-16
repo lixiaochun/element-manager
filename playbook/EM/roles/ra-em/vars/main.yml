@@ -1,0 +1,5 @@
+folder_name: 'bin'
+
+file_list:
+  - file_name: 'em'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/em'

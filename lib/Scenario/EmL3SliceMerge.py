@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmL3SliceMerge.py
 '''
 Individual scenario to add L3 slice.
@@ -19,21 +19,15 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
     Class for adding L3 slice.
     '''
 
-
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmL3SliceMerge, self).__init__()
-
         self.service = GlobalModule.SERVICE_L3_SLICE
-
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
-
         self.timeout_flag = False
-
         self.device_type = "device-leaf"
 
     @decorater_log
@@ -382,7 +376,7 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _find_timeout(self, condition):
         '''
-        Set time out flag and launch thread.  
+        Set time out flag and launch thread.
         Explanation about parameter:
             condition: Thread control information
         Explanation about return value:
@@ -401,13 +395,14 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
 
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
@@ -421,16 +416,16 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False
 
     @decorater_log
     def __creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
-        Explanation about parameter：
+        Convert EC message (XML) divided for each device into JSON.
+        Explanation about parameter:
             device_message: Message for each device
         Explanation about return value
             device_json_message: JSON message
@@ -488,7 +483,8 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
                     "static": {
                         "route": [],
                         "route6": []
-                    }  
+                    },
+                    "qos": {}
                 }
 
             cp_list["name"] = \
@@ -649,6 +645,28 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
             else:
                 del cp_list["static"]
 
+            qos_info = self._find_xml_node(cp_get,
+                                           self._xml_ns + "qos")
+            if qos_info is not None:
+                inflow_shaping_rate = qos_info.find(
+                    self._xml_ns + "inflow-shaping-rate")
+                if inflow_shaping_rate is not None:
+                    cp_list["qos"]["inflow-shaping-rate"] = float(
+                        inflow_shaping_rate.text)
+
+                outflow_shaping_rate = qos_info.find(
+                    self._xml_ns + "outflow-shaping-rate")
+                if outflow_shaping_rate is not None:
+                    cp_list["qos"]["outflow-shaping-rate"] = float(
+                        outflow_shaping_rate.text)
+
+                remark_menu = qos_info.find(self._xml_ns + "remark-menu")
+                if remark_menu is not None:
+                    cp_list["qos"]["remark-menu"] = remark_menu.text
+
+                egress_menu = qos_info.find(self._xml_ns + "egress-menu")
+                if egress_menu is not None:
+                    cp_list["qos"]["egress-menu"] = egress_menu.text
 
             device_json_message["device-leaf"]["cp"].append(cp_list.copy())
 
@@ -664,7 +682,7 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_netconf_message(element, slice_name):
         '''
-        Device name：Create Netconf message (json letter string).
+        Device name:Create Netconf message (json letter string).
         '''
         slice_elm = etree.Element("slice_name")
         slice_elm.text = slice_name

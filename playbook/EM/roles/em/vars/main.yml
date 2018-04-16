@@ -1,0 +1,29 @@
+# Getting em conf
+folder_name_bin: 'bin'
+files_conf:
+ -  file_name: 'conf_driver.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_driver.conf'
+ -  file_name: 'conf_if_process.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_if_process.conf'
+ -  file_name: 'conf_if_process_rest.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_if_process_rest.conf'
+ -  file_name: 'conf_scenario.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_scenario.conf'
+ -  file_name: 'conf_scenario_rest.conf' 
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_scenario_rest.conf'
+ -  file_name: 'conf_separate_driver_cisco.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_separate_driver_cisco.conf'
+ -  file_name: 'conf_sys_common.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_sys_common.conf'
+files_bin:
+  - file_name: 'em_ctl.sh'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/em_ctl.sh'
+  - file_name: 'EmMonitor.py'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/EmMonitor.py'
+  - file_name: 'controller_status.sh '
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/controller_status.sh'
+files_em:
+  file_name: 'lib'
+  url: 'https://github.com/multi-service-fabric/element-manager/archive/master.tar.gz'
+
+    

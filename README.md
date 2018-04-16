@@ -29,12 +29,13 @@ Element Manager(EM) is one of the software components of Multi-Service Fabric(MS
 ## How to use
 - installation
   - [installation manual](doc/element_manager_installation_manual.md)
+  - [Simplified installation procedure with Ansible](doc/element_controller_automate_installation_manual.md)
   - [configuration specifications](doc/element_manager_configuration_specifications.md)
 - build
   - [building manual](doc/element_manager_building_guide.md)
 
 ## Development
-The following document describes the interface specifications and the points to be noted in order to newly develop a network driver for adding a switch that can be controlled by the EM.
+The following document describes the interface specifications and the points to be noted in order to newly develop a network driver for adding the switch that can be controlled by the EM.
 
 - [API guide](doc/element_manager_api_specifications.md)
 

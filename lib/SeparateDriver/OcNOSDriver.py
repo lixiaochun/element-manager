@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: OcNOSDriver.py
 '''
 Individual section on driver (Ocnos's driver)
@@ -54,7 +54,7 @@ class OcNOSDriver(EmSeparateDriver):
                        order_type):
         '''
         Driver individual section connection control.
-            Launch from the common section on driver, 
+            Launch from the common section on driver,
             conduct device connection control to protocol processing section.
         Parameter:
             device_name : Device name
@@ -62,7 +62,8 @@ class OcNOSDriver(EmSeparateDriver):
             service_type : Service type
             order_type : Order type
         Return value :
-            Protocol processing section response : int (1:Normal, 2:Capability abnormal, 3:No response)
+            Protocol processing section response :
+                int (1:Normal, 2:Capability abnormal, 3:No response)
         '''
         if service_type in self.list_no_edit_service:
             return GlobalModule.COM_CONNECT_OK
@@ -93,8 +94,8 @@ class OcNOSDriver(EmSeparateDriver):
             service_type : Service type
             order_type : Order type
         Return value :
-            Processing finish status : int (1:Successfully updated 
-                                2:Validation check NG 
+            Processing finish status : int (1:Successfully updated
+                                2:Validation check NG
                                 3:Updating unsuccessful)
         '''
         self.common_util_log.logging(
@@ -129,15 +130,15 @@ class OcNOSDriver(EmSeparateDriver):
     def delete_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
         '''
-        Driver individual section deletion control.  
-            Launch from the common section on driver, 
-            conduct device deletion control to protocol processing section. 
+        Driver individual section deletion control.
+            Launch from the common section on driver,
+            conduct device deletion control to protocol processing section.
         Parameter:
             device_name : Device name
             service_type : Service type
             order_type : Order type
         Return value :
-            Processing finish status : int (1:Successfully deleted 
+            Processing finish status : int (1:Successfully deleted
                                 2:バValidation check NG
                                 3:Deletion unsuccessful)
         '''
@@ -153,9 +154,10 @@ class OcNOSDriver(EmSeparateDriver):
     @decorater_log
     def disconnect_device(self, device_name, service_type, order_type):
         '''
-        Driver individual section disconnection control.  
+        Driver individual section disconnection control.
             Launch from the common section on driver,
-            conduct device disconnection control to protocol processing section.
+            conduct device disconnection control
+            to protocol processing section.
         Parameter:
             device_name : Device name
             service_type : Service type
@@ -238,12 +240,10 @@ class OcNOSDriver(EmSeparateDriver):
             __name__)
         return ocnos_command_list
 
-
-
     @decorater_log
     def _set_command_initial(self):
         '''
-        Create command list after OcNOS connection. 
+        Create command list after OcNOS connection.
            Set Terminal length
            Switch to privileged mode
            Switch to configuration mode
@@ -265,7 +265,7 @@ class OcNOSDriver(EmSeparateDriver):
     @decorater_log
     def _set_command_finaly(self):
         '''
-        Create command list after executing config command. 
+        Create command list after executing config command.
             Cancel configuration mode
             Copy the currently used config to startup-config
             Cancel privileged mode
@@ -367,7 +367,7 @@ class OcNOSDriver(EmSeparateDriver):
     @decorater_log
     def _set_command_vni_vlan_mapping(self, cp_info={}, operation=None):
         '''
-        Create command list with linkage to VNI,VLAN. 
+        Create command list with linkage to VNI,VLAN.
         '''
         tmp_comm_list = []
         for cp_data in cp_info.values():
@@ -401,7 +401,7 @@ class OcNOSDriver(EmSeparateDriver):
                                               vlan_id=None,
                                               operation=None):
         '''
-        Create command with linkage to VNI,VLAN for each VLANIF. 
+        Create command with linkage to VNI,VLAN for each VLANIF.
         '''
         tmp_comm_list = []
         if vlan_id is not None:
@@ -427,8 +427,6 @@ class OcNOSDriver(EmSeparateDriver):
             "nvo vxlan access-port command : \n%s" % (tmp_comm_list,),
             __name__)
         return tmp_comm_list
-
-
 
     @decorater_log
     def _get_l2_cps_from_ec(self,
@@ -463,7 +461,8 @@ class OcNOSDriver(EmSeparateDriver):
     @decorater_log
     def _get_cp_interface_info_from_ec(self, cp_dicts, cp_info):
         '''
-        Collect IF information relating to slice from EC message (independent unit CPs). (common for L2, L3)
+        Collect IF information relating to slice from EC message
+        (independent unit CPs). (common for L2, L3)
         '''
         if_name = cp_info.get("name")
         vlan_id = cp_info.get("vlan-id")
@@ -537,9 +536,10 @@ class OcNOSDriver(EmSeparateDriver):
                         slice_name=None,
                         operation=None):
         '''
-        Create list for vlans.  
+        Create list for vlans.
         (Compare CP on DB and CP on operation instruction simultaneously.)
-        (Make judgment on the necessity of IF deletion and possibility for slice to remain inside device.)
+        (Make judgment on the necessity of IF deletion and
+        possibility for slice to remain inside device.)
         '''
         cos_if_list = {}
         db_cp = {}
@@ -574,7 +574,8 @@ class OcNOSDriver(EmSeparateDriver):
         '''
         Create list for class-or-service.
         (Compare CP on DB and CP on operation instruction simultaneously.)
-        (Make judgment on the necessity of IF deletion and possibility for slice to remain inside device.)
+        (Make judgment on the necessity of IF deletion
+        and possibility for slice to remain inside device.)
         '''
         cos_if_list = []
         db_cp = {}
@@ -637,7 +638,7 @@ class OcNOSDriver(EmSeparateDriver):
                       slice_name=None,
                       operation=None):
         '''
-        Create list for vni.  
+        Create list for vni.
         '''
         vni_list = []
         db_vni = self._get_db_vni_counts(db_info, slice_name)
@@ -722,12 +723,11 @@ class OcNOSDriver(EmSeparateDriver):
                 if_dict[if_name] = [vlan_id]
         return if_dict
 
-
     @staticmethod
     @decorater_log
     def _logging_send_command_str(ocnos_command_list=[]):
         '''
-        Indicate OcNOS transmit command as letter strings.  
+        Indicate OcNOS transmit command as letter strings.
         '''
         com_str = "send message for ocnos device:\n"
         for item in ocnos_command_list:

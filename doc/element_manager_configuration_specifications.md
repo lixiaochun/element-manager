@@ -1,14 +1,14 @@
 ## Element Manager Configuration Specifications
 
 **Version 1.0**
-**December 26, 2017**
-**Copyright(c) 2017 Nippon Telegraph and Telephone Corporation**
+**March 28, 2018**
+**Copyright(c) 2018 Nippon Telegraph and Telephone Corporation**
 
 ### Configuration Definitions
 
 Configurations are classified and defined by their usage. Also, they are distributed into separate files according to the usage. The table below is a list of them.
 
-|Namae   |Description            |
+|Name   |Description            |
 |:---------|:---------------|
 |conf_if_process.conf|It defines the Netconf server address, port number, host key information and Capability information, which are necessary for operating the  I/F Process Part. |
 |conf_if_process_rest.conf|It defines the REST server address, port number, host key information and Capability information, which are necessary for operating the  I/F Process Part.|
@@ -77,12 +77,12 @@ For the clear description, please refer to the following file.
 
 |No.|Item Name|Key|Description|Required?|Type|
 |:----|:-----|:----|:-----|:----|:----|
-|1|Scenario Key Name|Scenario_key**_n_**|The service type to run each scenario individual process from Order Flow Control|Yes|Test|
-|2|Order Type|Scenario_order**_n_**|The order type to run each scenario individual process from Order Flow Control|Yes|Text|
-|3|Individual Scenario Startup Name|Scenario_name**_n_**|The scenario name (Spine enhanced) to run each scenario individual process from Order Flow Control|Yes|Text|
-|4|Waiting Time of Order Request for each scenario|Scenario_Timer_Order_Wait**_n_**|The guard timer (ms) for each scenario. It watches that the time between the order reception and the configuration completion of all devices does not exceed the specified value.|Yes|Numeral|
-|5|Service Transaction ID for each scenario|Scenario_Service_Transaction_No**_n_**|An ID (Service Type) which is used by transaction management in Order Flow Control|Yes|Numeral|
-|6|Order Transaction ID for each scenario|Scenario_Order_Transaction_No**_n_**|The service type to run each scenario individual process from Order Flow Control|Yes|Numeral|
+|1|Scenario Key Name|Scenario_key|The service type to run each scenario individual process from Order Flow Control|Yes|Test|
+|2|Order Type|Scenario_order|The order type to run each scenario individual process from Order Flow Control|Yes|Text|
+|3|Individual Scenario Startup Name|Scenario_name|The scenario name (Spine enhanced) to run each scenario individual process from Order Flow Control|Yes|Text|
+|4|Waiting Time of Order Request for each scenario|Scenario_Timer_Order_Wait|The guard timer (ms) for each scenario. It watches that the time between the order reception and the configuration completion of all devices does not exceed the specified value.|Yes|Numeral|
+|5|Service Transaction ID for each scenario|Scenario_Service_Transaction_No|An ID (Service Type) which is used by transaction management in Order Flow Control|Yes|Numeral|
+|6|Order Transaction ID for each scenario|Scenario_Order_Transaction_No|The service type to run each scenario individual process from Order Flow Control|Yes|Numeral|
 
 ### conf_scenario_rest.conf
 
@@ -106,11 +106,13 @@ The table below shows the detail of items which are managed in this configuratio
 |3|Firmware Version 1|Firmware_ver1|firmware version of the target device|Yes|-|Text|Ditto.|-|
 |4|Individual Driver Startup Name 1|Driver_name1|name of the driver which is started at the time of control request of the target device<br>* specified in absolute path|Yes|-|Text|Ditto.|-|
 |5|Individual Driver Class Name 1|Driver_class1|name of the class which is started at the time of control request of the target device|Yes|-|Text|Ditto.|-|
-|6|Platform Name 2|Platform_name2|same as the first equivalent|Yes|-|Text|Ditto.|-|
-|7|Driver OS 2|Driver_os2|same as the first equivalent|Yes|-|Text|Ditto.|-|
-|8|Firmware Version 2|Firmware_ver2|same as the first equivalent|Yes|-|Text|Ditto.|-|
-|9|Individual Driver Startup Name 2|Driver_name2|same as the first equivalent|Yes|-|Text|Ditto.|-|
-|10|Individual Driver Class Name 2|Driver_class2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|6|QoS Configuration File Name 1|Qos_conf_file1|name of the QoS settiong file <br> specified in relative path  assumption to be placed under conf directory  * see the additional explanation(**qos.conf**)|Yes|-|Text|Ditto.|Values are required even if there is no file.|
+|7|Platform Name 2|Platform_name2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|8|Driver OS 2|Driver_os2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|9|Firmware Version 2|Firmware_ver2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|10|Individual Driver Startup Name 2|Driver_name2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|11|Individual Driver Class Name 2|Driver_class2|same as the first equivalent|Yes|-|Text|Ditto.|-|
+|12|QoS Configuration File Name 2|Qos_conf_file2|same as the first equivalent|Yes|-|Text|Ditto.|Values are required even if there is no file.|
 
 **Append lines each time when devices are added in the future.**
 
@@ -160,6 +162,28 @@ The table below shows the detail of items which are managed in this configuratio
 |7|I/F Name Prefix 3|IF_Name3|conventional prefix of the corresponding I/F name|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>Bundle-Ether|
 |8|mtu owner Value 3|IF_Owner_Name3|the corresponding I/F's mtu owner value which is to be injected to the device|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>etherbundle|
 |9|Tracking Object Prefix 3|IF_TrackingObject_Name3|the initial of tracking object|Yes|-|Text|No default value can be set for this item.|Reference Value:<br>EB|
+
+**Append lines each time when the patterns to be registered are increased in the future.
+**
+
+### [Additional Explanation] qos.conf
+
+The table below shows the detail of items which are managed in this configuration file.
+
+|No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
+|:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
+|1|Key information of remark menu 1|Remark_menu_key_1|Key information of remark menu 1(strings which input to EM)|Yes|-|Text|-|-|
+|2|IPv4 Policy information of remark menu 1|Remark_menu_value_ipv4_1|the string of device setting for ipv4 remark menu|Yes|-|Text|-|If the device doesn't have difference between ipv4 and ipv6 setting, write the value here.|
+|3|IPv6 Policy information of remark menu 1|Remark_menu_value_ipv6_1|the string of device setting for ipv6 remark menu|Yes|-|Text|-|Values are required even if there is no configuration differences between IPv4 and IPv6.|
+|4|Key information of remark menu 2|Remark_menu_key_2|Key information of remark menu 2(strings which input to EM)|Yes|-|Text|-|-|
+|5|IPv4 Policy information of remark menu 2|Remark_menu_value_ipv4_2|the string of device setting for ipv4 remark menu|Yes|-|Text|-|If the device doesn't have difference between ipv4 and ipv6 setting, write the value here.|
+|6|IPv6 Policy information of remark menu 2|Remark_menu_value_ipv6_2|the string of device setting for ipv6 remark menu|Yes|-|Text|-|Values are required even if there is no configuration differences between IPv4 and IPv6.|
+|7|Key information of eguress queue menu 1|Egress_menu_key_1|Key information of eguress queue menu 1(strings which input to EM)|Yes|-|Text|-|-|
+|8|IPv4 Policy information of eguress queue menu 1|Egress_menu_value_ipv4_1|the string of device setting for ipv4 eguress queue menu|Yes|-|Text|-|If the device doesn't have difference between ipv4 and ipv6 setting, write the value here.|
+|9|IPv6 Policy information of eguress queue menu 1|Egress_menu_value_ipv6_1|the string of device setting for ipv6 eguress queue menu|Yes|-|Text|-|Values are required even if there is no configuration differences between IPv4 and IPv6.|
+|10|Key information of eguress queue menu 2|Egress_menu_key_2|Key information of eguress queue menu 1(strings which input to EM)|Yes|-|Text|-|-|
+|11|IPv4 Policy information of eguress queue menu 2|Egress_menu_value_ipv4_2|the string of device setting for ipv4 eguress queue menu|Yes|-|Text|-|If the device doesn't have difference between ipv4 and ipv6 setting, write the value here.|
+|12|IPv6 Policy information of eguress queue menu 2|Egress_menu_value_ipv6_2|the string of device setting for ipv6 eguress queue menu|Yes|-|Text|-|Values are required even if there is no configuration differences between IPv4 and IPv6.|
 
 **Append lines each time when the patterns to be registered are increased in the future.
 **

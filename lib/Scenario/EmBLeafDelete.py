@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmBLeafDelete.py
 '''
-Individual scenario for B-Leaf reduction. 
+Individual scenario for B-Leaf reduction.
 '''
 import threading
 from EmBLeafUpdate import EmBLeafUpdate
@@ -23,7 +23,7 @@ class EmBLeafDelete(EmBLeafUpdate):
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conduct Leaf reduction control for each device. 
+        Conduct Leaf reduction control for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -39,20 +39,20 @@ class EmBLeafDelete(EmBLeafUpdate):
         if ospf_elm is not None:
             GlobalModule.EM_LOGGER.debug('OSPF tag EXIST')
             super(EmBLeafDelete, self)._gen_sub_thread(device_message,
-                                                     transaction_id,
-                                                     order_type,
-                                                     condition,
-                                                     device_name,
-                                                     force)
-            
+                                                       transaction_id,
+                                                       order_type,
+                                                       condition,
+                                                       device_name,
+                                                       force)
+
         else:
             GlobalModule.EM_LOGGER.debug('OSPF tag NOT EXIST')
             self._gen_sub_thread_b_leaf_delete(device_message,
-                                             transaction_id,
-                                             order_type,
-                                             condition,
-                                             device_name,
-                                             force)
+                                               transaction_id,
+                                               order_type,
+                                               condition,
+                                               device_name,
+                                               force)
 
     @decorater_log
     def __init__(self):
@@ -60,7 +60,6 @@ class EmBLeafDelete(EmBLeafUpdate):
         Constructor
         '''
         super(EmBLeafDelete, self).__init__()
-
 
         self.scenario_name = "B-LeafDelete"
 
@@ -73,13 +72,13 @@ class EmBLeafDelete(EmBLeafUpdate):
         self.error_code_03 = "204004"
 
         self.device_type = "device"
-        
+
     @decorater_log
     def _gen_sub_thread_b_leaf_delete(
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conduct B-Leaf reduction control for each device. 
+        Conduct B-Leaf reduction control for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -227,14 +226,14 @@ class EmBLeafDelete(EmBLeafUpdate):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status
+        of transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
-
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
 
@@ -244,15 +243,15 @@ class EmBLeafDelete(EmBLeafUpdate):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False
 
     @decorater_log
     def _find_timeout(self, condition):
         '''
-        Set timeout flag and launch thread.  
+        Set timeout flag and launch thread.
         Explanation about parameter:
         condition: Thread control information
         Explanation about return value:
@@ -267,4 +266,3 @@ class EmBLeafDelete(EmBLeafUpdate):
         condition.acquire()
         condition.notify()
         condition.release()
-

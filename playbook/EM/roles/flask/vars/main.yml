@@ -1,0 +1,15 @@
+folder_name: 'flask-0.12.2'
+
+file_list:
+  - file_name: 'click-6.7-py2.py3-none-any.whl'
+    url: 'https://pypi.python.org/packages/34/c1/8806f99713ddb993c5366c362b2f908f18269f8d792aff1abfd700775a77/click-6.7-py2.py3-none-any.whl#md5=5e7a4e296b3212da2ff11017675d7a4d'
+  - file_name: 'itsdangerous-0.24.tar.gz'
+    url: 'https://pypi.python.org/packages/dc/b4/a60bcdba945c00f6d608d8975131ab3f25b22f2bcfe1dab221165194b2d4/itsdangerous-0.24.tar.gz#md5=a3d55aa79369aef5345c036a8a26307f'
+  - file_name: 'Jinja2-2.9.6-py2.py3-none-any.whl'
+    url: 'https://pypi.python.org/packages/5e/73/10c45b82a88ed6b7751bd40da31eeefd7b362e07b56a99aa6e56655a0794/Jinja2-2.9.6-py2.py3-none-any.whl#md5=61a215bcdb0f7939c70582bc00b293f1'
+  - file_name: 'MarkupSafe-1.0.tar.gz'
+    url: 'https://pypi.python.org/packages/4d/de/32d741db316d8fdb7680822dd37001ef7a448255de9699ab4bfcbdf4172b/MarkupSafe-1.0.tar.gz#md5=2fcedc9284d50e577b5192e8e3578355'
+  - file_name: 'Werkzeug-0.12.2-py2.py3-none-any.whl'
+    url: 'https://pypi.python.org/packages/97/02/306e0d57fdbf467ec1c763bc1757ec6ba20b1332e0ea7e49111533d71d1c/Werkzeug-0.12.2-py2.py3-none-any.whl#md5=f2f1955f470f6eae8563c9e4e1ad1bba'
+  - file_name: 'Flask-0.12.2-py2.py3-none-any.whl'
+    url: 'https://pypi.python.org/packages/77/32/e3597cb19ffffe724ad4bf0beca4153419918e7fa4ba6a34b04ee4da3371/Flask-0.12.2-py2.py3-none-any.whl#md5=a0ded1d9a2066d3522efba953b4ed874'

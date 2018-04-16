@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmSpineMerge.py
 '''
-Individual scenario for Spine expansion. 
+Individual scenario for Spine expansion.
 '''
 import threading
 import json
@@ -19,21 +19,15 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     Class for Spine expansion
     '''
 
-
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmSpineMerge, self).__init__()
-
         self.service = GlobalModule.SERVICE_SPINE
-
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
-
         self.timeout_flag = False
-
         self.device_type = "device"
 
     @decorater_log
@@ -41,7 +35,7 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conducts Spine expansion control for each device. 
+        Conducts Spine expansion control for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -430,7 +424,7 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _find_timeout(self, condition):
         '''
-        Set time out flag and launch thread.  
+        Set time out flag and launch thread.
         Explanation about parameter:
             condition: Thread control information
         Explanation about return value:
@@ -449,13 +443,14 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
 
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
@@ -469,16 +464,16 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False
 
     @decorater_log
     def _creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
-        Explanation about parameter：
+        Convert EC message (XML) divided for each device into JSON.
+        Explanation about parameter:
             device_message: Message for each device
         Explanation about return value
             device_json_message: JSON message
@@ -569,14 +564,14 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_name(self, xml, xml_ns):
         '''
-            Obtain name information from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain name information from xml message to be analyzed and
+            set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         name_elm = self._find_xml_node(xml, xml_ns + "name")
@@ -585,14 +580,14 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_equipment(self, json, xml, xml_ns):
         '''
-            Obtain device connection information from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain device connection information from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         equ_elm = self._find_xml_node(xml, xml_ns + "equipment")
@@ -611,14 +606,14 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_breakout(self, json, xml, xml_ns):
         '''
-            Obtain breakoutIF information from xml message to be analyzed and 
+            Obtain breakoutIF information from xml message to be analyzed and
             set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         breakout_elm = self._find_xml_node(xml,
@@ -640,14 +635,14 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_internal_if(self, json, xml, xml_ns):
         '''
-            Obtain IF information for internal Link from xml message to be analyzed and 
-            set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain IF information for internal Link from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
         internal_if_elm = self._find_xml_node(xml,
                                               xml_ns + "internal-interface")
@@ -670,14 +665,15 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_internal_phy(self, json, xml_ns, internal_phy):
         '''
-            Obtain physical IF information for internal Link from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain physical IF information for internal Link
+            from xml message to be analyzed and set it
+            for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
         internal_phy_name = internal_phy.find(xml_ns + "name").text
         internal_phy_opp = internal_phy.find(
@@ -693,18 +689,19 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_internal_lag(self, json, xml_ns, itnal_lag):
         '''
-            Obtain LAG information for internal Link from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain LAG information for internal Link from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
         internal_lag_message = {
             "name": None,
             "opposite-node-name": None,
+            "lag-id": 0,
             "minimum-links": 0,
             "link-speed": 0,
             "address": None,
@@ -726,6 +723,8 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
             itnal_lag.find(xml_ns + "name").text
         internal_lag_message["opposite-node-name"] = \
             itnal_lag.find(xml_ns + "opposite-node-name").text
+        internal_lag_message["lag-id"] = \
+            int(itnal_lag.find(xml_ns + "lag-id").text)
         internal_lag_message["minimum-links"] = \
             int(itnal_lag.find(xml_ns + "minimum-links").text)
         internal_lag_message["link-speed"] = \
@@ -741,12 +740,12 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_management(self, json, xml, xml_ns):
         '''
-            Obtain management IF information from xml message to be analyzed 
-            and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Obtain management IF information from xml message to be analyzed
+            and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
         man_elm = self._find_xml_node(xml,
                                       xml_ns + "management-interface")
@@ -759,12 +758,12 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_loopback(self, json, xml, xml_ns):
         '''
-            Obtain loopback IF information from xml message to be analyzed 
+            Obtain loopback IF information from xml message to be analyzed
             and set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
         loop_elm = self._find_xml_node(xml,
                                        xml_ns + "loopback-interface")
@@ -777,12 +776,12 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_snmp(self, json, xml, xml_ns):
         '''
-            Obtain SNMP information from xml message to be analyzed 
+            Obtain SNMP information from xml message to be analyzed
             and set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
         snmp_elm = self._find_xml_node(xml,
                                        xml_ns + "snmp")
@@ -795,12 +794,12 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_ntp(self, json, xml, xml_ns):
         '''
-            Obtain NTP information from xml message to be analyzed 
-            and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Obtain NTP information from xml message to be analyzed
+            and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
         ntp_elm = self._find_xml_node(xml,
                                       xml_ns + "ntp")
@@ -810,12 +809,12 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_ospf(self, json, xml, xml_ns):
         '''
-            Obtain OSPF information from xml message to be analyzed 
+            Obtain OSPF information from xml message to be analyzed
             and set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
         ospf_elm = self._find_xml_node(xml,
                                        xml_ns + "ospf")

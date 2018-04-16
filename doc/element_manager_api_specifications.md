@@ -1,12 +1,12 @@
 ## Element Manager API Specifications
 
 **Version 1.0**
-**December 26, 2017**
-**Copyright(c) 2017 Nippon Telegraph and Telephone Corporation**
+**March 28, 2018**
+**Copyright(c) 2018 Nippon Telegraph and Telephone Corporation**
 
 
-1. Introduction
-============
+# 1. Introduction
+
 
 1.1. Objective
 ---------
@@ -28,8 +28,7 @@ whole system.
 
 Please refer to RFC 6241, 6242 for details about NETCONF protocol.
 
-2. Overview
-========
+# 2. Overview
 
 2.1. The Whole Picture of Implementation Consideration Points
 --------------------------------------------------------
@@ -87,8 +86,7 @@ Consideration Point (5)
 
 See also Chapter 5 for the sequence related to Driver Individual Part.
 
-3. IF Specifications
-=================
+# 3. IF Specifications
 
 3.1. Driver Individual Part
 ----------------------
@@ -135,8 +133,6 @@ Level Functional Part of Driver Individual Part.
 Table 3.1 depicts the relationship between the Service Type and Order
 Type specified by High Level Functional Part and the other services.
 "merge/delete/replace/get" operation is specified for the Order Type.
-Consideration of Device Removal in Driver Individual Part is not
-necessary since it is not controlled by EM.
 
 Table 3-1 Service List
 
@@ -147,7 +143,7 @@ Table 3-1 Service List
   3    | B-Leaf Generate                                    |  b-leaf       |   merge
   4    | B-Leaf Update                                      |  b-leaf       |   replace
   5    | B-Leaf Delete                                      |  b-leaf       |   delete
-  6    | L2 Slice ENPN Control                              |  l2-slice     |   merge
+  6    | L2 Slice ENPN Control                              |  l2-slice     |   merge <br> delete
   7    | L3 Slice Add                                       |  l3-slice     |   merge
   8    | L3 Slice Delete                                    |  l3-slice     |   delete
   9    | L3 Slice Update                                    |  l3-slice     |   replace
@@ -161,6 +157,10 @@ Table 3-1 Service List
   17   | Inter-Cluster Link Delete                          |  cluster-link |   delete
   18   | breakoutIF Registration                            |  breakout     |   merge
   19   | breakoutIF Deletion                                |  breakout     |   delete  
+  20   | Recovery Extension                                 |  recover-node |   merge
+  21   | Service reconfiguration                            |  recover-service |   merge
+  22   | L2 Slice Update                                    |  l2-slice     |   replace
+
 
 In Figure 3-1, the part of which each service relates to the
 configuration or others in an actual switch cluster NW construction is
@@ -196,7 +196,7 @@ Figure 3-3 Format of Device Information
 
 Only the services of which Order Type is "merge" or "replace" are
 specified by High Level Functional Part. Specifically, the services of
-No. 1-4, 6, 7, 9, 10, 12, 16 and 18 in Table 3-1 Service List
+No. 1-4, 6, 7, 9, 10, 12, 16, 18, 20, 21 and 22 in Table 3-1 Service List
 (combinations of Service Type and Order Type) are specified. Figure 3-4
 IF Detail of Device Configuration Update Control depicts the detailed
 information of interfaces which are instructed from High Level
@@ -264,48 +264,60 @@ Figure 3-14 Format of breakoutIF Registration Information
 
 Figure 3-15 Format of Inter-Cluster Link Generation Information
 
+![Figure 3-16 Format of Recovery Extension Information](media/Figure3-16.png "Figure3-16")
+
+Figure 3-16 Format of Recovery Extension Information
+
+![Figure 3-17 Format of Service Reconfiguration Information](media/Figure3-17.png "Figure3-17")
+
+Figure 3-17 Format of Service Reconfiguration Information
+
+![Figure 3-18 Format of L2 Slice Update Information](media/Figure3-18.png "Figure3-18")
+
+Figure 3-18 Format of L2 Slice Update Information
+
 ### 3.1.4. Device Configuration Deletion Control
 
 Only the services of which Order Type is "delete" are specified by
 High Level Functional Part. Specifically, the services of No. 5, 8, 11,
 13, 17 and 19 in Table 3-1 Service List (combinations of Service Type
-and Order Type) are specified. Figure 3-16 IF Detail of Device
+and Order Type) are specified. Figure 3-19 IF Detail of Device
 Configuration Deletion Control depicts the detailed information of
 interfaces which are instructed from High Level Functional Part to
-Driver Individual Part. And Figure 3-17 through Figure 3-22 depict the
+Driver Individual Part. And Figure 3-20 through Figure 3-25 depict the
 format of configuration value of Argument 4 which is input information
 of each service. Same as Device Configuration Update Control, it
 responds High Level Functional Part with corresponding result depending
 on the returned value of performing Device Control Signal Transmission
 of Low Level Functional Part. See Section 3.1.3 for the mapping policy.
 
-![Figure 3-16 IF Detail of Device Configuration Deletion Control](media/Figure3-16.png "Figure3-16")
+![Figure 3-19 IF Detail of Device Configuration Deletion Control](media/Figure3-19.png "Figure3-19")
 
-Figure 3-16 IF Detail of Device Configuration Deletion Control
+Figure 3-19 IF Detail of Device Configuration Deletion Control
 
-![Figure 3-17 Format of B-Leaf Deletion Information](media/Figure3-17.png "Figure3-17")
+![Figure 3-20 Format of B-Leaf Deletion Information](media/Figure3-20.png "Figure3-20")
 
-Figure 3-17 Format of B-Leaf Deletion Information
+Figure 3-20 Format of B-Leaf Deletion Information
 
-![Figure 3-18 Format of Internal Link IF Deletion Information](media/Figure3-18.png "Figure3-18")
+![Figure 3-21 Format of Internal Link IF Deletion Information](media/Figure3-21.png "Figure3-21")
 
-Figure 3-18 Format of Internal Link IF Deletion Information
+Figure 3-21 Format of Internal Link IF Deletion Information
 
-![Figure 3-19 Format of LAG Deletion for CE Information](media/Figure3-19.png "Figure3-19")
+![Figure 3-22 Format of LAG Deletion for CE Information](media/Figure3-22.png "Figure3-22")
 
-Figure 3-19 Format of LAG Deletion for CE Information
+Figure 3-22 Format of LAG Deletion for CE Information
 
-![Figure 3-20 Format of L3 Slice Deletion Information](media/Figure3-20.png "Figure3-20")
+![Figure 3-23 Format of L3 Slice Deletion Information](media/Figure3-23.png "Figure3-23")
 
-Figure 3-20 Format of L3 Slice Deletion Information
+Figure 3-23 Format of L3 Slice Deletion Information
 
-![Figure 3-21 Format of breakoutIF Deletion Information](media/Figure3-21.png "Figure3-21")
+![Figure 3-24 Format of breakoutIF Deletion Information](media/Figure3-24.png "Figure3-24")
 
-Figure 3-21 Format of breakoutIF Deletion Information
+Figure 3-24 Format of breakoutIF Deletion Information
 
-![Figure 3-22 Format of Inter-Cluster Link Deletion Information](media/Figure3-22.png "Figure3-22")
+![Figure 3-25 Format of Inter-Cluster Link Deletion Information](media/Figure3-25.png "Figure3-25")
 
-Figure 3-22 Format of Inter-Cluster Link Deletion Information
+Figure 3-25 Format of Inter-Cluster Link Deletion Information
 
 ### 3.1.5. Device Configuration Reservation Control
 
@@ -316,9 +328,9 @@ Normal" when the result does not contain error message, or responds
 with "False: Error" when the result contains error message or the
 response was "False".
 
-![Figure 3-23 IF Detail of Device Configuration Reservation Control](media/Figure3-23.png "Figure3-23")
+![Figure 3-26 IF Detail of Device Configuration Reservation Control](media/Figure3-26.png "Figure3-26")
 
-Figure 3-23 IF Detail of Device Configuration Reservation Control
+Figure 3-26 IF Detail of Device Configuration Reservation Control
 
 ### 3.1.6. Device Configuration Enablement Control
 
@@ -327,9 +339,9 @@ Functional Part with corresponding result depending on the returned
 value of performing Device Control Signal Transmission of Low Level
 Functional Part. See Section 3.1.5 for the mapping policy.
 
-![Figure 3-24 IF Detail of Device Configuration Enablement Control](media/Figure3-24.png "Figure3-24")
+![Figure 3-27 IF Detail of Device Configuration Enablement Control](media/Figure3-27.png "Figure3-27")
 
-Figure 3-24 IF Detail of Device Configuration Enablement Control
+Figure 3-27 IF Detail of Device Configuration Enablement Control
 
 ### 3.1.7. Device Disconnection Control
 
@@ -337,9 +349,9 @@ Taking over the return value of performing Device Control Signal
 Transmission of Low Level Functional Part, it responds High Level
 Functional Part with "True: Normal" or "False: Error".
 
-![Figure 3-25 IF Detail of Device Disconnection Control](media/Figure3-25.png "Figure3-25")
+![Figure 3-28 IF Detail of Device Disconnection Control](media/Figure3-28.png "Figure3-28")
 
-Figure 3-25 IF Detail of Device Disconnection Control
+Figure 3-28 IF Detail of Device Disconnection Control
 
 ### 3.1.8. Device Configuration Acquisition Control
 
@@ -355,9 +367,9 @@ The character string of response result (Configuration) from the device
 of Return 2 is specified by High Level Functional Part as an argument of
 Device Configuration Integrity Control IF via the following sequence.
 
-![Figure 3-26 IF Detail of Device Configuration Acquisition Control](media/Figure3-26.png "Figure3-26")
+![Figure 3-29 IF Detail of Device Configuration Acquisition Control](media/Figure3-29.png "Figure3-29")
 
-Figure 3-26 IF Detail of Device Configuration Acquisition Control
+Figure 3-29 IF Detail of Device Configuration Acquisition Control
 
 ### 3.1.9. Device Configuration Integrity Control
 
@@ -370,13 +382,13 @@ information of which EM retains in DB is identical with the actual
 device configuration information. The target of information integration
 is L2 and L3 slice related information. It collates the result of device
 configuration acquisition at Device Configuration Acquisition Control
-with DB information (see Figure 3-39 and Figure 3-40) acquired through
+with DB information (see Figure 3-42 and Figure 3-43) acquired through
 Utility Common Part (DB) and if they are identical, returns "True:
 Normal" or otherwise, returns "False: Error".
 
-![Figure 3-27 IF Detail of Device Configuration Integrity Control](media/Figure3-27.png "Figure3-27")
+![Figure 3-30 IF Detail of Device Configuration Integrity Control](media/Figure3-30.png "Figure3-30")
 
-Figure 3-27 IF Detail of Device Configuration Integrity Control
+Figure 3-30 IF Detail of Device Configuration Integrity Control
 
 3.2. Driver Individual Part Low Level Functional Part
 ------------------------------------------------
@@ -404,19 +416,19 @@ use of NETCONF Client Library (ncclient).
 See Figure 3-3 Format of Device Information for more details about
 Device Information.
 
-![Figure 3-28 IF Detail of Device Connection Control (Low Level Functional Part, Netconf)](media/Figure3-28.png "Figure3-28")
+![Figure 3-31 IF Detail of Device Connection Control (Low Level Functional Part, Netconf)](media/Figure3-31.png "Figure3-31")
 
-Figure 3-28 IF Detail of Device Connection Control (Low Level Functional Part, Netconf)
+Figure 3-31 IF Detail of Device Connection Control (Low Level Functional Part, Netconf)
 
 #### 3.2.2.2. Device Control Signal Transmission
 
-![Figure 3-29 IF Detail of Device Control Signal Transmission (Netconf)](media/Figure3-29.png "Figure3-29")
+![Figure 3-32 IF Detail of Device Control Signal Transmission (Netconf)](media/Figure3-32.png "Figure3-32")
 
-Figure 3-29 IF Detail of Device Control Signal Transmission (Netconf)
+Figure 3-32 IF Detail of Device Control Signal Transmission (Netconf)
 
 When executing this IF from Driver Individual Part, specify NETCONF
 Message Type and Device Control Information (XML Message) as arguments.
-Figure 3-30 and Figure 3-31 illustrate the task sharing between Driver
+Figure 3-33 and Figure 3-34 illustrate the task sharing between Driver
 Individual Part and Low Level Functional Part for creating each of
 edit-config and get-config NETCONF message. The lines with blue letters
 indicate the part which is made up by Driver Individual Part (device
@@ -426,23 +438,23 @@ parts are given by Low Level Functional Part.
 In case of the other message types, messages are generated only by Low
 Level Functional Part so set None (no specification) for Argument 2.
 
-![Figure 3-30 image](media/Figure3-30.png "Figure3-30")
+![Figure 3-33 image](media/Figure3-33.png "Figure3-33")
 
-Figure 3-30 Image of Sharing Netconf Message
+Figure 3-33 Image of Sharing Netconf Message
 Creation between Driver Individual Part and Low Level Functional Part
 (edit-config)
 
-![Figure 3-31 image](media/Figure3-31.png "Figure3-31")
+![Figure 3-34 image](media/Figure3-34.png "Figure3-34")
 
-Figure 3-31 Image of Sharing Netconf Message
+Figure 3-34 Image of Sharing Netconf Message
 Creation between Driver Individual Part and Low Level Functional Part
 (get-config)
 
 #### 3.2.2.3. Device Disconnection Control
 
-![Figure 3-32 IF Detail of Device Disconnection Control (Low Level Functional Part, Netconf)](media/Figure3-32.png "Figure3-32")
+![Figure 3-35 IF Detail of Device Disconnection Control (Low Level Functional Part, Netconf)](media/Figure3-35.png "Figure3-35")
 
-Figure 3-32 IF Detail of Device Disconnection Control (Low Level Functional Part, Netconf)
+Figure 3-35 IF Detail of Device Disconnection Control (Low Level Functional Part, Netconf)
 
 ### 3.2.3. IF for CLI Protocol
 
@@ -454,15 +466,15 @@ use of ssh connection.
 See Figure 3-3 Format of Device Information for more details about
 Device Information.
 
-![Figure 3-33 image](media/Figure3-33.png "Figure3-33")
+![Figure 3-36 image](media/Figure3-36.png "Figure3-36")
 
-Figure 3-33 IF Detail of Device Connection Control (Low Level Functional Part, CLI)
+Figure 3-36 IF Detail of Device Connection Control (Low Level Functional Part, CLI)
 
 #### 3.2.3.2. Device Control Signal Transmission
 
-![Figure 3-34 image](media/Figure3-34.png "Figure3-34")
+![Figure 3-37 image](media/Figure3-37.png "Figure3-37")
 
-Figure 3-34 IF Detail of Device Control Signal Transmission (CLI)
+Figure 3-37 IF Detail of Device Control Signal Transmission (CLI)
 
 When executing this IF from Driver Individual Part, specify Message Type
 and the CLI Command executing at device side as arguments. However, in
@@ -471,9 +483,9 @@ case of using CLI protocol.
 
 #### 3.2.3.3. Device Disconnection Control
 
-![Figure 3-35 image](media/Figure3-35.png "Figure3-35")
+![Figure 3-38 image](media/Figure3-38.png "Figure3-38")
 
-Figure 3-35 IF Detail of Device Disconnection Control (Low Level Functional Part, CLI)
+Figure 3-38 IF Detail of Device Disconnection Control (Low Level Functional Part, CLI)
 
 3.3. Utility Functional Part (DB)
 ----------------------------
@@ -486,47 +498,47 @@ DB.
 
 ### 3.3.2. Read Configured Information
 
-![Figure 3-36 image](media/Figure3-36.png "Figure3-36")
-
-Figure 3-36 IF Detail of Read Configured Information
-
-![Figure 3-37 image](media/Figure3-37.png "Figure3-37")
-
-Figure 3-37 Format of Spine Information Acquisition
-
-![Figure 3-38 image](media/Figure3-38.png "Figure3-38")
-
-Figure 3-38 Format of Leaf Information Acquisition
-
 ![Figure 3-39 image](media/Figure3-39.png "Figure3-39")
 
-Figure 3-39 Format of L2 Slice Information Acquisition
+Figure 3-39 IF Detail of Read Configured Information
 
 ![Figure 3-40 image](media/Figure3-40.png "Figure3-40")
 
-Figure 3-40 Format of L3 Slice Information Acquisition
+Figure 3-40 Format of Spine Information Acquisition
 
 ![Figure 3-41 image](media/Figure3-41.png "Figure3-41")
 
-Figure 3-41 Format of LAG for CE Information Acquisition
+Figure 3-41 Format of Leaf Information Acquisition
 
 ![Figure 3-42 image](media/Figure3-42.png "Figure3-42")
 
-Figure 3-42 Format of Internal Link IF Information Acquisition
+Figure 3-42 Format of L2 Slice Information Acquisition
 
 ![Figure 3-43 image](media/Figure3-43.png "Figure3-43")
 
-Figure 3-43 Format of breakoutIF Information Acquisition
+Figure 3-43 Format of L3 Slice Information Acquisition
 
 ![Figure 3-44 image](media/Figure3-44.png "Figure3-44")
 
-Figure 3-44 Format of Inter-Cluster Link Information Acquisition
+Figure 3-44 Format of LAG for CE Information Acquisition
+
+![Figure 3-45 image](media/Figure3-45.png "Figure3-45")
+
+Figure 3-45 Format of Internal Link IF Information Acquisition
+
+![Figure 3-46 image](media/Figure3-46.png "Figure3-46")
+
+Figure 3-46 Format of breakoutIF Information Acquisition
+
+![Figure 3-47 image](media/Figure3-47.png "Figure3-47")
+
+Figure 3-47 Format of Inter-Cluster Link Information Acquisition
 
 ### 3.3.3. Acquiring Device Type and VPN Type
 
-![Figure 3-45 IF Detail of Acquiring Device Type and VPN Type](media/Figure3-45.png "Figure3-45")
+![Figure 3-48 IF Detail of Acquiring Device Type and VPN Type](media/Figure3-48.png "Figure3-48")
 
-Figure 3-45 IF Detail of Acquiring Device Type and VPN Type
+Figure 3-48 IF Detail of Acquiring Device Type and VPN Type
 
 3.4. Utility Functional Part (LOG)
 -----------------------------
@@ -549,12 +561,11 @@ the storage location of each file.
 
 ### 3.4.2. Log Output for Driver Individual Part
 
-![Figure 3-46 IF Detail of Log Output for Driver Individual Part](media/Figure3-46.png "Figure3-46")
+![Figure 3-49 IF Detail of Log Output for Driver Individual Part](media/Figure3-49.png "Figure3-49")
 
-Figure 3-46 IF Detail of Log Output for Driver Individual Part
+Figure 3-49 IF Detail of Log Output for Driver Individual Part
 
-4. Log
-===
+# 4. Log
 
 4.1. Contents of Output and Format
 -----------------------------
@@ -578,8 +589,7 @@ Table 4-1 Items of Display
 
 Figure 4-1 Output Image
 
-5. Sequence
-========
+# 5. Sequence
 
 5.1. For NETCONF Protocol
 --------------------
@@ -621,8 +631,7 @@ device configuration automatically when configuration setting failed.
 
 Figure 5-3 Example of Configuration Set/Delete Sequence
 
-6. Other Implementation Guideline
-==============================
+# 6. Other Implementation Guideline
 
 6.1. Validation Check Overview
 -------------------------

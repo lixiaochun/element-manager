@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmSeparateScenario.py
 '''
-Individual processing base for each scenario. 
+Individual processing base for each scenario.
 '''
 import threading
 import Queue
@@ -15,7 +15,7 @@ import GlobalModule
 
 class EmScenario(threading.Thread):
     '''
-    Individual section of each scenario. (base class) 
+    Individual section of each scenario. (base class)
     '''
 
     @decorater_log
@@ -23,25 +23,17 @@ class EmScenario(threading.Thread):
         '''
         Constructor
         '''
-
         super(EmScenario, self).__init__()
-
         self.device_name_list = []
-
         self.device_cond_dict = {}
-
         self.device_thread_dict = {}
-
         self.com_driver_list = {}
-
         self.force = False
-
         self.service_type_list = {}
         scenario_conf = \
             GlobalModule.EM_CONFIG.read_service_type_scenario_conf()
         for key, value in scenario_conf.items():
             self.service_type_list[value[2]] = key[0]
-
         self.daemon = True
         self.que_events = Queue.Queue(10)
         self.start()
@@ -49,8 +41,8 @@ class EmScenario(threading.Thread):
     @decorater_log
     def run(self):
         '''
-        Get launched as default after launching Thread by Thread object.  
-        Method for override. 
+        Get launched as default after launching Thread by Thread object.
+        Method for override.
         '''
         while True:
             try:
@@ -77,7 +69,8 @@ class EmScenario(threading.Thread):
     @decorater_log
     def execute(self, ec_message, transaction_id, order_type):
         '''
-        Gets launched from order flow control and conduct necessary settings to Queue. 
+        Gets launched from order flow control
+        and conduct necessary settings to Queue.
         Explanation about parameter:
             ec_message: Message for each device
             transaction_id: Transaction ID
@@ -98,7 +91,8 @@ class EmScenario(threading.Thread):
     @decorater_log
     def notify(self, ec_message, transaction_id, order_type):
         '''
-        Launched from order flow control and instructs to continue processing to the child thread. 
+        Launched from order flow control and instructs
+        to continue processing to the child thread.
         Explanation about parameter:
             ec_message: Message for each device
             transaction_id: Transaction ID
@@ -114,11 +108,11 @@ class EmScenario(threading.Thread):
                 device_thread_con.notify()
                 device_thread_con.release()
 
-
     @decorater_log
     def __scenario_main(self, ec_message, transaction_id, order_type):
         '''
-        Conducts administration for each device n(child thread) at individual control of each scenario. 
+        Conducts administration for each device n(child thread)
+        at individual control of each scenario.
         Explanation about parameter:
             ec_message: Message for each device
             transaction_id: Transaction ID
@@ -126,7 +120,6 @@ class EmScenario(threading.Thread):
         Explanation about return value:
             None
         '''
-
 
         self.device_name_list, device_xml_dict = self._analyze_ec_message(
             ec_message)
@@ -156,11 +149,12 @@ class EmScenario(threading.Thread):
     def _analyze_ec_message(self, ec_message):
         '''
         Netconf message analysis
-            Divides the Netconf message from order flow control for each device. 
+            Divides the Netconf message
+            from order flow control for each device.
         Parameter:
             ec_message : Netconf message
         Return valur :
-            Device name: Dictionary type Netconf message for each device. 
+            Device name: Dictionary type Netconf message for each device.
         '''
 
         device_name_list = []
@@ -217,7 +211,7 @@ class EmScenario(threading.Thread):
     @decorater_log
     def _gen_netconf_message(element, slice_name=None):
         '''
-        Device name：Create Netconf message (json letter string).
+        Device name:Create Netconf message (json letter string).
         '''
         return etree.tostring(element)
 
@@ -226,7 +220,7 @@ class EmScenario(threading.Thread):
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conducts control for each device. 
+        Conducts control for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -245,7 +239,7 @@ class EmScenario(threading.Thread):
     @decorater_log
     def _find_timeout(self, condition):
         '''
-        Set time out flag and launch thread.  
+        Set time out flag and launch thread.
         Explanation about parameter:
             condition: Thread control information
         Explanation about return value:
@@ -260,11 +254,13 @@ class EmScenario(threading.Thread):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
 
         GlobalModule.EM_LOGGER.error(
@@ -277,14 +273,18 @@ class EmScenario(threading.Thread):
             self, transaction_id, order_type, device_name, transaction_status,
             connect_device_flg, db_ng_flg):
         '''
-        Conduct subnormal operation.  
+        Conduct subnormal operation.
         Explanation about parameter:
             transaction_id: Transaction ID
             order_type: Order type
             device_name: Device name
             transaction_status: Transaction status
-            connect_device_flg: Device connection availability flag (True:Device connection available ,False:Device connection unavailable)
-            db_ng_flg: DB connection NG flag (True:DB connection NG, False:except for DB connection NG)
+            connect_device_flg: Device connection availability flag
+                (True:Device connection available ,
+                 False:Device connection unavailable)
+            db_ng_flg: DB connection NG flag
+                (True:DB connection NG,
+                 False:except for DB connection NG)
         Explanation about return value:
             None
         '''
@@ -343,7 +343,8 @@ class EmScenario(threading.Thread):
                 return_table_info[0]["transaction_status"])
 
             if need_update is True:
-                GlobalModule.EM_LOGGER.debug("Transaction state update required")
+                GlobalModule.EM_LOGGER.debug(
+                    "Transaction state update required")
 
                 is_db_result = \
                     GlobalModule.EMSYSCOMUTILDB. \
@@ -371,8 +372,9 @@ class EmScenario(threading.Thread):
     @decorater_log
     def _find_xml_node(parent, *tags):
         '''
-        Designate XML object and search the tag.  
-            Called out when node is created under the parent node which says "At variable section."
+        Designate XML object and search the tag.
+            Called out when node is created under the parent node
+            which says "At variable section."
         Parameter:
             parent : Parent node object
             *tag : Designate tag name one by one. (tag1, tag2, tag3…)

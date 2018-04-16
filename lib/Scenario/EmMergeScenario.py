@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmMargeScenario.py
 '''
-Class which is common for scenario creation.  
+Class which is common for scenario creation.
 '''
 import threading
 import EmSeparateScenario
@@ -17,24 +17,16 @@ class EmMergeScenario(EmSeparateScenario.EmScenario):
     Class which is common for scenario creation.
     '''
 
-
-
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmMergeScenario, self).__init__()
-
         self._xml_ns = ""
-
         self.timeout_flag = False
-
         self._scenario_name = ""
-
         self.service = ""
-
         self.error_code01 = "104001"
         self.error_code02 = "204004"
         self.error_code03 = "104002"
@@ -44,7 +36,7 @@ class EmMergeScenario(EmSeparateScenario.EmScenario):
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conduct creation control for each device.  
+        Conduct creation control for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -403,7 +395,7 @@ class EmMergeScenario(EmSeparateScenario.EmScenario):
     @decorater_log
     def _find_timeout(self, condition):
         '''
-        Set time out flag and launch thread.  
+        Set time out flag and launch thread.
         Explanation about parameter:
             condition: Thread control information
         Explanation about return value:
@@ -422,13 +414,14 @@ class EmMergeScenario(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
 
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
@@ -442,22 +435,22 @@ class EmMergeScenario(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False
 
     @decorater_log
     def _gen_json_name(self, json, xml, xml_ns):
         '''
-            Obtain device name from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain device name from xml message to be analyzed and
+            set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         name_elm = self._find_xml_node(xml, xml_ns + "name")

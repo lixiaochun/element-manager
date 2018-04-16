@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmBLeafScenario.py
 from EmSeparateScenario import EmScenario
 from EmCommonLog import decorater_log
@@ -15,7 +15,6 @@ class EmBLeafScenario(EmScenario):
     B-Leaf flavor
     '''
 
-
     @decorater_log
     def __init__(self):
         '''
@@ -26,13 +25,14 @@ class EmBLeafScenario(EmScenario):
     @decorater_log
     def _gen_json_b_leaf_ospf(self, json, xml, xml_ns):
         '''
-            Obtain OSPF information from xml message to be analyzed and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain OSPF information from xml message to be analyzed and
+            set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         ospf_elm = self._find_xml_node(xml, xml_ns + "ospf")

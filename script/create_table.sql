@@ -76,7 +76,8 @@ CREATE TABLE VlanIfInfo(
     metric            Integer,
     esi               text,
     system_id         text,
-    shaping_rate      float,
+    inflow_shaping_rate float,
+    outflow_shaping_rate float,
     remark_menu       text,
     egress_queue_menu text,
     PRIMARY KEY (device_name, if_name, vlan_id, slice_name),
@@ -88,6 +89,7 @@ CREATE TABLE LagIfInfo(
     device_name    text NOT NULL,
     lag_if_name    text NOT NULL,
     lag_type       Integer NOT NULL,
+    lag_if_id      Integer NOT NULL,
     minimum_links  Integer NOT NULL,
     link_speed     text,
     PRIMARY KEY (device_name, lag_if_name),
@@ -101,9 +103,9 @@ CREATE TABLE LagMemberIfInfo(
     if_name        text NOT NULL,
     PRIMARY KEY (device_name, lag_if_name, if_name),
     FOREIGN KEY (device_name,lag_if_name)
-        REFERENCES LagIfInfo(device_name,lag_if_name),
+        REFERENCES LagIfInfo(device_name,lag_if_name) ON UPDATE CASCADE,
     FOREIGN KEY (device_name,if_name)
-        REFERENCES PhysicalIfInfo(device_name,if_name)
+        REFERENCES PhysicalIfInfo(device_name,if_name) ON UPDATE CASCADE
 );
 
 CREATE TABLE L3VpnLeafBgpBasicInfo(
@@ -127,7 +129,7 @@ CREATE TABLE VrfDetailInfo(
     router_id       text    NOT NULL,
     PRIMARY KEY (device_name, if_name, vlan_id, slice_name),
     FOREIGN KEY (device_name, if_name, vlan_id, slice_name)
-        REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name)
+        REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name) ON UPDATE CASCADE
 );
 
 CREATE TABLE VrrpDetailInfo(
@@ -141,7 +143,7 @@ CREATE TABLE VrrpDetailInfo(
     priority             Integer NOT NULL,
     PRIMARY KEY (device_name, if_name, vlan_id, slice_name),
     FOREIGN KEY (device_name, if_name, vlan_id, slice_name)
-         REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name)
+         REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name) ON UPDATE CASCADE
 );
 
 CREATE TABLE VrrpTrackIfInfo(
@@ -155,6 +157,7 @@ CREATE TABLE BgpDetailInfo(
     if_name             text    NOT NULL,
     vlan_id             Integer NOT NULL,
     slice_name          text    NOT NULL,
+    master              boolean NOT NULL,
     remote_as_number    Integer NOT NULL,
     local_ipv4_address  text,
     remote_ipv4_address text,
@@ -162,7 +165,7 @@ CREATE TABLE BgpDetailInfo(
     remote_ipv6_address text,
     PRIMARY KEY (device_name, if_name, vlan_id, slice_name),
     FOREIGN KEY (device_name, if_name, vlan_id, slice_name)
-        REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name)
+        REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name) ON UPDATE CASCADE
 );
 
 CREATE TABLE StaticRouteDetailInfo(
@@ -176,7 +179,7 @@ CREATE TABLE StaticRouteDetailInfo(
     nexthop      text    NOT NULL,
     PRIMARY KEY (device_name, if_name, vlan_id, slice_name, address_type, address, prefix, nexthop),
     FOREIGN KEY (device_name,if_name,vlan_id,slice_name)
-        REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name)
+        REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name) ON UPDATE CASCADE
 );
 
 CREATE TABLE BreakoutIfInfo(
@@ -217,4 +220,5 @@ CREATE TABLE InnerLinkIfInfo(
     FOREIGN KEY (device_name)
         REFERENCES DeviceRegistrationInfo (device_name)
 );
+
 

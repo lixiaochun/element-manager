@@ -1,0 +1,13 @@
+rpm_path: /root/setup/em
+em_path: /root/setup/em
+install_flag: false
+download_flag: false
+db_address: 192.168.0.123
+db_name: msf_script
+controller_cidr: 192.168.53.1/16
+ha_flag: false
+act_address: none
+act_node_name: none
+sby_address: none
+sby_node_name: none
+cluster_name: none

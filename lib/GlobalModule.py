@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: GlobalModule.py
 
 EM_CONFIG = None
@@ -28,6 +28,8 @@ SERVICE_CE_LAG = "ce-lag"
 SERVICE_INTERNAL_LINK = "internal-link"
 SERVICE_BREAKOUT = "breakout"
 SERVICE_CLUSTER_LINK = "cluster-link"
+SERVICE_RECOVER_NODE = "recover-node"
+SERVICE_RECOVER_SERVICE = "recover-service"
 
 ORDER_MERGE = "merge"
 ORDER_DELETE = "delete"
@@ -76,4 +78,3 @@ COM_COMPARE_NO_INFO = 3
 
 COM_STOP_NORMAL = 0             
 COM_STOP_CHGOVER = 2            
-

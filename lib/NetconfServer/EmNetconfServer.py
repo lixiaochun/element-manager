@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmNetconfServer.py
 '''
 Netconf Server function
@@ -25,7 +25,7 @@ from EmSysCommonUtilityDB import EmSysCommonUtilityDB
 
 class EmNetconfSessionDate(object):
     '''
-    Instance information management class for each session.  
+    Instance information management class for each session.
     '''
     lock = threading.Lock()
     session_date = {}
@@ -45,7 +45,8 @@ class EmNetconfSessionDate(object):
     @decorater_log
     def get_session_date(cls, session_id):
         '''
-        Processing the acquisition of session instance corresponding to session ID 
+        Processing the acquisition of session instance
+        corresponding to session ID
         '''
         with cls.lock:
             session = cls.session_date.get(session_id)
@@ -84,8 +85,8 @@ class NetconfMethods(server.NetconfMethods):
     @decorater_log
     def nc_append_capabilities(self, capabilities):
         '''
-        Launched from NetconfSSHServer class. 
-        Edit Capablitiy to be set into Hello. 
+        Launched from NetconfSSHServer class.
+        Edit Capablitiy to be set into Hello.
         Explanation about parameter:
             capabilities: Transmit Capability list
         Explanation about return value:
@@ -128,8 +129,8 @@ class NetconfMethods(server.NetconfMethods):
     @decorater_log
     def rpc_get_config(self, session, rpc, source_elm, filter_or_none):
         '''
-        Launched from NetconfSSHServer class and send Netconf message to order flow control.  
-        Explanation about parameter:
+        Launched from NetconfSSHServer class and send Netconf
+        message to order flow control.Explanation about parameter:
             session:
             rpc:Netconf message parser result
             source_elm::source parameter of Netconf message
@@ -140,7 +141,7 @@ class NetconfMethods(server.NetconfMethods):
         GlobalModule.EM_LOGGER.debug("rpc_get_config start")
 
         (ret, status) = GlobalModule.EMSYSCOMUTILDB.read_system_status(
-                            EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
+            EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
         if status != EmSysCommonUtilityDB.STATE_START:
             return False, etree.fromstring(self.__rpc_error_message)
 
@@ -166,8 +167,8 @@ class NetconfMethods(server.NetconfMethods):
     @decorater_log
     def rpc_edit_config(self, session, rpc, *unused_params):
         '''
-        Launched from NetconfSSHServer class and send Netconf message to order flow control.  
-        Explanation about parameter:
+        Launched from NetconfSSHServer class and send Netconf message
+        to order flow control.Explanation about parameter:
             session:
             rpc:Netconf message parser result
             target_elm::Parameter for tag and below of Netconf message
@@ -178,7 +179,7 @@ class NetconfMethods(server.NetconfMethods):
         GlobalModule.EM_LOGGER.debug("rpc_edit_config start")
 
         (ret, status) = GlobalModule.EMSYSCOMUTILDB.read_system_status(
-                            EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
+            EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
         if status != EmSysCommonUtilityDB.STATE_START:
             return False, etree.fromstring(self.__rpc_error_message)
 
@@ -243,9 +244,25 @@ class EmNetconfSSHServerSocket(server.NetconfSSHServerSocket):
         self.thread.start()
 
     @decorater_log
+    def _timeout_accept(self):
+        '''
+        catch running _accept_chan_thread's timeout
+        '''
+        GlobalModule.EM_LOGGER.debug('_accept_chan_thread is timeout')
+        self.timeout_flag = True
+
+    @decorater_log
     def _accept_chan_thread(self):
         try:
+            timeout_time = 60.0
+            GlobalModule.EM_LOGGER.debug(
+                "timeout value is %s", (timeout_time,))
+            self.timeout_flag = False
+            timer = threading.Timer(timeout_time, self._timeout_accept)
+            timer.start()
             while True:
+                if self.timeout_flag:
+                    raise Exception("accept thread is timeout")
                 if self.debug:
                     GlobalModule.EM_LOGGER.debug(
                         "%s: Accepting channel connections", str(self))
@@ -290,6 +307,8 @@ class EmNetconfSSHServerSocket(server.NetconfSSHServerSocket):
             self.client_socket.close()
             self.client_socket = None
         finally:
+            timer.cancel()
+            self.timeout_flag = False
             self.server.remove_socket(self)
 
 
@@ -420,7 +439,6 @@ class EmNetconfServerSession(server.NetconfServerSession):
                                 rpc, unknown_elm)
                     params = [target_param, config_param]
 
-
                 try:
                     rpcname = rpcname.rpartition("}")[-1]
                     method_name = "rpc_" + rpcname.replace('-', '_')
@@ -430,7 +448,6 @@ class EmNetconfServerSession(server.NetconfServerSession):
 
                     if result is not True:
                         self.send_rpc_reply(reply, rpc)
-
 
                 except NotImplementedError:
                     raise ncerror.RPCSvrErrNotImpl(rpc)
@@ -530,9 +547,9 @@ class EmNetconfSSHServer(object):
 """
         if system_status is None:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                            "UPDATE",
-                            EmSysCommonUtilityDB.STATE_STOP,
-                            EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_STOP,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
             GlobalModule.EM_LOGGER.info(
                 "102009 EM Status Transition[%s -> %s]",
                 "UNKNOWN", "STOP")
@@ -541,40 +558,43 @@ class EmNetconfSSHServer(object):
         self.stop_state = GlobalModule.COM_STOP_NORMAL
 
         (ret, lo_status) = GlobalModule.EMSYSCOMUTILDB.read_system_status(
-                            EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
+            EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
 
         if lo_status != EmSysCommonUtilityDB.STATE_STOP:
-            raise RuntimeError("Starting request detected, but Em state is not Stop state.")
+            raise RuntimeError(
+                "Starting request detected, but Em state is not Stop state.")
 
         if system_status != EmSysCommonUtilityDB.STATE_CHANGE_OVER:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                "UPDATE",
-                                EmSysCommonUtilityDB.STATE_READY_TO_START,
-                                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
-            GlobalModule.EM_LOGGER.info("102009 EM Status Transition[%s -> %s]",
-                                        "STOP", "READY_TO_START")
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_READY_TO_START,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+            GlobalModule.EM_LOGGER.info(
+                "102009 EM Status Transition[%s -> %s]",
+                "STOP", "READY_TO_START")
         else:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                    "UPDATE",
-                                    EmSysCommonUtilityDB.STATE_CHANGE_OVER,
-                                    EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
-            GlobalModule.EM_LOGGER.info("102009 EM Status Transition[%s -> %s]",
-                                        "STOP", "CHG_OVER")
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_CHANGE_OVER,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
+            GlobalModule.EM_LOGGER.info(
+                "102009 EM Status Transition[%s -> %s]",
+                "STOP", "CHG_OVER")
 
         if username is None:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                    "UPDATE",
-                                    EmSysCommonUtilityDB.STATE_STOP,
-                                    EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_STOP,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
             GlobalModule.EM_LOGGER.info(
                 "102009 EM Status Transition[%s -> %s]",
                 "READY_TO_START", "STOP")
             raise IOError("username is not specified")
         if password is None:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                      "UPDATE",
-                                      EmSysCommonUtilityDB.STATE_STOP,
-                                      EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_STOP,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
             GlobalModule.EM_LOGGER.info(
                 "102009 EM Status Transition[%s -> %s]",
                 "READY_TO_START", "STOP")
@@ -584,9 +604,9 @@ class EmNetconfSSHServer(object):
             read_sys_common_conf("Em_log_level")
         if result is not True:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                    "UPDATE",
-                                    EmSysCommonUtilityDB.STATE_STOP,
-                                    EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_STOP,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
             GlobalModule.EM_LOGGER.info(
                 "102009 EM Status Transition[%s -> %s]",
                 "READY_TO_START", "STOP")
@@ -609,9 +629,9 @@ class EmNetconfSSHServer(object):
             GlobalModule.EM_LOGGER.debug(
                 "Connect Error:%s", str(type(exception)))
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                    "UPDATE",
-                                    EmSysCommonUtilityDB.STATE_STOP,
-                                    EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_STOP,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
             GlobalModule.EM_LOGGER.info(
                 "102009 EM Status Transition[%s -> %s]",
                 "READY_TO_START", "STOP")
@@ -629,7 +649,8 @@ class EmNetconfSSHServer(object):
     @decorater_log
     def send_response(self, order_result, ec_message, session_id):
         '''
-        Launched from order flow control sets necessary information in the Queue, hand over to Netconf server.
+        Launched from order flow control sets necessary information
+        in the Queue, hand over to Netconf server.
         Explanation about parameter:
             order_result:Order result
             ec_message: EC message
@@ -649,42 +670,42 @@ class EmNetconfSSHServer(object):
     @decorater_log
     def start(self):
         '''
-        Launched from main, updates the EM status to "Running".  
+        Launched from main, updates the EM status to "Running".
         Explanation about parameter:
             None
         Explanation about return value:
             None
         '''
         GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                    "UPDATE",
-                                    EmSysCommonUtilityDB.STATE_START,
-                                    EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+            "UPDATE",
+            EmSysCommonUtilityDB.STATE_START,
+            EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
         GlobalModule.EM_LOGGER.info("102009 EM Status Transition[%s -> %s]",
                                     "READY_TO_START", "START")
 
     @decorater_log
     def stop(self, stop_state):
         '''
-        Launched from main, waits until transactions in order flow control have been finished.
-        Then, conducts processing to stop.  
-            
+        Launched from main, waits until transactions
+        in order flow control have been finished.
+        Then, conducts processing to stop.
+
         Explanation about parameter:
             stop_state: Stop state
         Explanation about return value:
             None
         '''
-
         self.stop_state = stop_state
-
         self.stop_event.set()
-
-
 
     @decorater_log
     def _stop_monitoring(self):
         '''
-        Wait for the instruction to stop from main, updates EM status to "Getting ready to stop". 
-        After receiving the instruction to stop, wait until transactions will finish and  updates EM status to "Stopping". 
+        Wait for the instruction to stop from main,
+        updates EM status to "Getting ready to stop".
+        After receiving the instruction to stop,
+        wait until transactions will finish
+        and updates EM status to "Stopping".
         Explanation about parameter：
             None
         Explanation about return value:
@@ -707,38 +728,32 @@ class EmNetconfSSHServer(object):
         while True:
             if self.stop_event.is_set() is True:
                 (ret, status) = GlobalModule.EMSYSCOMUTILDB.read_system_status(
-                                    EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
+                    EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
                 if status != EmSysCommonUtilityDB.STATE_START:
                     self.stop_event.clear()
-
                     GlobalModule.EM_LOGGER.debug(
-                                            "Stop request detected, but Em state is not Start state.")
+                        "Stop request detected, " +
+                        "but Em state is not Start state.")
                 else:
-
                     if self.stop_state == GlobalModule.COM_STOP_NORMAL:
-
                         GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                "UPDATE",
-                                EmSysCommonUtilityDB.STATE_READY_TO_STOP,
-                                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+                            "UPDATE",
+                            EmSysCommonUtilityDB.STATE_READY_TO_STOP,
+                            EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
                         GlobalModule.EM_LOGGER.info(
-                                    "102009 EM Status Transition[%s -> %s]",
-                                                    "START", "READY_TO_STOP")
+                            "102009 EM Status Transition[%s -> %s]",
+                            "START", "READY_TO_STOP")
 
                     elif self.stop_state == GlobalModule.COM_STOP_CHGOVER:
-
                         GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                   "UPDATE",
-                                   EmSysCommonUtilityDB.STATE_CHANGE_OVER,
-                                   EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+                            "UPDATE",
+                            EmSysCommonUtilityDB.STATE_CHANGE_OVER,
+                            EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
                         GlobalModule.EM_LOGGER.info(
-                                "102009 EM Status Transition[%s -> %s]",
-                                                    "START", "CHANGE_OVER")
-
+                            "102009 EM Status Transition[%s -> %s]",
+                            "START", "CHANGE_OVER")
                     break
-
             time.sleep(stop_watch_timer)
-
         while True:
             transaction_result = \
                 GlobalModule.EM_ORDER_CONTROL.get_transaction_presence()
@@ -758,38 +773,39 @@ class EmNetconfSSHServer(object):
         if self.stop_state == GlobalModule.COM_STOP_NORMAL:
 
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                    "UPDATE",
-                                    EmSysCommonUtilityDB.STATE_STOP,
-                                    EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_STOP,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
             GlobalModule.EM_LOGGER.info(
-                                    "102009 EM Status Transition[%s -> %s]",
-                                    "READY_TO_STOP", "STOP")
+                "102009 EM Status Transition[%s -> %s]",
+                "READY_TO_STOP", "STOP")
 
         elif self.stop_state == GlobalModule.COM_STOP_CHGOVER:
 
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                                    "UPDATE",
-                                    EmSysCommonUtilityDB.STATE_STOP,
-                                    EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
+                "UPDATE",
+                EmSysCommonUtilityDB.STATE_STOP,
+                EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
             GlobalModule.EM_LOGGER.info(
-                                "102009 EM Status Transition[%s -> %s]",
-                                                "READY_TO_STOP", "STOP")
-
+                "102009 EM Status Transition[%s -> %s]",
+                "READY_TO_STOP", "STOP")
 
     @decorater_log
     def _send_netconf_resp(self, order_resp, ec_message, session_id):
         '''
-        Transmits Netconf(rpc-reply) to EC main module based on the response from order flow control.
+        Transmits Netconf(rpc-reply) to EC main module based
+        on the response from order flow control.
         Explanation about parameter：
             order_resp:Order control result
             ec_message:Receive request signal
-            session_id:Session ID during connection to EC mail module 
+            session_id:Session ID during connection to EC mail module
         Explanation about return value:
         '''
         session_date = EmNetconfSessionDate.get_session_date(session_id)
 
         if session_date is None:
-            GlobalModule.EM_LOGGER.debug("Target session is not existed.Could not send response.")
+            GlobalModule.EM_LOGGER.debug(
+                "Target session is not existed.Could not send response.")
             return
 
         rpc_reply = self._create_resp_message(order_resp)
@@ -803,8 +819,8 @@ class EmNetconfSSHServer(object):
     @decorater_log
     def _create_resp_message(self, order_resp):
         '''
-        Launched from self class, creates Netconf(rpc-reply) according to the argument.
-        Explanation about parameter：
+        Launched from self class, creates Netconf(rpc-reply)
+        according to the argument.Explanation about parameter：
             order_resp:Response to EC main module
         Explanation about return value:
             error_rpc:Response message to EC main module

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmLeafDelete.py
 '''
-Individual scenario for reducing Leaf.  
+Individual scenario for reducing Leaf.
 '''
 import EmSeparateScenario
 from EmCommonDriver import EmCommonDriver
@@ -13,9 +13,8 @@ from EmCommonLog import decorater_log
 
 class EmLeafDelete(EmSeparateScenario.EmScenario):
     '''
-    Class for reducing Leaf.  
+    Class for reducing Leaf.
     '''
-
 
     @decorater_log
     def __init__(self):
@@ -23,17 +22,12 @@ class EmLeafDelete(EmSeparateScenario.EmScenario):
         Constructor
         '''
         super(EmLeafDelete, self).__init__()
-
         self.scenario_name = "LeafDelete"
-
         self.service = GlobalModule.SERVICE_LEAF
-
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
-
         self.error_code_01 = "104001"
         self.error_code_02 = "104002"
         self.error_code_03 = "204004"
-
         self.device_type = "device"
 
     @decorater_log
@@ -145,14 +139,14 @@ class EmLeafDelete(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
-
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
 
@@ -162,7 +156,7 @@ class EmLeafDelete(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False

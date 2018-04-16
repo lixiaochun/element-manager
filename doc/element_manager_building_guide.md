@@ -1,8 +1,8 @@
 ## element Manager building guide
 
 **Version 1.0**
-**December 26, 2017**
-**Copyright(c) 2017 Nippon Telegraph and Telephone Corporation**
+**March 28, 2018**
+**Copyright(c) 2018 Nippon Telegraph and Telephone Corporation**
 
 This text describes how to generate pyc files from py files.
 
@@ -88,6 +88,7 @@ sh pyc_create.sh
   |  |  |--EmL2SliceEvpnControl.py
   |  |  |--EmL2SliceGet.py
   |  |  |--EmL2SliceMerge.py
+  |  |  |--EmL2SliceUpdate.py
   |  |  |--EmL3SliceDelete.py
   |  |  |--EmL3SliceGet.py
   |  |  |--EmL3SliceMerge.py
@@ -95,6 +96,9 @@ sh pyc_create.sh
   |  |  |--EmLeafDelete.py
   |  |  |--EmLeafMerge.py
   |  |  |--EmMergeScenario.py
+  |  |  |--EmRecover.py
+  |  |  |--EmRecoverNode.py
+  |  |  |--EmRecoverService.py
   |  |  |--EmSeparateScenario.py
   |  |  |--EmSpineDelete.py
   |  |  |--EmSpineMerge.py
@@ -102,6 +106,7 @@ sh pyc_create.sh
   |  |--SeparateDriver
   |  |  |--CiscoDriver.py
   |  |  |--CiscoDriver5501.py
+  |  |  |--EmRecoverUtil.py
   |  |  |--EmSeparateDriver.py
   |  |  |--JuniperDriver5100.py
   |  |  |--JuniperDriver5200.py

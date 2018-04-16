@@ -1,0 +1,31 @@
+# Setting python
+  - include: getrpm.yml
+    when: download_flag
+  - name: setuptool install 1
+    shell: tar zxvf {{ rpm_path }}/setuptools-28.6.0.tar.gz -C {{ rpm_path }}
+  - name: pip install 1
+    shell: python setup.py install
+    args:
+      chdir: "{{ rpm_path }}/setuptools-28.6.0/"
+  - name: pip install 2
+    shell: tar zxvf {{ rpm_path }}/pip-8.1.2.tar.gz  -C {{ rpm_path }}
+  - name: pip install 3
+    shell: python setup.py install
+    args:
+      chdir: "{{ rpm_path }}/pip-8.1.2/"
+  - name: python install 1
+    shell: tar xvf {{ rpm_path }}/whl_package.tar -C {{ rpm_path }}/
+  - name: python install 2
+    shell: mv {{ rpm_path }}/psycopg2-2.6.2-cp27-cp27mu-linux_x86_64.whl {{ rpm_path }}/whl_package
+  - name: python install 3
+    shell: mv {{ rpm_path }}/paramiko-2.0.2-py2.py3-none-any.whl {{ rpm_path }}/whl_package
+  - name: python install 4
+    shell: pip install --use-wheel --no-index --find-links={{ rpm_path }}/whl_package {{ rpm_path }}/whl_package/netconf-0.4.1-py2-none-any.whl
+  - name: python install 5
+    shell: pip install --use-wheel --no-index --find-links={{ rpm_path }}/whl_package {{ rpm_path }}/whl_package/ncclient-0.5.2-py2-none-any.whl
+  - name: python install 6
+    shell: pip install --use-wheel --no-index --find-links={{ rpm_path }}/whl_package {{ rpm_path }}/whl_package/oslo.db-4.13.3-py2.py3-none-any.whl
+  - name: python install 7
+    shell: pip install --use-wheel --no-index --find-links={{ rpm_path }}/whl_package {{ rpm_path }}/whl_package/xmltodict-0.10.2-py2-none-any.whl
+  - name: python install 8
+    shell: pip install --use-wheel --no-index --find-links={{ rpm_path }}/whl_package {{ rpm_path }}/whl_package/psycopg2-2.6.2-cp27-cp27mu-linux_x86_64.whl

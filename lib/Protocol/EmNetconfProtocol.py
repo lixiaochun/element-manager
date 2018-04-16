@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmNetconfProtocol.py
 '''
 Protocol processing section (Netconf)
@@ -22,12 +22,11 @@ class EmNetconfProtocol(object):
     __CONNECT_CAPABILITY_NG = 2
     __CONNECT_NO_RESPONSE = 3
 
-
     @decorater_log
     def connect_device(self, device_info):
         '''
         Device connection control
-            Conduct SSH connection to applicable device as request information. 
+            Conduct SSH connection to applicable device as request information.
         Explanation about parameter:
             device_info: Device information
                            Platform name
@@ -37,10 +36,13 @@ class EmNetconfProtocol(object):
                            Password
                            IPv4 address for management
                            Prefix of IPv4 address for management
-                           Device information to be used for ncclient. (to be set only when necessary)
-                           Port No. to be used for ncclient. (to be set only when necessary)
+                           Device information to be used for ncclient.
+                               (to be set only when necessary)
+                           Port No. to be used for ncclient.
+                               (to be set only when necessary)
         Explanation about return value:
-            Connection result : int (1:Normal, 2: Capability Abnormal 3:No response)
+            Connection result :
+                int (1:Normal, 2: Capability Abnormal 3:No response)
         '''
 
         parse_json = json.loads(device_info)
@@ -114,7 +116,7 @@ class EmNetconfProtocol(object):
 
                 break
 
-            except Exception as exception:  
+            except Exception as exception:
                 GlobalModule.EM_LOGGER.debug(
                     "Connect Error:%s", str(type(exception)))
                 GlobalModule.EM_LOGGER.debug(
@@ -128,7 +130,7 @@ class EmNetconfProtocol(object):
                 if count < (retry_num_val - 1):
                     continue
 
-                return self.__CONNECT_NO_RESPONSE  
+                return self.__CONNECT_NO_RESPONSE
 
         device_capability_list = self.__connection.server_capabilities
         GlobalModule.EM_LOGGER.debug(
@@ -143,20 +145,20 @@ class EmNetconfProtocol(object):
         if capability_judge is not True:
             GlobalModule.EM_LOGGER.debug(
                 "Connect Error:exceptions.MissingCapabilityError")
-            return self.__CONNECT_CAPABILITY_NG  
+            return self.__CONNECT_CAPABILITY_NG
 
         self.__connection.raise_mode = operations.RaiseMode.NONE
 
         GlobalModule.EM_LOGGER.info("107001 SSH Connection Open for %s",
                                     self.__device_ip)
 
-        return self.__CONNECT_OK  
+        return self.__CONNECT_OK
 
     @decorater_log
     def send_control_signal(self, message_type, send_message):
         '''
         Transmit device control signal
-            Transmit Netconf to device and returns response signal. 
+            Transmit Netconf to device and returns response signal.
         Explanation about parameter:
             message_type: Message type(response message)
                            discard-changes
@@ -170,11 +172,12 @@ class EmNetconfProtocol(object):
             send_message: Send message
                            get-config:XML format (<config></config>)
                            edit-config:XML format (<config></config>)
-                           Not necessary in case of other message types. 
+                           Not necessary in case of other message types.
         Explanation about return value:
             Send result : boolean (True:Normal,False:Abnormal)
             REsponse signal : str (Netconf response signal
-                           (Returns "NetconfSendOK" to return value 1 when rpc-error is received successfully.))
+                           (Returns "NetconfSendOK" to return value 1
+                            when rpc-error is received successfully.))
         '''
 
         is_judg_result, judg_message_type = self.__judg_control_signal(
@@ -183,10 +186,10 @@ class EmNetconfProtocol(object):
         GlobalModule.EM_LOGGER.debug("__send_signal_judg:%s", is_judg_result)
         GlobalModule.EM_LOGGER.debug("judg_message_type:%s", judg_message_type)
 
-        if is_judg_result is False:  
+        if is_judg_result is False:
             GlobalModule.EM_LOGGER.debug("__send_signal_judg NG")
 
-            return False, None  
+            return False, None
 
         GlobalModule.EM_LOGGER.debug("__send_signal_judg OK")
 
@@ -229,10 +232,10 @@ class EmNetconfProtocol(object):
                 GlobalModule.EM_LOGGER.debug("read_sys_common:%s",
                                              is_send_result)
 
-                if is_send_result is False:  
+                if is_send_result is False:
                     GlobalModule.EM_LOGGER.debug("read_sys_common NG")
 
-                    return False, None  
+                    return False, None
 
                 GlobalModule.EM_LOGGER.debug("read_sys_common OK")
                 GlobalModule.EM_LOGGER.debug("return_value:%s", return_value)
@@ -264,7 +267,7 @@ class EmNetconfProtocol(object):
                     GlobalModule.EM_LOGGER.debug("AttributeError:%s",
                                                  judg_message_type)
 
-                    return False, None  
+                    return False, None
 
             GlobalModule.EM_LOGGER.info("107003 Sending %s to %s",
                                         message_type, self.__device_ip)
@@ -275,18 +278,18 @@ class EmNetconfProtocol(object):
             GlobalModule.EM_LOGGER.debug(
                 "Sending Error:%s", str(type(exception)))
 
-            return False, None  
+            return False, None
 
         GlobalModule.EM_LOGGER.info("107002 Receiving rpc-reply from %s",
                                     self.__device_ip)
 
-        return True, receive_message  
+        return True, receive_message
 
     @decorater_log
     def disconnect_device(self):
         '''
-        Device disconnection control 
-        Disconnect from the device. 
+        Device disconnection control
+        Disconnect from the device.
         Explanation about parameter:
         None
         Explanation about return value:
@@ -300,20 +303,18 @@ class EmNetconfProtocol(object):
             GlobalModule.EM_LOGGER.debug(
                 "Disconnect Error:%s", str(type(exception)))
 
-            return False  
+            return False
 
         GlobalModule.EM_LOGGER.info("107004 SSH Connection Closed for %s",
                                     self.__device_ip)
 
-        return True  
-
+        return True
 
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         self.__connection = None
         self.__device_ip = None
         self.__capability_list = \
@@ -324,7 +325,7 @@ class EmNetconfProtocol(object):
     def __judg_control_signal(self, message_type):
         '''
         Control signal judgment
-            Make judgment on the message to be sent based on the message type. 
+            Make judgment on the message to be sent based on the message type.
         Explanation about parameter:
             message_type: Message type (response message)
                            discard-changes
@@ -351,8 +352,8 @@ class EmNetconfProtocol(object):
 
             judg_message_type = message_type.replace('-', '_')
 
-            return True, judg_message_type  
+            return True, judg_message_type
 
         GlobalModule.EM_LOGGER.debug("message_type UNMatch")
 
-        return False, None  
+        return False, None

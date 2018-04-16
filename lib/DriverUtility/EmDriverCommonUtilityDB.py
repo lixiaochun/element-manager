@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmDriverCommonUtilityDB.py
 '''
 Common utility (DB) module for the driver.
@@ -48,6 +48,8 @@ class EmDriverCommonUtilityDB(object):
         self._name_b_leaf = GlobalModule.SERVICE_B_LEAF
         self._name_breakout = GlobalModule.SERVICE_BREAKOUT
         self._name_cluster_link = GlobalModule.SERVICE_CLUSTER_LINK
+        self._name_recover_node = GlobalModule.SERVICE_RECOVER_NODE
+        self._name_recover_service = GlobalModule.SERVICE_RECOVER_SERVICE
 
         self._get_functions = {
             self._name_spine: (self._get_spine_info,
@@ -68,6 +70,10 @@ class EmDriverCommonUtilityDB(object):
                                   self._json_breakout),
             self._name_cluster_link: (self._get_cluster_link_info,
                                       self._json_cluster_link),
+            self._name_recover_node: (self._get_recover_node_info,
+                                      self._json_leaf),
+            self._name_recover_service: (self._get_recover_service_info,
+                                         self._json_recover_service),
         }
 
         self._get_db = {
@@ -134,7 +140,7 @@ class EmDriverCommonUtilityDB(object):
     def read_configureddata_info(self, device_name, service_name):
         '''
         Called out from individual section on driver when message to the device is created.
-        Gives the Edit information of the device from DB.  
+        Gives the Edit information of the device from DB.
         Explanation about parameter:
             device_name: Device name
             service_name: Service name
@@ -174,7 +180,7 @@ class EmDriverCommonUtilityDB(object):
     @decorater_log
     def _get_db_infos(self, device_name, tables):
         '''
-        Obtain the table list data from the DB control. 
+        Obtain the table list data from the DB control.
         Explanation about parameter:
             device_name: Device name
             tables: Table list (list)
@@ -194,7 +200,7 @@ class EmDriverCommonUtilityDB(object):
     def _get_spine_info(self, device_name):
         '''
         Obtain the Spine information
-            Called out if the Service name is Spine-related when obtaining the Edit information. 
+            Called out if the Service name is Spine-related when obtaining the Edit information.
             Explanation about parameter:
             device_name: Device name
         Explanation about return value:
@@ -236,7 +242,7 @@ class EmDriverCommonUtilityDB(object):
     @decorater_log
     def _get_l2_slice_info(self, device_name):
         '''
-        Obtain L2 slice information. 
+        Obtain L2 slice information.
             Called out if the Service name is L2 slice-related when obtaining the Edit information.
         Explanation about parameter:
             device_name: Device name
@@ -244,7 +250,8 @@ class EmDriverCommonUtilityDB(object):
             Acquisition result : Boolean
             Edit information : {DB name:({Item name: value})}
         '''
-        get_tables = [self._table_vlan_if,
+        get_tables = [self._table_device,
+                      self._table_vlan_if,
                       self._table_lag_if,
                       ]
 
@@ -275,7 +282,7 @@ class EmDriverCommonUtilityDB(object):
     @decorater_log
     def _get_ce_lag_info(self, device_name):
         '''
-        Obtain LAG information for CE. 
+        Obtain LAG information for CE.
             Called out if the Service name is related to LAG for CE when obtaining the Edit information.
             Explanation about parameter:
             device_name: Device name
@@ -292,7 +299,7 @@ class EmDriverCommonUtilityDB(object):
     @decorater_log
     def _get_internal_link_info(self, device_name):
         '''
-        Obtain LAG information for internal Link  
+        Obtain LAG information for internal Link
             Called out if the Service name is related to LAG for internal Link when obtaining the Edit information.
             Explanation about parameter:
             device_name: Device name
@@ -329,7 +336,7 @@ class EmDriverCommonUtilityDB(object):
         '''
         Obtain Link information among the clusters
             Called out if the Service name is related to Link among the clusters when obtaining the Edit information.
-            Explanation about parameter:
+        Explanation about parameter:
             device_name: Device name
         Explanation about return value:
             Acquisition result : Boolean
@@ -339,6 +346,54 @@ class EmDriverCommonUtilityDB(object):
                       self._table_lag_if,
                       self._table_lag_mem,
                       self._table_phy_if,
+                      ]
+
+        return self._get_db_infos(device_name, get_tables)
+
+    @decorater_log
+    def _get_recover_node_info(self, device_name):
+        '''
+        Acquire necessary information for "recover node"
+        Explanation about parameter:
+            device_name: Device name
+        Explanation about return value:
+            Acquisition result : Boolean
+            Edit information : {DB name:({Item name: value})}
+        '''
+        get_tables = [self._table_device,
+                      self._table_lag_if,
+                      self._table_lag_mem,
+                      self._table_breakout,
+                      self._table_l3vpn_bgp,
+                      self._table_inner_link,
+                      ]
+
+        return self._get_db_infos(device_name, get_tables)
+
+    @decorater_log
+    def _get_recover_service_info(self, device_name):
+        '''
+        Acquire necessary information for "recover service"
+        Explanation about parameter:
+            device_name: Device name
+        Explanation about return value:
+            Acquisition result : Boolean
+            Edit information : {DB name:({Item name: value})}
+        '''
+        get_tables = [self._table_device,
+                      self._table_lag_if,
+                      self._table_lag_mem,
+                      self._table_phy_if,
+                      self._table_inner_link,
+                      self._table_cluster_link,
+                      self._table_breakout,
+                      self._table_l3vpn_bgp,
+                      self._table_vlan_if,
+                      self._table_vrf,
+                      self._table_bgp,
+                      self._table_static,
+                      self._table_vrrp,
+                      self._table_vrrp_track,
                       ]
 
         return self._get_db_infos(device_name, get_tables)
@@ -385,6 +440,7 @@ class EmDriverCommonUtilityDB(object):
         json_return = {}
 
         json_return["device"] = self._get_json_common_device_data(db_info)
+
         tmp_ospf = {}
         tmp_ospf.update(self._get_json_common_area_id_data(db_info))
         t_table = db_info.get(self._table_device, ({},))[0]
@@ -438,6 +494,14 @@ class EmDriverCommonUtilityDB(object):
             (API data list(JSON format).xlsm L2 slice information acquisition)
         '''
         json_return = {}
+
+        t_table = db_info.get(self._table_device, ({},))[0]
+        json_item = {}
+        json_item["platform_name"] = t_table.get("platform_name")
+        json_item["os_name"] = t_table.get("os")
+        json_item["firm_version"] = t_table.get("firm_version")
+        json_return["device"] = json_item
+
         t_table = db_info.get(self._table_vlan_if, ())
 
         json_list_item = []
@@ -455,6 +519,7 @@ class EmDriverCommonUtilityDB(object):
             json_item["vni"] = row.get("vni")
             json_item["esi"] = row.get("esi")
             json_item["system-id"] = row.get("system_id")
+            json_item["qos"] = self._get_json_common_qos(row)
             json_list_item.append(json_item)
         json_return["cp"] = json_list_item
 
@@ -486,6 +551,9 @@ class EmDriverCommonUtilityDB(object):
         json_item = {}
         json_item["device_name"] = t_table.get("device_name")
         json_item["as_number"] = t_table.get("as_number")
+        json_item["platform_name"] = t_table.get("platform_name")
+        json_item["os_name"] = t_table.get("os")
+        json_item["firm_version"] = t_table.get("firm_version")
         json_return["device"] = json_item
 
         t_table = db_info.get(self._table_vlan_if, ())
@@ -511,6 +579,7 @@ class EmDriverCommonUtilityDB(object):
                                            "static": row["static_flag"],
                                            "direct": row["direct_flag"],
                                            "vrrp": row["vrrp_flag"]}
+            json_item["qos"] = self._get_json_common_qos(row)
             json_list_item.append(json_item)
         json_return["cp"] = json_list_item
 
@@ -559,6 +628,7 @@ class EmDriverCommonUtilityDB(object):
             json_item["if_name"] = row["if_name"]
             json_item["vlan_id"] = row["vlan_id"]
             json_item["slice_name"] = row["slice_name"]
+            json_item["master"] = row["master"]
             json_item["as_number"] = row["remote_as_number"]
             json_item["remote"] = \
                 {"ipv4_address": row["remote_ipv4_address"],
@@ -612,6 +682,8 @@ class EmDriverCommonUtilityDB(object):
         for row in t_table:
             json_item = {}
             json_item["if_name"] = row["lag_if_name"]
+            json_item["type"] = row["lag_type"]
+            json_item["lag_if_id"] = row["lag_if_id"]
             json_item["links"] = row["minimum_links"]
             json_item["link_speed"] = row["link_speed"]
             json_list_item.append(json_item)
@@ -658,6 +730,19 @@ class EmDriverCommonUtilityDB(object):
 
         json_return["internal-link"] = \
             self._get_json_common_internal_link_data(db_info)
+
+        t_table = db_info.get(self._table_lag_if, ())
+        json_list_item = []
+        json_return["lag_value"] = len(t_table)
+        for row in t_table:
+            json_item = {}
+            json_item["if_name"] = row["lag_if_name"]
+            json_item["type"] = row["lag_type"]
+            json_item["lag_if_id"] = row["lag_if_id"]
+            json_item["links"] = row["minimum_links"]
+            json_item["link_speed"] = row["link_speed"]
+            json_list_item.append(json_item)
+        json_return["lag"] = json_list_item
 
         return json.dumps(json_return)
 
@@ -742,10 +827,33 @@ class EmDriverCommonUtilityDB(object):
         return json.dumps(json_return)
 
     @decorater_log
+    def _json_recover_service(self, db_info):
+        '''
+        Recover Service API data shaping
+            Called out from DB after obtaining data.
+        Explanation about parameter:
+            db_info : DB information obtained({DB name:({Item name: value})})
+        Explanation about return value:
+            API data letter strings(json format) ; str
+            (API data list(JSON format).xlsm
+                Refer to Recover Service acquisition sheet)
+        '''
+        json_return = {}
+        json_return[self._name_leaf] = json.loads(self._json_leaf(db_info))
+        json_return[self._name_ce_lag] = json.loads(self._json_ce_lag(db_info))
+        json_return[self._name_cluster_link] = json.loads(
+            self._json_cluster_link(db_info))
+        json_return[self._name_l2_slice] = json.loads(
+            self._json_l2_slice(db_info))
+        json_return[self._name_l3_slice] = json.loads(
+            self._json_l3_slice(db_info))
+        return json.dumps(json_return)
+
+    @decorater_log
     def _get_json_common_device_data(self, db_info):
         '''
-        Obtain device information by processing the DeviceRegistrationInfo. 
-        Called out when obtaining device information.  
+        Obtain device information by processing the DeviceRegistrationInfo.
+        Called out when obtaining device information.
         Explanation about parameter:
             db_info : DB information obtained
         Explanation about return value:
@@ -764,12 +872,17 @@ class EmDriverCommonUtilityDB(object):
         json_item["snmp"] = {"address": t_table.get("snmp_server_address"),
                              "community": t_table.get("snmp_community")}
         json_item["ntp"] = {"address": t_table.get("ntp_server_address")}
+        if t_table.get("vpn_type") is not None:
+            json_item["vpn_type"] = t_table.get("vpn_type")
+        if t_table.get("as_number") is not None:
+            json_item["as_number"] = t_table.get("as_number")
+
         return json_item
 
     @decorater_log
     def _get_json_common_area_id_data(self, db_info):
         '''
-        Obtain area_id information by processing the DeviceRegistrationInfo. 
+        Obtain area_id information by processing the DeviceRegistrationInfo.
         Called out when obtaining area_id information.
         Explanation about parameter:
             db_info : DB information obtained
@@ -803,14 +916,16 @@ class EmDriverCommonUtilityDB(object):
             json_item["speed"] = row["link_speed"]
             json_item["ip_address"] = row["internal_link_ip_address"]
             json_item["ip_prefix"] = row["internal_link_ip_prefix"]
+
             if json_item["if_type"] == self._if_type_lag:
+                t_lag_table = db_info.get(self._table_lag_if, ())
+                for lag_if in t_lag_table:
+                    if lag_if.get("lag_if_name") == json_item["if_name"]:
+                        json_item["lag_if_id"] = lag_if.get("lag_if_id")
+                        break
                 lag_mems = []
-                for lag_row in mem_table:
-                    lag_mems = self._select_row(mem_table,
-                                                device_name=lag_row[
-                                                    "device_name"],
-                                                lag_if_name=lag_row[
-                                                    "lag_if_name"])
+                lag_mems = self._select_row(mem_table,
+                                            lag_if_name=json_item["if_name"])
                 json_item["member_value"] = len(lag_mems)
                 tmp_mem_list = []
                 for lag_mem in lag_mems:
@@ -824,9 +939,8 @@ class EmDriverCommonUtilityDB(object):
     @decorater_log
     def _get_json_common_breakout(self, db_info):
         '''
-        Obtain breakout information by processing the BreakoutIfInfo. 
-        Called out when obtaining area_id information.
-            Called out when obtaining breakout information. 
+        Obtain breakout information by processing the BreakoutIfInfo.
+        Called out when obtaining breakout information.
         Explanation about parameter:
             db_info : DB information obtained
         Explanation about return value:
@@ -844,6 +958,24 @@ class EmDriverCommonUtilityDB(object):
             tmp_breakout_if["breakout-num"] = row.get("breakout_num")
             tmp_ifs.append(tmp_breakout_if)
         json_item["interface"] = tmp_ifs
+        return json_item
+
+    @decorater_log
+    def _get_json_common_qos(self, db_info):
+        '''
+        Obtain VlanQoS information by processing the VlanInfo.
+        Called out when obtaining L2／L3 slice information.
+        Explanation about parameter:
+            db_info : DB information obtained
+        Explanation about return value:
+            API data letter strings(json format) ; dict
+        '''
+
+        json_item = {}
+        json_item["inflow_shaping_rate"] = db_info.get("inflow_shaping_rate")
+        json_item["outflow_shaping_rate"] = db_info.get("outflow_shaping_rate")
+        json_item["remark_menu"] = db_info.get("remark_menu")
+        json_item["egress_queue_menu"] = db_info.get("egress_queue_menu")
         return json_item
 
     @staticmethod

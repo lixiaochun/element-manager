@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: JuniperDriverMX240.py
 '''
 Individual section on driver (JuniperDriver's driver (MX240))
@@ -31,7 +31,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                        device_info, service_type, order_type):
         '''
         Driver individual section connection control.
-            Launch from the common section on driver, 
+            Launch from the common section on driver,
             conduct device connection control to protocol processing section.
         Parameter:
             device_name : Device name
@@ -39,11 +39,13 @@ class JuniperDriverMX240(EmSeparateDriver):
             service_type : Service type
             order_type : Order type
         Return value :
-            Protocol processing section response : int (1:Normal, 2:Capability abnormal, 3:No response)
+            Protocol processing section response :
+                int (1:Normal, 2:Capability abnormal, 3:No response)
         '''
         if service_type in (self.name_spine,
                             self.name_leaf,
                             self.name_b_leaf,
+                            self.name_recover_node,
                             self.name_internal_link,):
             return GlobalModule.COM_CONNECT_OK
         else:
@@ -64,13 +66,14 @@ class JuniperDriverMX240(EmSeparateDriver):
             service_type : Service type
             order_type : Order type
         Return value :
-            Processing finish status : int (1:Successfully updated 
-                                2:Validation check NG 
+            Processing finish status : int (1:Successfully updated
+                                2:Validation check NG
                                 3:Updating unsuccessful)
         '''
         if service_type in (self.name_spine,
                             self.name_leaf,
                             self.name_b_leaf,
+                            self.name_recover_node,
                             self.name_internal_link,):
             return GlobalModule.COM_UPDATE_OK
         else:
@@ -83,22 +86,23 @@ class JuniperDriverMX240(EmSeparateDriver):
     def delete_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
         '''
-        Driver individual section deletion control.  
-            Launch from the common section on driver, 
-            conduct device deletion control to protocol processing section. 
+        Driver individual section deletion control.
+            Launch from the common section on driver,
+            conduct device deletion control to protocol processing section.
         Parameter:
             device_name : Device name
             service_type : Service type
             order_type : Order type
             diff_info : Information about difference
         Return value :
-            Processing finish status : int (1:Successfully deleted 
+            Processing finish status : int (1:Successfully deleted
                                 2:バValidation check NG
                                 3:Deletion unsuccessful)
         '''
         if service_type in (self.name_spine,
                             self.name_leaf,
                             self.name_b_leaf,
+                            self.name_recover_node,
                             self.name_internal_link,):
             return GlobalModule.COM_DELETE_OK
         else:
@@ -110,9 +114,10 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def reserve_device_setting(self, device_name, service_type, order_type):
         '''
-        Driver individual section tentative setting control.  
-            Launch from the common section on driver, 
-            conduct device tentative setting control to protocol processing section.
+        Driver individual section tentative setting control.
+            Launch from the common section on driver,
+            conduct device tentative setting control
+            to protocol processing section.
         Parameter:
             device_name : Device name
             service_type : Service type
@@ -123,6 +128,7 @@ class JuniperDriverMX240(EmSeparateDriver):
         if service_type in (self.name_spine,
                             self.name_leaf,
                             self.name_b_leaf,
+                            self.name_recover_node,
                             self.name_internal_link,):
             return GlobalModule.COM_UPDATE_OK
         else:
@@ -133,9 +139,9 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def enable_device_setting(self, device_name, service_type, order_type):
         '''
-        Driver individual section established control.  
+        Driver individual section established control.
             Launch from the common section on driver,
-            conduct device established control to protocol processing section. 
+            conduct device established control to protocol processing section.
         Parameter:
             device_name : Device name
             service_type : Service type
@@ -146,7 +152,8 @@ class JuniperDriverMX240(EmSeparateDriver):
         if service_type in (self.name_spine,
                             self.name_leaf,
                             self.name_b_leaf,
-                            self.name_internal_link,):
+                            self.name_recover_node,
+                            self.name_internal_link):
             return GlobalModule.COM_UPDATE_OK
         else:
             return self.as_super.enable_device_setting(device_name,
@@ -156,9 +163,10 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def disconnect_device(self, device_name, service_type, order_type):
         '''
-        Driver individual section disconnection control.  
+        Driver individual section disconnection control.
             Launch from the common section on driver,
-            conduct device disconnection control to protocol processing section.
+            conduct device disconnection control to
+            protocol processing section.
         Parameter:
             device_name : Device name
             service_type : Service type
@@ -169,7 +177,8 @@ class JuniperDriverMX240(EmSeparateDriver):
         if service_type in (self.name_spine,
                             self.name_leaf,
                             self.name_b_leaf,
-                            self.name_internal_link,):
+                            self.name_recover_node,
+                            self.name_internal_link):
             return GlobalModule.COM_CONNECT_OK
         else:
             return self.as_super.disconnect_device(device_name,
@@ -193,7 +202,9 @@ class JuniperDriverMX240(EmSeparateDriver):
                                     self.name_l3_slice,
                                     self.name_celag,
                                     self.name_internal_link,
-                                    self.name_cluster_link]
+                                    self.name_cluster_link,
+                                    self.name_recover_service,
+                                    ]
         self._lag_check = re.compile("^ae([0-9]{1,})")
         tmp_get_mes = (
             '<filter>' +
@@ -232,7 +243,6 @@ class JuniperDriverMX240(EmSeparateDriver):
             is_result = True
         return is_result, message
 
-
     @decorater_log
     def _set_configuration_node(self, xml_obj):
         '''
@@ -247,7 +257,7 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def _set_interfaces_node(self, conf_node):
         '''
-        Set interfaces.  
+        Set interfaces.
         '''
         return self._xml_setdefault_node(conf_node, "interfaces")
 
@@ -258,7 +268,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                   lag_if_name=None,
                                   operation=None):
         '''
-        Set LAG member IF. 
+        Set LAG member IF.
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
 
@@ -290,7 +300,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                 if_name=None,
                                 operation=None):
         '''
-        Set physical IF. 
+        Set physical IF.
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
 
@@ -409,7 +419,8 @@ class JuniperDriverMX240(EmSeparateDriver):
                                   vpn_type=None,
                                   opposite_vpn_type=None):
         '''
-        Create unit node of interface node for internal link/inter-cluster link.
+        Create unit node of interface node for
+        internal link/inter-cluster link.
         '''
         node_2 = self._set_xml_tag(if_node, "unit")
         self._set_xml_tag(node_2, "name", None, None, "0")
@@ -432,7 +443,7 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def _set_device_protocols(self, conf_node):
         '''
-        Set protocols for device. 
+        Set protocols for device.
         '''
         return self._xml_setdefault_node(conf_node, "protocols")
 
@@ -463,7 +474,8 @@ class JuniperDriverMX240(EmSeparateDriver):
                                   **options):
         '''
         Set IF for the ospf/area node.
-        *Should be only for ClusterLink since InternalLink does not exist in MX240.
+        *Should be only for ClusterLink since
+        InternalLink does not exist in MX240.
             options  ; operation : Operation type
         '''
         operation = options.get("operation")
@@ -512,7 +524,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                              port_mode=None,
                              slice_type=2):
         '''
-        Set mtu value for L2/L3CPIF. 
+        Set mtu value for L2/L3CPIF.
         *Should be only L3CP in case of MX240.
         '''
         tmp = None
@@ -525,11 +537,10 @@ class JuniperDriverMX240(EmSeparateDriver):
                 tmp = int(mtu) + 14
         return tmp
 
-
     @decorater_log
     def _set_slice_protocol_routing_options(self, conf_node, vrf_name=None):
         '''
-        Set routing-options in preparation of L3 slice protocol settings. 
+        Set routing-options in preparation of L3 slice protocol settings.
         '''
         node_1 = self._xml_setdefault_node(conf_node, "routing-instances")
         node_2 = self._xml_setdefault_node(node_1, "instance")
@@ -549,7 +560,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                 vrf_name,
                                 bgp_list=None):
         '''
-        Set bgp for L3VLANIF. 
+        Set bgp for L3VLANIF.
         '''
         node_1 = self._set_slice_protocol_routing_options(
             conf_node, vrf_name).getparent()
@@ -570,7 +581,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                              ip_ver=4,
                              bgp=None):
         '''
-        Set bgp for L3VLANIF. 
+        Set bgp for L3VLANIF.
         '''
         node_1 = self._set_xml_tag(bgp_node, "group")
         self._set_xml_tag(node_1, "name", None, None, "RI_eBGPv%d" % (ip_ver,))
@@ -592,7 +603,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                 group_node,
                                 bgp=None):
         '''
-        Set bgp for L3VLANIF. 
+        Set bgp for L3VLANIF.
         '''
         attr, attr_val = self._get_attr_from_operation(bgp.get("OPERATION"))
         ip_ver = bgp.get("BGP-IP-VERSION")
@@ -621,7 +632,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                  conf_node,
                                  cp_infos):
         '''
-        Set all L3CP for CE. 
+        Set all L3CP for CE.
         '''
         node_1 = self._set_interfaces_node(conf_node)
         for tmp_cp in cp_infos.values():
@@ -636,7 +647,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                               ifs_node,
                               cp_info):
         '''
-        Set L3CP for CE. 
+        Set L3CP for CE.
         '''
         operation = cp_info.get("OPERATION")
         if_type = cp_info.get("IF-TYPE")
@@ -771,7 +782,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                        vrf_name,
                                        operation=None):
         '''
-        Set routing_instance node. 
+        Set routing_instance node.
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
         node_1 = self._xml_setdefault_node(conf_node, "routing-instances")
@@ -791,7 +802,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                                  cps_info,
                                                  operation="merge"):
         '''
-        Set IF for instance node. 
+        Set IF for instance node.
         '''
         for if_info in cps_info.values():
             if_name = if_info["IF-NAME"]
@@ -835,7 +846,6 @@ class JuniperDriverMX240(EmSeparateDriver):
             self._XML_LOG % (conf_node.tag, etree.tostring(node_1)),
             __name__)
         return node_2
-
 
     @decorater_log
     def _get_ce_lag_from_ec(self,
@@ -951,7 +961,8 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def _get_cluster_if_info(self, if_info, if_type=None):
         '''
-        Obtain inter-cluster link information from EC message. (regardless of physical/LAG)
+        Obtain inter-cluster link information from EC message.
+        (regardless of physical/LAG)
         '''
 
         tmp = {
@@ -966,7 +977,8 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def _get_cp_interface_info_from_ec(self, cp_dicts, cp_info):
         '''
-        Collect IF information relating to slice from EC message (independent unit CPs). (common for L2, L3)
+        Collect IF information relating to slice from EC message
+        (independent unit CPs). (common for L2, L3)
         '''
         if_name = cp_info.get("name")
         vlan_id = cp_info.get("vlan-id")
@@ -1008,7 +1020,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                      db_info,
                                      slice_name=None):
         '''
-        Conduct setting for the section relating to VLAN_IF on CP. 
+        Conduct setting for the section relating to VLAN_IF on CP.
         '''
         if_name = ec_cp.get("name")
         tmp = {
@@ -1030,8 +1042,9 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def _get_if_ip_network(address, prefix):
         '''
-        Create IP network object based on address and pre-fix. 
-        *IP network object will not be created and cidr mesage will be returned.
+        Create IP network object based on address and pre-fix.
+        *IP network object will not be created and
+        cidr mesage will be returned.
         '''
         if not address and prefix is None:
             return None
@@ -1098,7 +1111,7 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def _compound_list_val_dict(dict_1, dict_2):
         '''
-        Combine two dictionaries carrying list as the value. 
+        Combine two dictionaries carrying list as the value.
         '''
         tmp = dict_1.keys()
         tmp.extend(dict_2.keys())
@@ -1123,7 +1136,8 @@ class JuniperDriverMX240(EmSeparateDriver):
         '''
         Create list for class-or-service.
         (Compare CP on DB and CP on operation instruction simultaneously.)
-        (Make judgment on the necessity of IF deletion and possibility for slice to remain inside device.)
+        (Make judgment on the necessity of IF deletion and
+        possibility for slice to remain inside device.)
         '''
         cos_if_list = []
         db_cp = {}
@@ -1282,25 +1296,24 @@ class JuniperDriverMX240(EmSeparateDriver):
         db_ifs = len(self._get_db_cp_ifs(device_info, slice_name))
         return bool(del_if_count == db_ifs)
 
-
     @decorater_log
     def _gen_l3_slice_fix_message(self, xml_obj, operation):
         '''L3Slice
-        Fixed value to create message (L3Slice) for Netconf.  
-            Called out when creating message for L3Slice. 
+        Fixed value to create message (L3Slice) for Netconf.
+            Called out when creating message for L3Slice.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
         Return value.
-            Creation result : Boolean (Write properly using override method)  
+            Creation result : Boolean (Write properly using override method)
         '''
         return True
 
     @decorater_log
     def _gen_ce_lag_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (CeLag) for Netconf.  
-            Called out when creating message for CeLag. 
+        Fixed value to create message (CeLag) for Netconf.
+            Called out when creating message for CeLag.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -1312,8 +1325,8 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def _gen_cluster_link_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (cluster-link) for Netconf.  
-            Called out when creating message for cluster-link. 
+        Fixed value to create message (cluster-link) for Netconf.
+            Called out when creating message for cluster-link.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -1321,7 +1334,6 @@ class JuniperDriverMX240(EmSeparateDriver):
             Creation result : Boolean (Write properly using override method)
         '''
         return True
-
 
     @decorater_log
     def _gen_l3_slice_replace_message(self,
@@ -1331,7 +1343,8 @@ class JuniperDriverMX240(EmSeparateDriver):
                                       operation):
         '''
         Variable value to create message (L3Slice) for Netconf.
-            Called out when creating message for SpineL3Slice. (After fixed message has been created.) 
+            Called out when creating message for SpineL3Slice.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -1354,7 +1367,8 @@ class JuniperDriverMX240(EmSeparateDriver):
                                        operation):
         '''
         Variable value to create message (L3Slice) for Netconf.
-            Called out when creating message for SpineL3Slice. (After fixed message has been created.) 
+            Called out when creating message for SpineL3Slice.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -1451,7 +1465,8 @@ class JuniperDriverMX240(EmSeparateDriver):
                                      operation):
         '''
         Variable value to create message (CeLag) for Netconf.
-            Called out when creating message for CeLag. (After fixed message has been created.) 
+            Called out when creating message for CeLag.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -1506,7 +1521,8 @@ class JuniperDriverMX240(EmSeparateDriver):
                                            operation):
         '''
         Variable value to create message (cluster-link) for Netconf.
-            Called out when creating message for cluster-link. (After fixed message has been created.)
+            Called out when creating message for cluster-link.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -1562,17 +1578,17 @@ class JuniperDriverMX240(EmSeparateDriver):
 
         return True
 
-
     @decorater_log
     def _comparsion_sw_db_l3_slice(self, message, db_info):
         '''
         SW-DB comparison process (check for information matching) (L3Slice).
-            Called out when checking information matching of L3Slice.  
+            Called out when checking information matching of L3Slice.
         Parameter:
             message : Response message
             db_info : DB information
         Return value :
-            Matching result : Boolean (Should always be "True" unless override occurs.)
+            Matching result :
+                Boolean (Should always be "True" unless override occurs.)
         '''
         class ns_xml(object):
 
@@ -1780,7 +1796,6 @@ class JuniperDriverMX240(EmSeparateDriver):
                         cp_data["ipv4_addr"]):
                     is_return = False
                     break
-
 
         node_1 = ns_p.ns_find_node(config_node,
                                    "routing-instances",

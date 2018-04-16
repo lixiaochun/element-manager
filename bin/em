@@ -2,13 +2,13 @@
 #
 # EM Resource Agent
 #
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 
 #######################################
 #             setting             #
 # EM Control Shell Install Full Path
 # ex. /msf/em/em_ctl.sh
-EM_CONTROL_SHELL_PATH="/opt/em/em_ctl.sh"
+EM_CONTROL_SHELL_PATH="/opt/em/bin/em_ctl.sh"
 #######################################
 
 
@@ -77,7 +77,7 @@ em_start() {
 }
 
 em_stop() {
-    bash $OCF_RESKEY_EM_CONTROL_SHELL stop
+    bash $OCF_RESKEY_EM_CONTROL_SHELL stop changeover
     result=$?
     if [ $result = $OCF_SUCCESS ]; then
         ocf_log info "EM STOP SUCCESSFULLY"

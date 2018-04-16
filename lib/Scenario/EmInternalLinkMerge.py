@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmInternalLinkMerge.py
 '''
-Individual scenario to add IF for internal Link.   
+Individual scenario to add IF for internal Link.
 '''
 import threading
 import json
@@ -16,25 +16,18 @@ from EmCommonLog import decorater_log
 
 class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
     '''
-    Class to add IF for internal Link. 
+    Class to add IF for internal Link.
     '''
-
-
 
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmInternalLinkMerge, self).__init__()
-
         self.service = GlobalModule.SERVICE_INTERNAL_LINK
-
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
-
         self.timeout_flag = False
-
         self.device_type = "device"
 
     @decorater_log
@@ -42,7 +35,7 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conduct IF addition control for internal link for each device. 
+        Conduct IF addition control for internal link for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -384,7 +377,7 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _find_timeout(self, condition):
         '''
-        Set time out flag and launch thread.  
+        Set time out flag and launch thread.
         Explanation about parameter:
             condition: Thread control information
         Explanation about return value:
@@ -403,13 +396,14 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
 
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
@@ -423,16 +417,16 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False
 
     @decorater_log
     def __creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
-        Explanation about parameter：
+        Convert EC message (XML) divided for each device into JSON.
+        Explanation about parameter:
             device_message: Message for each device
         Explanation about return value
             device_json_message: JSON message
@@ -475,14 +469,15 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_vpn_type(self, json, xml, xml_ns):
         '''
-            Obtain physical IF information for internal Link from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain physical IF information for internal Link
+            from xml message to be analyzed and set it
+            for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         vpn_type = self._find_xml_node(xml, xml_ns + "vpn-type")
@@ -493,12 +488,12 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_name(self, json, xml, xml_ns):
         '''
-            Obtain device name from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Obtain device name from xml message to be analyzed and
+            set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
 
         name_elm = self._find_xml_node(xml, xml_ns + "name")
@@ -507,14 +502,14 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_breakout(self, json, xml, xml_ns):
         '''
-            Obtain breakoutIF information from xml message to be analyzed and 
-set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain breakoutIF information from xml message to be analyzed
+            and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
         breakout_elm = self._find_xml_node(xml,
                                            xml_ns + "breakout-interface")
@@ -536,12 +531,12 @@ set it for EC message storage dictionary object.
     @decorater_log
     def _gen_json_internal_if(self, json, xml, xml_ns):
         '''
-            Obtain IF information for internal Link from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Obtain IF information for internal Link from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
         internal_if_elm = self._find_xml_node(xml,
                                               xml_ns + "internal-interface")
@@ -569,12 +564,13 @@ set it for EC message storage dictionary object.
     @decorater_log
     def _gen_json_internal_phy(self, json, xml_ns, internal_phy):
         '''
-            Obtain physical IF information for internal Link from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage
-                xml_ns：Name space
-                internal_phy：xml message to be analyzed
+            Obtain physical IF information for internal Link
+            from xml message to be analyzed and set it
+            for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml_ns:Name space
+                internal_phy:xml message to be analyzed
         '''
 
         internal_phy_name = internal_phy.find(xml_ns + "name").text
@@ -591,16 +587,17 @@ set it for EC message storage dictionary object.
     @decorater_log
     def _gen_json_internal_lag(self, json, xml_ns, itnal_lag):
         '''
-            Obtain LAG information for internal Link from xml message to be analyzed and 
-            set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage
-                xml_ns：Name space
-                itnal_lag：xml message to be analyzed
+            Obtain LAG information for internal Link from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml_ns:Name space
+                itnal_lag:xml message to be analyzed
         '''
         internal_lag_message = {
             "name": None,
             "opposite-node-name": None,
+            "lag-id": 0,
             "minimum-links": 0,
             "link-speed": None,
             "address": None,
@@ -620,6 +617,8 @@ set it for EC message storage dictionary object.
 
         internal_lag_message["name"] = \
             itnal_lag.find(xml_ns + "name").text
+        internal_lag_message["lag-id"] = \
+            int(itnal_lag.find(xml_ns + "lag-id").text)
         internal_lag_message["opposite-node-name"] = \
             itnal_lag.find(xml_ns + "opposite-node-name").text
         internal_lag_message["minimum-links"] = \

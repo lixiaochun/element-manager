@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmSpineDelete.py
 '''
-Individual scenario for Spine reduction.  
+Individual scenario for Spine reduction.
 '''
 import EmSeparateScenario
 from EmCommonDriver import EmCommonDriver
@@ -15,7 +15,6 @@ class EmSpineDelete(EmSeparateScenario.EmScenario):
     '''
     Class for Spine reduction.
     '''
-
 
     @decorater_log
     def __init__(self):
@@ -138,13 +137,14 @@ class EmSpineDelete(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
 
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
@@ -155,7 +155,7 @@ class EmSpineDelete(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False

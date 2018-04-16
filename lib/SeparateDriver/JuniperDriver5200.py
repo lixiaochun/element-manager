@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: JuniperDriver5200.py
 '''
 Individual section on driver (JuniperDriver's (QFX5200-32C) driver)
@@ -45,6 +45,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                     self.name_internal_link,
                                     self.name_breakout,
                                     self.name_cluster_link,
+                                    self.name_recover_node,
+                                    self.name_recover_service,
                                     ]
         self._lag_check = re.compile("^ae([0-9]{1,})")
         self._breakout_check = re.compile("[0-9]{1,}/[0-9]{1,}/([0-9]{1,})")
@@ -56,6 +58,8 @@ class JuniperDriver5200(EmSeparateDriver):
             self.name_l2_slice: tmp_get_mes,
             self.name_l3_slice: tmp_get_mes,
         }
+        self._device_type_leaf = "leaf"
+        self._device_type_spine = "spine"
 
     @decorater_log
     def _send_control_signal(self,
@@ -86,7 +90,6 @@ class JuniperDriver5200(EmSeparateDriver):
     def _set_conf_device_count(self, ec_message=None, device_info=None):
         ret_val = 448
         return ret_val
-
 
     @decorater_log
     def _set_configuration_node(self, xml_obj):
@@ -446,7 +449,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                   vpn_type=None,
                                   opposite_vpn_type=None):
         '''
-        Create unit node of interface node for internal link/inter-cluster link.
+        Create unit node of interface node for
+        internal link/inter-cluster link.
         '''
         node_2 = self._set_xml_tag(if_node, "unit")
         self._set_xml_tag(node_2, "name", None, None, "0")
@@ -624,7 +628,7 @@ class JuniperDriver5200(EmSeparateDriver):
                                           range_prefix=None,
                                           operation=None):
         '''
-        Set ospf node for protocols and set areaN (crossing between clusters). 
+        Set ospf node for protocols and set areaN (crossing between clusters).
         Internal link should not be set here.
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
@@ -650,7 +654,7 @@ class JuniperDriver5200(EmSeparateDriver):
                                   if_infos=(),
                                   **options):
         '''
-        Set IF for the ospf/area node. 
+        Set IF for the ospf/area node.
             options : service : Service name
                     ; operation : Operation type
                     ; is_loopback : Possibility of loopback setting
@@ -717,11 +721,16 @@ class JuniperDriver5200(EmSeparateDriver):
         return node_2
 
     @decorater_log
-    def _set_device_protocols_ldp(self, protocols_node):
+    def _set_device_protocols_ldp(self, protocols_node, service_type):
         '''
         Set ldp node for protocols.
         '''
         node_1 = self._set_xml_tag(protocols_node, "ldp")
+
+        if service_type == GlobalModule.SERVICE_SPINE:
+            self._set_xml_tag(node_1, "egress-policy", None, None, "EL_To_LDP")
+            self._set_xml_tag(node_1, "explicit-null")
+
         node_2 = self._set_xml_tag(node_1, "interface")
         self._set_xml_tag(node_2, "interface_name", None, None, "all")
         self._set_xml_tag(node_2, "hello-interval", None, None, "5")
@@ -765,9 +774,9 @@ class JuniperDriver5200(EmSeparateDriver):
                                   operation=None,
                                   **qos_info):
         '''
-        Conduct interface settings for class-of-service node. 
-        Argument：qos_info
-            service：Service name
+        Conduct interface settings for class-of-service node.
+        Argument:qos_info
+            service:Service name
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
 
@@ -790,7 +799,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _set_qos_policy_inner_link_device_dependent(self, if_node):
         '''
-        Conduct settings on device-dependent section for class-of-service node. (internal link/inter-cluster link)
+        Conduct settings on device-dependent section for
+        class-of-service node. (internal link/inter-cluster link)
         '''
         self._set_xml_tag(if_node,
                           "scheduler-map",
@@ -801,7 +811,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _set_qos_policy_slice_device_dependent(self, if_node):
         '''
-        Conduct the settings on device-dependent section of class-of-service node. (slice-adding-related)
+        Conduct the settings on device-dependent section of
+        class-of-service node. (slice-adding-related)
         '''
         self._set_xml_tag(if_node,
                           "scheduler-map",
@@ -812,7 +823,7 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _set_qos_policy_inner_link(self, if_node):
         '''
-        Conduct settings relating to internal link of class-of-service node. 
+        Conduct settings relating to internal link of class-of-service node.
         '''
         self._set_qos_policy_inner_link_device_dependent(if_node)
         node_1 = self._set_xml_tag(if_node, "unit")
@@ -864,7 +875,7 @@ class JuniperDriver5200(EmSeparateDriver):
                              port_mode=None,
                              slice_type=2):
         '''
-        Set mtu value for L2/L3CPIF. 
+        Set mtu value for L2/L3CPIF.
         '''
         tmp = None
         if mtu is None:
@@ -879,7 +890,7 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _set_slice_protocol_routing_options(self, conf_node, vrf_name=None):
         '''
-        Set routing-options in preparation of L3 slice protocol settings.  
+        Set routing-options in preparation of L3 slice protocol settings.
         '''
         node_1 = self._xml_setdefault_node(conf_node, "routing-instances")
         node_2 = self._xml_setdefault_node(node_1, "instance")
@@ -1085,10 +1096,12 @@ class JuniperDriver5200(EmSeparateDriver):
             self._set_xml_tag(node_1, "mtu", attr, attr_val, tmp)
         if cp_info.get("VLAN"):
             for unit in cp_info.get("VLAN").values():
+                tmp_qos = cp_info.get("QOS")
                 self._set_l3_slice_vlan_unit(node_1,
                                              unit,
                                              is_vlan=is_vlan,
-                                             mtu=mtu)
+                                             mtu=mtu,
+                                             qos=tmp_qos)
         self.common_util_log.logging(
             None, self.log_level_debug,
             self._XML_LOG % (ifs_node.tag, etree.tostring(node_1)),
@@ -1100,7 +1113,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                 if_node,
                                 vlan,
                                 is_vlan=None,
-                                mtu=None):
+                                mtu=None,
+                                qos={}):
         '''
         Set unit for interface node.
         '''
@@ -1131,7 +1145,8 @@ class JuniperDriver5200(EmSeparateDriver):
                 prefix=vlan.get("CE-IF-PREFIX6"),
                 is_vlan=is_vlan,
                 mtu=mtu,
-                is_add_cp=is_add_cp
+                is_add_cp=is_add_cp,
+                qos_info=qos
             )
             if vrrp and vrrp.get("VRRP-VIRT-ADDR6"):
                 self._set_l3_slice_vrrp(node_3, vrrp, 6)
@@ -1143,7 +1158,8 @@ class JuniperDriver5200(EmSeparateDriver):
                 prefix=vlan.get("CE-IF-PREFIX"),
                 is_vlan=is_vlan,
                 mtu=mtu,
-                is_add_cp=is_add_cp
+                is_add_cp=is_add_cp,
+                qos_info=qos
             )
             if vrrp and vrrp.get("VRRP-VIRT-ADDR"):
                 self._set_l3_slice_vrrp(node_3, vrrp, 4)
@@ -1172,6 +1188,7 @@ class JuniperDriver5200(EmSeparateDriver):
         prefix = params.get("prefix")
         is_vlan = params.get("is_vlan")
         mtu = params.get("mtu")
+        qos_info = params.get("qos_info")
         is_add_cp = params.get("is_add_cp", True)
 
         tag_name = "inet" if ip_ver == 4 else "inet6"
@@ -1179,7 +1196,8 @@ class JuniperDriver5200(EmSeparateDriver):
         if is_add_cp and ip_ver == 4:
             node_2 = self._set_xml_tag(node_1, "filter")
             node_3 = self._set_xml_tag(node_2, "input")
-            filter_name = "ipv%d_filter_input" % (ip_ver,)
+            key_name = "IPV%d" % (ip_ver,)
+            filter_name = qos_info.get("REMARK-MENU").get(key_name)
             self._set_xml_tag(node_3,
                               "filter-name",
                               None,
@@ -1333,11 +1351,11 @@ class JuniperDriver5200(EmSeparateDriver):
             __name__)
         return node_2
 
-
     @decorater_log
     def _get_device_from_ec(self, device_mes, service=None):
         '''
-        Obtain EC message information regarding device expansion. (common for spine, leaf)
+        Obtain EC message information regarding device expansion.
+        (common for spine, leaf)
         '''
         dev_reg_info = {}
         dev_reg_info["DEVICE-NAME"] = device_mes.get("name")
@@ -1568,7 +1586,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _get_cluster_if_info(self, if_info, if_type=None):
         '''
-        Obtain inter-cluster link information from EC message. (regardless of physical/LAG)
+        Obtain inter-cluster link information from EC message.
+        (regardless of physical/LAG)
         '''
         tmp = {
             "IF-TYPE": if_type,
@@ -1588,6 +1607,14 @@ class JuniperDriver5200(EmSeparateDriver):
         '''
         Obtain EC message information relating to internal link (LAG).
         '''
+
+        if (service == self.name_spine) or \
+                (service == self.name_internal_link and
+                 db_info.get("device_type") == self._device_type_spine):
+            need_oppo_info = True
+        else:
+            need_oppo_info = False
+
         phy_ifs = []
 
         for tmp in device_mes.get("internal-physical", ()):
@@ -1596,7 +1623,9 @@ class JuniperDriver5200(EmSeparateDriver):
                     tmp.get("prefix") is None):
                 raise ValueError("internal-physical not enough information")
 
-            phy_ifs.append(self._get_internal_if_info(tmp, self._if_type_phy))
+            phy_ifs.append(
+                self._get_internal_if_info(
+                    tmp, self._if_type_phy, need_oppo_info))
 
         lag_ifs = []
         lag_mem_ifs = []
@@ -1611,7 +1640,9 @@ class JuniperDriver5200(EmSeparateDriver):
                     len(tmp["internal-interface"]) == 0):
                 raise ValueError("internal-lag not enough information")
 
-            lag_ifs.append(self._get_internal_if_info(tmp, self._if_type_lag))
+            lag_ifs.append(
+                self._get_internal_if_info(
+                    tmp, self._if_type_lag, need_oppo_info))
 
             for lag_mem in tmp.get("internal-interface"):
                 if not lag_mem.get("name"):
@@ -1630,7 +1661,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                        operation=None,
                                        db_info=None):
         '''
-        Obtain EC message/DB information relating to internal link (LAG) for deletion.
+        Obtain EC message/DB information relating to
+        internal link (LAG) for deletion.
         '''
         inner_ifs = []
 
@@ -1674,19 +1706,22 @@ class JuniperDriver5200(EmSeparateDriver):
         return phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs
 
     @decorater_log
-    def _get_internal_if_info(self, if_info, if_type=None):
+    def _get_internal_if_info(self, if_info, if_type=None, need_oppo_info=True):
         '''
-        Obtain internal link information from EC message. (regardless of physical, LAG)
+        Obtain internal link information from EC message.
+        (regardless of physical, LAG)
         '''
         op_node_type = None
         op_node_vpn = None
-        if if_info.get("opposite-node-name"):
-            op_node_type, op_node_vpn = \
-                self.common_util_db.read_device_type(
-                    if_info.get("opposite-node-name"))
-        if (not if_info.get("opposite-node-name") or not op_node_type):
-            raise ValueError("fault opposite-node vpn:device = %s,n_type=%s" %
-                             (if_info.get("opposite-node-name"), op_node_type))
+        if need_oppo_info:
+            if if_info.get("opposite-node-name"):
+                op_node_type, op_node_vpn = \
+                    self.common_util_db.read_device_type(
+                        if_info.get("opposite-node-name"))
+            if (not if_info.get("opposite-node-name") or not op_node_type):
+                raise ValueError(
+                    "fault opposite-node vpn:device = %s,n_type=%s" %
+                    (if_info.get("opposite-node-name"), op_node_type))
 
         tmp = {
             "IF-TYPE": if_type,
@@ -1703,7 +1738,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _get_internal_if_del_info(self, if_info, if_type=None):
         '''
-        Obtain internal link information from EC message. (regardless of physical, LAG)
+        Obtain internal link information from EC message.
+        (regardless of physical, LAG)
         '''
 
         tmp = {
@@ -1715,9 +1751,10 @@ class JuniperDriver5200(EmSeparateDriver):
         return tmp
 
     @decorater_log
-    def _get_cp_interface_info_from_ec(self, cp_dicts, cp_info):
+    def _get_cp_interface_info_from_ec(self, cp_dicts, cp_info, db_info):
         '''
-        Collect IF information relating to slice from EC message (independent unit CPs). (common for L2, L3)
+        Collect IF information relating to slice from EC message
+        (independent unit CPs). (common for L2, L3)
         '''
         if_name = cp_info.get("name")
         vlan_id = cp_info.get("vlan-id")
@@ -1732,7 +1769,11 @@ class JuniperDriver5200(EmSeparateDriver):
                 "IF-IS-VLAN":  bool(vlan_id),
                 "OPERATION": None,
                 "VLAN":  {},
+                "QOS": {},
             }
+
+            if cp_info.get("qos"):
+                tmp["QOS"] = self._get_cp_qos_info_from_ec(cp_info, db_info)
             cp_dicts[if_name] = tmp
         else:
             tmp = cp_dicts[if_name]
@@ -1859,8 +1900,9 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _get_if_ip_network(address, prefix):
         '''
-        Create IP network object based on address and pre-fix. 
-        *IP network object will not be created and cidr mesage will be returned.
+        Create IP network object based on address and pre-fix.
+        *IP network object will not be created and
+        cidr mesage will be returned.
         '''
         if not address and prefix is None:
             return None
@@ -1909,7 +1951,7 @@ class JuniperDriver5200(EmSeparateDriver):
                     not tmp_cp.get("vrrp")):
                 continue
             tmp, vlan_id = self._get_cp_interface_info_from_ec(
-                cp_dicts, tmp_cp)
+                cp_dicts, tmp_cp, db_info)
             tmp["VLAN"][vlan_id] = self._get_l3_vlan_if_info_from_ec(
                 tmp_cp, db_info, slice_name)
             if tmp["VLAN"][vlan_id].get("OPERATION") == self._REPLACE:
@@ -1955,7 +1997,8 @@ class JuniperDriver5200(EmSeparateDriver):
         '''
         Create list for class-or-service.
         (Compare CP on DB and CP on operation instruction simultaneously.)
-        (Make judgment on the necessity of IF deletion and possibility for slice to remain inside device.)
+        (Make judgment on the necessity of IF deletion and
+        possibility for slice to remain inside device.)
         '''
         cos_if_list = []
         db_cp = {}
@@ -2149,8 +2192,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _get_db_static_del_nexthop(self, static_addrs):
         '''
-        Obtain static nexthop of DB.  
-        ・Obtain the contents of ipv4/ipv6 tags. 
+        Obtain static nexthop of DB.
+        ・Obtain the contents of ipv4/ipv6 tags.
         ・None will be returned if all is null inside.
         '''
         if (static_addrs.get("address") is None and
@@ -2166,7 +2209,8 @@ class JuniperDriver5200(EmSeparateDriver):
     def _normalizing_ec_static(self, ec_static=[]):
         '''
         Make the static route of EC message official.
-        Delete the repeated orders. (note: treat them as "Error" unless additionally offset since repeated deletion never goes into machine.)
+        Delete the repeated orders. (note: treat them as "Error" unless
+        additionally offset since repeated deletion never goes into machine.)
         Offset the additions/deletions for the same staticIP/nexthop.
         '''
         tmp_list = []
@@ -2330,12 +2374,11 @@ class JuniperDriver5200(EmSeparateDriver):
         db_ifs = len(self._get_db_cp_ifs(device_info, slice_name))
         return bool(del_if_count == db_ifs)
 
-
     @decorater_log
     def _gen_spine_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (spine) for Netconf.  
-            Called out when creating message for Spine. 
+        Fixed value to create message (spine) for Netconf.
+            Called out when creating message for Spine.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -2347,10 +2390,10 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _gen_leaf_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (Leaf) for Netconf.  
-            Called out when creating message for Leaf. 
+        Fixed value to create message (Leaf) for Netconf.
+            Called out when creating message for Leaf.
         Parameter:
-            xml_obj : xml object 
+            xml_obj : xml object
             operation : Designate "delete" when deleting.
         Return value.
             Creation result : Boolean (Write properly using override method)
@@ -2360,8 +2403,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _gen_l3_slice_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (L3Slice) for Netconf. 
-            Called out when creating message for L3Slice.  
+        Fixed value to create message (L3Slice) for Netconf.
+            Called out when creating message for L3Slice.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -2373,8 +2416,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _gen_ce_lag_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (CeLag) for Netconf. 
-            Called out when creating message for CeLag.  
+        Fixed value to create message (CeLag) for Netconf.
+            Called out when creating message for CeLag.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -2386,8 +2429,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _gen_internal_link_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (InternalLink) for Netconf. 
-            Called out when creating message for InternalLink.  
+        Fixed value to create message (InternalLink) for Netconf.
+            Called out when creating message for InternalLink.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -2399,8 +2442,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _gen_breakout_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (breakout) for Netconf. 
-            Called out when creating message for breakout.  
+        Fixed value to create message (breakout) for Netconf.
+            Called out when creating message for breakout.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -2412,8 +2455,8 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _gen_cluster_link_fix_message(self, xml_obj, operation):
         '''
-        Fixed value to create message (cluster-link) for Netconf. 
-            Called out when creating message for cluster-link.  
+        Fixed value to create message (cluster-link) for Netconf.
+            Called out when creating message for cluster-link.
         Parameter:
             xml_obj : xml object
             operation : Designate "delete" when deleting.
@@ -2421,7 +2464,6 @@ class JuniperDriver5200(EmSeparateDriver):
             Creation result : Boolean (Write properly using override method)
         '''
         return True
-
 
     @decorater_log
     def _gen_spine_variable_message(self,
@@ -2431,7 +2473,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                     operation):
         '''
         Variable value to create message (Spine) for Netconf.
-            Called out when creating message for Spine. (After fixed message has been created.) 
+            Called out when creating message for Spine.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2463,7 +2506,6 @@ class JuniperDriver5200(EmSeparateDriver):
                 __name__)
             return False
 
-
         conf_node = self._set_configuration_node(xml_obj)
 
         self._set_system_config(conf_node, dev_reg_info["DEVICE-NAME"])
@@ -2489,7 +2531,8 @@ class JuniperDriver5200(EmSeparateDriver):
         area_node = self._set_device_protocols_ospf_area_N(
             protocols_node, dev_reg_info["OSPF-AREA-ID"])
         self._set_ospf_area_interfaces(area_node, inner_ifs, is_loopback=True)
-        self._set_device_protocols_ldp(protocols_node)
+        self._set_device_protocols_ldp(
+            protocols_node, GlobalModule.SERVICE_SPINE)
 
         self._set_qos_policy_interfaces(conf_node,
                                         inner_ifs,
@@ -2504,7 +2547,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                    operation):
         '''
         Variable value to create message (Leaf) for Netconf.
-            Called out when creating message for Leaf. (After fixed message has been created.) 
+            Called out when creating message for Leaf.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2544,7 +2588,6 @@ class JuniperDriver5200(EmSeparateDriver):
                 __name__)
             return False
 
-
         conf_node = self._set_configuration_node(xml_obj)
 
         if not device_mes.get("equipment"):
@@ -2561,7 +2604,8 @@ class JuniperDriver5200(EmSeparateDriver):
         self._set_interface_inner_links(if_node,
                                         lag_mem_ifs=lag_mem_ifs,
                                         lag_ifs=lag_ifs,
-                                        phy_ifs=phy_ifs)
+                                        phy_ifs=phy_ifs,
+                                        vpn_type=dev_reg_info["VPN-TYPE"])
         self._set_interface_loopback(if_node,
                                      dev_reg_info["LB-IF-ADDR"],
                                      dev_reg_info["LB-IF-PREFIX"])
@@ -2585,7 +2629,8 @@ class JuniperDriver5200(EmSeparateDriver):
 
         area_node = self._set_b_leaf_ospf_data(conf_node, dev_reg_info)
         self._set_ospf_area_interfaces(area_node, inner_ifs, is_loopback=True)
-        self._set_device_protocols_ldp(protocols_node)
+        self._set_device_protocols_ldp(
+            protocols_node, GlobalModule.SERVICE_LEAF)
 
         self._set_qos_policy_interfaces(conf_node,
                                         inner_ifs,
@@ -2600,7 +2645,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                       operation):
         '''
         Variable value to create message (L3Slice) for Netconf.
-            Called out when creating message for L3Slice. (After fixed message has been created.) 
+            Called out when creating message for L3Slice.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2620,6 +2666,10 @@ class JuniperDriver5200(EmSeparateDriver):
             static = self._get_static_routes_from_ec(device_mes,
                                                      device_info,
                                                      slice_name)
+
+            qos_info = self._get_l3_cps_qos_from_ec(device_mes,
+                                                    device_info,
+                                                    slice_name)
         except Exception as ex:
             self.common_util_log.logging(
                 device_name,
@@ -2638,7 +2688,156 @@ class JuniperDriver5200(EmSeparateDriver):
             self._set_slice_protocol_static_route(conf_node,
                                                   vrf_name,
                                                   static)
+
+        if qos_info:
+            self._set_l3_slice_qos(conf_node, qos_info)
+
         return True
+
+    @decorater_log
+    def _get_l3_cps_qos_from_ec(self,
+                                device_mes,
+                                db_info,
+                                slice_name=None,
+                                operation=None):
+        '''
+        Get qos data from parameter (cp) from EC message.
+        '''
+        cp_dicts = {}
+        for tmp_cp in device_mes.get("cp", ()):
+            if (not tmp_cp.get("qos")):
+                continue
+            tmp, vlan_id = self._get_cp_interface_info_from_ec(
+                cp_dicts, tmp_cp, db_info)
+            tmp["VLAN"][vlan_id] = self._get_qos_l3_vlan_if_info_from_ec(
+                tmp_cp, db_info, slice_name)
+            if tmp["VLAN"][vlan_id].get("OPERATION") == self._REPLACE:
+                tmp["OPERATION"] = self._REPLACE
+
+        return cp_dicts
+
+    @decorater_log
+    def _get_qos_l3_vlan_if_info_from_ec(self,
+                                         ec_cp,
+                                         db_info,
+                                         slice_name=None):
+        '''
+        Set the part related to the VLAN IF of the CP.
+        '''
+        if_name = ec_cp.get("name")
+        tmp = {
+            "OPERATION": ec_cp.get("operation"),
+            "CE-IF-VLAN-ID": ec_cp.get("vlan-id"),
+        }
+
+        target_cp = None
+        for tmp_cp in db_info.get("cp"):
+            if if_name == tmp_cp["if_name"] and ec_cp.get("vlan-id") == tmp_cp["vlan"].get("vlan_id"):
+                target_cp = tmp_cp
+                break
+
+        if target_cp["ce_ipv6"]:
+            tmp["CE-IF-ADDR6"] = target_cp["ce_ipv6"].get("address")
+        if target_cp["ce_ipv4"]:
+            tmp["CE-IF-ADDR"] = target_cp["ce_ipv4"].get("address")
+        return tmp
+
+    @decorater_log
+    def _set_l3_slice_qos(self, conf_node, qos_infos=None):
+        '''
+        Set qos for changing L3 VLAN IF.
+        '''
+        node_1 = self._set_interfaces_node(conf_node)
+        for tmp_cp in qos_infos.values():
+            self._set_qos_l3_vlan_if(node_1, tmp_cp)
+        self.common_util_log.logging(
+            None, self.log_level_debug,
+            self._XML_LOG % (conf_node.tag, etree.tostring(node_1)),
+            __name__)
+
+    @decorater_log
+    def _set_qos_l3_vlan_if(self,
+                            ifs_node,
+                            cp_info):
+        '''
+        Set IF(qos) for changing L3 VLAN IF.
+        '''
+        node_1 = self._set_xml_tag(ifs_node, "interface")
+        self._set_xml_tag(node_1, "name", None, None, cp_info.get("IF-NAME"))
+        if cp_info.get("VLAN"):
+            for unit in cp_info.get("VLAN").values():
+                tmp_qos = cp_info.get("QOS")
+                self._set_qos_l3_vlan_unit(node_1,
+                                           unit,
+                                           qos=tmp_qos)
+        self.common_util_log.logging(
+            None, self.log_level_debug,
+            self._XML_LOG % (ifs_node.tag, etree.tostring(node_1)),
+            __name__)
+        return node_1
+
+    @decorater_log
+    def _set_qos_l3_vlan_unit(self,
+                              if_node,
+                              vlan,
+                              qos={}):
+        '''
+        Set unit to interface node.
+        '''
+        attr = self._ATTR_OPE
+        attr_val = self._REPLACE
+
+        node_1 = self._set_xml_tag(if_node, "unit")
+        self._set_xml_tag(node_1,
+                          "name",
+                          None,
+                          None,
+                          vlan.get("CE-IF-VLAN-ID"))
+        node_2 = self._set_xml_tag(node_1, "family")
+
+        if vlan.get("CE-IF-ADDR"):
+            node_3 = self._set_qos_l3_vlan_unit_address(
+                node_2,
+                4,
+                attr_info=attr,
+                attr_val_info=attr_val,
+                qos_info=qos
+            )
+        self.common_util_log.logging(
+            None, self.log_level_debug,
+            self._XML_LOG % (if_node.tag, etree.tostring(node_1)),
+            __name__)
+        return node_1
+
+    @decorater_log
+    def _set_qos_l3_vlan_unit_address(self,
+                                      family_node,
+                                      ip_ver=4,
+                                      **params):
+        '''
+        Set inet on the family node (IPv4 or IPv6)
+            params : qos_info = QOS Value
+        '''
+        qos_info = params.get("qos_info")
+        attr = params.get("attr_info")
+        attr_val = params.get("attr_val_info")
+
+        tag_name = "inet" if ip_ver == 4 else "inet6"
+        node_1 = self._set_xml_tag(family_node, tag_name)
+        node_2 = self._set_xml_tag(node_1, "filter")
+        node_3 = self._set_xml_tag(node_2, "input")
+        key_name = "IPV%d" % (ip_ver,)
+        filter_name = qos_info.get("REMARK-MENU").get(key_name)
+        self._set_xml_tag(node_3,
+                          "filter-name",
+                          attr,
+                          attr_val,
+                          filter_name)
+        self.common_util_log.logging(
+            None, self.log_level_debug,
+            self._XML_LOG % (family_node.tag, etree.tostring(node_1)),
+            __name__)
+        return node_2
 
     @decorater_log
     def _gen_l3_slice_variable_message(self,
@@ -2648,7 +2847,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                        operation):
         '''
         Variable value to create message (L3Slice) for Netconf.
-            Called out when creating message for L3Slice. (After fixed message has been created.) 
+            Called out when creating message for L3Slice.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2754,7 +2954,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                      operation):
         '''
         Variable value to create message (CeLag) for Netconf.
-            Called out when creating message for CeLag. (After fixed message has been created.) 
+            Called out when creating message for CeLag.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2809,7 +3010,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                             operation):
         '''
         Variable value to create message (InternalLag) for Netconf.
-            Called out when creating message for InternalLag. (After fixed message has been created.) 
+            Called out when creating message for InternalLag.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2839,7 +3041,8 @@ class JuniperDriver5200(EmSeparateDriver):
                 phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs = \
                     self._get_internal_link_from_ec(
                         device_mes,
-                        service=self.name_internal_link)
+                        service=self.name_internal_link,
+                        db_info=device_info)
                 breakout_ifs = self._get_breakout_from_ec(device_mes)
                 self._check_breakout_if_name(breakout_ifs)
         except Exception as ex:
@@ -2889,7 +3092,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                        operation):
         '''
         Variable value to create message (breakout) for Netconf.
-            Called out when creating message for breakout. (After fixed message has been created.) 
+            Called out when creating message for breakout.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2932,7 +3136,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                            operation):
         '''
         Variable value to create message (cluster-link) for Netconf.
-            Called out when creating message for cluster-link. (After fixed message has been created.) 
+            Called out when creating message for cluster-link.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2991,17 +3196,17 @@ class JuniperDriver5200(EmSeparateDriver):
 
         return True
 
-
     @decorater_log
     def _comparsion_sw_db_l3_slice(self, message, db_info):
         '''
         SW-DB comparison processing (check for information matching) (L3Slice).
-            Called out when checking information matching of L3Slice.  
+            Called out when checking information matching of L3Slice.
         Parameter:
             message : Response message
             db_info : DB information
         Return value :
-            Matching result : Boolean (Should always be "True" unless override occurs.)
+            Matching result :
+                Boolean (Should always be "True" unless override occurs.)
         '''
         class ns_xml(object):
 
@@ -3279,7 +3484,6 @@ class JuniperDriver5200(EmSeparateDriver):
                                 is_return = False
                                 break
 
-
         node_1 = ns_p.ns_find_node(config_node,
                                    "routing-instances",
                                    "instance",
@@ -3503,3 +3707,30 @@ class JuniperDriver5200(EmSeparateDriver):
                                 breakout_ifs=[]):
         for br_if in breakout_ifs:
             self._breakout_check.search(br_if["IF-NAME"]).groups()[0]
+
+    @decorater_log
+    def _get_cp_qos_info_from_ec(self, cp_info_ec, db_info):
+        '''
+        Add QoS information from EC to CP information to be set.
+        Parameter:
+            cp_info_ec: dict  CP information input from EC.
+            db_info: dict  DB Information.
+        Return value:
+            cp_info_em : dict  QoS information for device setting
+        '''
+        cp_info_em = {}
+
+        conf_qos_remark, conf_qos_egress = GlobalModule.EM_CONFIG.get_qos_conf(
+            db_info["device"].get("platform_name"),
+            db_info["device"].get("os_name"),
+            db_info["device"].get("firm_version"))
+
+        tmp_remark_menu = cp_info_ec["qos"].get("remark-menu")
+        for tmp_conf_key in conf_qos_remark.keys():
+            if tmp_remark_menu == tmp_conf_key:
+                tmp_remark_menu = conf_qos_remark[tmp_conf_key]
+                break
+
+        cp_info_em["REMARK-MENU"] = tmp_remark_menu
+
+        return cp_info_em

@@ -1,0 +1,164 @@
+# Setting EM
+  - name: make em library folder
+    shell: mkdir -p {{ em_path }}/lib
+  - name: make em conf folder
+    shell: mkdir -p {{ em_path }}/conf
+  - name: make em script folder
+    shell: mkdir -p {{ em_path }}/bin
+  - name: make em log folder
+    shell: mkdir -p {{ em_path }}/{{ log_path }}
+  - include: getconf.yml
+    when: download_flag
+  - copy: src={{ installing_em_path }}/conf/ dest={{ em_path }}/conf
+    when: download_flag == false
+  - include: getbin.yml 
+    when: download_flag
+  - copy: src={{ installing_em_path }}/bin/ dest={{ em_path }}/bin
+    when: download_flag == false
+  - shell: chmod 777 {{ em_path }}/bin/*
+  - name: check path setting 1
+    find: paths=/etc/profile
+          patterns='/usr/bin/python'
+    register: found_files1
+  - name: add path setting 1
+    lineinfile:
+      dest=/etc/profile
+      line='export PATH=$PATH:/usr/bin/python'
+    when: found_files1.matched == 0
+  - name: check path setting 2
+    find: paths=/etc/profile
+          patterns='{{ em_path }}/bin'
+    register: found_files2
+  - name: add path setting 2
+    lineinfile:
+      dest=/etc/profile
+      line='export PATH=$PATH:{{ em_path }}/bin'
+    when: found_files2.matched == 0
+  - shell: source /etc/profile 
+  - name: em_main.conf data set 1
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_if_process_rest.conf'
+      state=present
+      backrefs=yes
+      regexp='Rest_server_address.*'
+      line='Rest_server_address={{ em_rest_address }}'
+  - name: em_main.conf data set 2
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_if_process_rest.conf'
+      state=present
+      backrefs=yes
+      regexp='Port_number.*'
+      line='Port_number={{ em_rest_port }}'
+  - name: em_main.conf data set 3
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Ec_rest_server_address.*'
+      line='Ec_rest_server_address={{ ec_rest_address }}'
+  - name: em_main.conf data set 4
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Ec_port_number.*'
+      line='Ec_port_number={{ ec_rest_port }}'
+  - name: em_main.conf data set 5
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_if_process.conf'
+      state=present
+      backrefs=yes
+      regexp='Netconf_server_address.*'
+      line='Netconf_server_address={{ em_netconf_address }}'
+  - name: em_main.conf data set 6
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_if_process.conf'
+      state=present
+      backrefs=yes
+      regexp='Port_number.*'
+      line='Port_number={{ em_netconf_port }}'
+  - name: em_main.conf data set 7
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Em_Rest_server_address.*'
+      line='em_rest_address={{ em_rest_address }}'
+  - name: em_main.conf data set 8
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Em_port_number.*'
+      line='em_rest_port={{ em_rest_port }}'
+  - name: em_main.conf data set 9
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Controller_management_address.*'
+      line='Controller_management_address={{ em_physical_address }}'
+  - name: em_main.conf data set 10
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Em_log_file_path.*'
+      line='Em_log_file_path={{ em_path }}/{{ log_path }}'
+  - name: em_main.conf data set 12
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='DB_server_address.*'
+      line='DB_server_address={{ db_address }}'
+  - name: em_main.conf data set 13
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='DB_access_table.*'
+      line='DB_access_table={{ db_name }}'
+  - name: em_ctl.sh data set 1
+    lineinfile: >-
+      dest='{{ em_path }}/bin/em_ctl.sh'
+      state=present
+      backrefs=yes
+      regexp='IPV4=.*'
+      line='IPV4="{{ em_netconf_address }}"'
+  - name: em_ctl.sh data set 2
+    lineinfile: >-
+      dest='{{ em_path }}/bin/em_ctl.sh'
+      state=present
+      backrefs=yes
+      regexp='PORT=.*'
+      line='PORT={{ em_netconf_port }}'
+  - name: em_ctl.sh data set 1
+    lineinfile: >-
+      dest='{{ em_path }}/bin/em_ctl.sh'
+      state=present
+      backrefs=yes
+      regexp='IPV4=.*'
+      line='IPV4="{{ em_netconf_address }}"'
+  - name: em_ctl.sh data set 2
+    lineinfile: >-
+      dest='{{ em_path }}/bin/em_ctl.sh'
+      state=present
+      backrefs=yes
+      regexp='PORT=.*'
+      line='PORT={{ em_netconf_port }}'
+  - name: em_ctl.sh data set 3
+    lineinfile: >-
+      dest='{{ em_path }}/bin/em_ctl.sh'
+      state=present
+      backrefs=yes
+      regexp='EC_HOST=.*'
+      line='EC_HOST="{{ ec_rest_address }}"'
+  - name: em_ctl.sh data set 4
+    lineinfile: >-
+      dest='{{ em_path }}/bin/em_ctl.sh'
+      state=present
+      backrefs=yes
+      regexp='EC_PORT=.*'
+      line='EC_PORT={{ ec_rest_port }}'
+  - include: getem.yml

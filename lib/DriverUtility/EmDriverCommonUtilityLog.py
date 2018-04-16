@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmDriverCommonUtilityLog.py
 '''
 Common utility for the driver (Log)
@@ -58,7 +58,8 @@ class EmDriverCommonUtilityLog(object):
             device_name: Device name
             log_level: Log level (DEBUG,INFO,WARN,ERROR)
             log_message: Log message
-            log_module: Module name (Make sure to input "_name_" as the argument.)
+            log_module: Module name
+                        (Make sure to input "_name_" as the argument.)
         Explanation about the return value:
             Log output result : Boolean
         '''

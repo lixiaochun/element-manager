@@ -1,48 +1,48 @@
 #!/bin/sh
-##
-## EM Start-up Script em_ctl.sh
-## Parameter (mandatory) <stop|forcestop>
-##
-## Shell script executed by RA or a maintenance operator
-## and does EM termination or forceful termination.
-##
-## Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
-##
+#
+# EM Start-up Script em_ctl.sh
+# Parameter (mandatory) <stop|forcestop>
+#
+# Shell script executed by RA or a maintenance operator
+# and does EM termination or forceful termination.
+#
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+#
 
 ######################################################################
-## Environment Definition
-## Configures the information to access EM in monitoring module
-## Login User Name for EM
+# Environment Definition
+# Configures the information to access EM in monitoring module
+# Login User Name for EM
 USERNAME="user1"
-## Login Password for EM
+# Login Password for EM
 PASSWORD="pass"
-## Logical IP Address of EM
+# Logical IP Address of EM
 IPV4="127.0.0.1"
-## Waiting Port of EM
+# Waiting Port of EM
 PORT=831
-## Time Interval until connection timeout
+# Time Interval until connection timeout
 SSH_TIMEOUT=5
-## EC Host Name
+# EC Host Name
 EC_HOST="192.168.53.132"
-## EC Port
+# EC Port
 EC_PORT="18080"
-## The Number of REST Retries
+# The Number of REST Retries
 RESTRETRYNUM=2
-## REST Timeout Time
+# REST Timeout Time
 RESTTIMEOUT=5
 
 ######################################################################
 
 #######################################################################
-## Setting:
-## start_try_time: Number of trials for Start-up (times)
-## start_wait_time:Waiting time for start-up (seconds)
+# Setting:
+# start_try_time: Number of trials for Start-up (times)
+# start_wait_time:Waiting time for start-up (seconds)
 
 start_try_time=3
 start_wait_time=5
 
-## stop_try_time: Number of trials for termination (times)
-## stop_wait_time: Waiting time for termination (seconds)
+# stop_try_time: Number of trials for termination (times)
+# stop_wait_time: Waiting time for termination (seconds)
 
 stop_try_time=3
 stop_wait_time=5
@@ -51,7 +51,7 @@ stop_wait_time=5
 
 
 ########################
-##Initialization
+# Initialization
 
 source /root/.bash_profile
 
@@ -59,7 +59,7 @@ ACTION=$1
 EM_SUCCESS=0
 EM_ERR=1
 EM_NOT_RUNNING=7
-EM_NORMAL_STOP="NORMAL_STOP"
+EM_CHANGEOVER="changeover"
 
 cd `dirname "$0"`
 EM_INSTALL_PATH="$(cd "$(dirname "$0")/../"; pwd)/"
@@ -92,7 +92,6 @@ em_start() {
 
     # No Probrem in Monitor then Start Main Module
     echo "EM START: EM MAIN MODULE STARTING..."
-    notify_start_changeover
 
     python "${EM_INSTALL_PATH}${main_module}" > /dev/null 2>&1 &
     echo $! > "${EM_INSTALL_PATH}${pid_module}"
@@ -121,46 +120,6 @@ em_start() {
     return $result
 }
 
-## Systems Switching Over Start Notification for EC
-function notify_start_changeover() {
-    for i in `seq 1 ${RESTRETRYNUM}`
-    do
-        JSON_MESSAGE="{\"controller\": {\"controller_type\": \"em\", \"event\": \"start system switching\"}}"
-        response=`curl -sS --connect-timeout ${RESTTIMEOUT} -m ${RESTTIMEOUT} -w ' resultCode:%{http_code}' -H "Accept: application/json" -H "Content-type: application/json" -X PUT -g -d "${JSON_MESSAGE}" ${EC_HOST}:${EC_PORT}/v1/internal/ec_ctrl/statusnotify 2>&1`
-
-        retd="0"
-        logger -t em_ctl.sh " Notify start changeover response. code=${response}."
-
-        err=`echo "${response}" | grep -c "resultCode\:000"`
-
-        errorcount=`echo "${response}" | grep -c "000001"`
-
-        if [ "${err}" -eq 0 ]; then
-
-            resultCode=`echo "${response}" | sed -e "s/.*resultCode://"`
-
-            if [ "${resultCode}" != "200" ]; then
-                if  [ "${errorcount}" -eq 0 ]; then
-                    logger -t em_ctl.sh "<error> Notify start changeover Failed. code=${resultCode}."
-                    retd=1
-                    break
-                fi
-
-                continue
-            fi
-            break
-        else
-            retd=1
-        fi
-        if [ "$retd" != "0" ]; then
-            logger -i "EM NOTIFY EC FAILURE@em_ctl.sh"
-            echo "<error> Notify start changeover Failed."
-        fi
-    done
-
-    return 0
-}
-
 em_stop() {
     echo "EM STOP: PRECHECK OPERATION RUNNING..."
     em_status
@@ -176,10 +135,10 @@ em_stop() {
     fi
 
     # No Probrem in Monitor then Stop Main Module
-    if [ "$1" == ${EM_NORMAL_STOP} ]; then
-        pkill -USR1 -F "${EM_INSTALL_PATH}${pid_module}"
-    else
+    if [ "$1" == ${EM_CHANGEOVER} ]; then
         pkill -USR2 -F "${EM_INSTALL_PATH}${pid_module}"
+    else
+        pkill -USR1 -F "${EM_INSTALL_PATH}${pid_module}"
     fi
 
     echo "EM STOP: AFTER STOP CHECK RUNNING..."

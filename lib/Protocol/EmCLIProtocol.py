@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmCLIProtocol.py
 '''
 Protocol processing section (CLI)
@@ -24,7 +24,6 @@ class EmCLIProtocol(object):
 
     _SSH_RECV_COUNT = 10
 
-
     @decorater_log
     def __init__(self):
         '''
@@ -36,12 +35,11 @@ class EmCLIProtocol(object):
         self._ssh_timeout_val = None
         self._ssh_recv_time = None
 
-
     @decorater_log
     def connect_device(self, device_info):
         '''
         Device connection control
-            Conduct SSH connection to applicable device as request information. 
+            Conduct SSH connection to applicable device as request information.
         Explanation about parameter:
             device_info: Device information
                            Platform name
@@ -128,7 +126,7 @@ class EmCLIProtocol(object):
                                                  username=username,
                                                  password=password)
                 break
-            except Exception as exception:  
+            except Exception as exception:
                 self._ssh_connect_device.close()
                 GlobalModule.EM_LOGGER.debug(
                     "Connect Error:%s", str(type(exception)))
@@ -139,22 +137,23 @@ class EmCLIProtocol(object):
                 time.sleep(retrytimer_val)
                 if count < (retry_num_val - 1):
                     continue
-                return GlobalModule.COM_CONNECT_NO_RESPONSE  
+                return GlobalModule.COM_CONNECT_NO_RESPONSE
 
         GlobalModule.EM_LOGGER.info("111001 SSH Connection(CLI) Open for %s",
                                     self._device_ip)
 
-        return GlobalModule.COM_CONNECT_OK  
+        return GlobalModule.COM_CONNECT_OK
 
     @decorater_log
     def send_control_signal(self, message_type, send_message):
         '''
         Transmit device control signal
-            Transmit CLI to device and returns response signal.  
+            Transmit CLI to device and returns response signal.
         Explanation about parameter:
             message_type: Message type(response message)
             send_message: CLI command list
-                        （Send the command one line by one line using str in case of sending message. 
+                        （Send the command one line by one line using str
+                          in case of sending message.
         Explanation about return value:
             Send result : boolean (True:Normal,False:Abnormal)
             Response signal : str (CLI response signal
@@ -166,9 +165,9 @@ class EmCLIProtocol(object):
         GlobalModule.EM_LOGGER.debug("__send_signal_judg:%s", is_judg_result)
         GlobalModule.EM_LOGGER.debug("judg_message_type:%s", judg_message_type)
 
-        if not is_judg_result:  
+        if not is_judg_result:
             GlobalModule.EM_LOGGER.debug("__send_signal_judg NG")
-            return False, None  
+            return False, None
 
         GlobalModule.EM_LOGGER.debug("_send_signal_judg OK")
 
@@ -187,29 +186,27 @@ class EmCLIProtocol(object):
     @decorater_log
     def disconnect_device(self):
         '''
-        Device disconnection control 
-        Disconnect from the device. 
+        Device disconnection control
+        Disconnect from the device.
         Explanation about parameter:
         None
         Explanation about return value:
         Judgment result : boolean (True:Normal,False:Abnormal)
         '''
-
         try:
             self._ssh_connect_device.close()
         except Exception as exception:
             GlobalModule.EM_LOGGER.debug("Disconnect Error:%s", exception)
-            return False  
+            return False
         GlobalModule.EM_LOGGER.info(
             "111002 SSH Connection(CLI) Closed For %s", self._device_ip)
-        return True  
-
+        return True
 
     @decorater_log
     def _judg_control_signal(self, message_type):
         '''
         Control signal judgment
-            Make judgment on the message to be sent based on the message type. 
+            Make judgment on the message to be sent based on the message type.
         Explanation about parameter:
             message_type: Message type (response message)
                            discard-changes
@@ -236,16 +233,16 @@ class EmCLIProtocol(object):
 
             judg_message_type = message_type.replace('-', '_')
 
-            return True, judg_message_type  
+            return True, judg_message_type
 
         GlobalModule.EM_LOGGER.debug("message_type UNMatch")
 
-        return False, None  
+        return False, None
 
     @decorater_log
     def _send_signal_to_device(self, send_message, mes_type):
         '''
-        Send message to device.  
+        Send message to device.
         '''
         if mes_type != "edit-config":
             GlobalModule.EM_LOGGER.debug("non edit-config request is OK")
@@ -296,7 +293,8 @@ class EmCLIProtocol(object):
             if err_mess:
                 for recv_err in err_mess:
                     if re.search(recv_err, output):
-                        raise Exception("device config error :\n%s" % (output,))
+                        raise Exception(
+                            "device config error :\n%s" % (output,))
         return output
 
     @decorater_log
@@ -305,7 +303,7 @@ class EmCLIProtocol(object):
                       send_message,
                       receive_keyword):
         '''
-        Send CLI command list to device connected by SSH.  
+        Send CLI command list to device connected by SSH.
         Parameter:
             shell_obj : ssh object
             send_message : Send message

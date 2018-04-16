@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmControllerLogGet.py
 '''
-Controller log acquisition scenario. 
+Controller log acquisition scenario.
 '''
 import re
 import os
@@ -51,7 +51,7 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _get_url_param(self, request):
         '''
-        Obtain URL parameter.  
+        Obtain URL parameter.
         '''
         date_format = "%Y%m%d"
         if not request:
@@ -86,8 +86,8 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _scenario_main(self, *args, **kwargs):
         '''
-        Scenario processing section. 
-        Obtain log data. 
+        Scenario processing section.
+        Obtain log data.
         '''
         GlobalModule.EM_LOGGER.debug(
             "start get log: args=%s ,kwargs=%s" % (args, kwargs))
@@ -113,7 +113,7 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _gen_response(self, log_data, is_over_limit):
         '''
-        Create response. 
+        Create response.
         '''
 
         tmp_json = self._gen_response_json(
@@ -127,7 +127,7 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _gen_response_json(log_data, url_parameter, is_over_limit):
         '''
-        Create Json for response.  
+        Create Json for response.
         '''
         conditions = {}
         conditions.update(url_parameter)
@@ -161,7 +161,7 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
                       end_date,
                       limit_number):
         '''
-        Obtain log data.  
+        Obtain log data.
         '''
         GlobalModule.EM_LOGGER.debug(
             "Target Date : Start = %s, End = %s" % (start_date, end_date))
@@ -185,7 +185,8 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
                                  end_date,
                                  limit_number):
         '''
-        Read log files (all files which have been rotated) based on file name and obtain log.
+        Read log files (all files which have been rotated)
+        based on file name and obtain log.
         '''
 
         is_over_limit = False
@@ -265,7 +266,8 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _sorted_key_file_date(self, f_name1):
         '''
-        Method as the key for sorted method. (change the file name to the "Order of the date.")
+        Method as the key for sorted method.
+        (change the file name to the "Order of the date.")
         '''
         match_obj = self._file_format_re.search(f_name1)
         if not match_obj:
@@ -281,7 +283,7 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
                                         start_date=None,
                                         end_date=None):
         '''
-        Open the files under applicable file names, obtain log.  
+        Open the files under applicable file names, obtain log.
         '''
         GlobalModule.EM_LOGGER.debug("Get Log Date in %s" % (file_name, ))
         with open(file_name, "r") as log_file:

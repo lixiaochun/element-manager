@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmClusterLinkMarge.py
 '''
-Individual scenario to create inter-cluster link.  
+Individual scenario to create inter-cluster link.
 '''
 import json
 from lxml import etree
@@ -14,32 +14,25 @@ from EmCommonLog import decorater_log
 
 class EmClusterLinkMerge(EmMergeScenario):
     '''
-    Class for creation of inter-cluster link. 
+    Class for creation of inter-cluster link.
     '''
-
-
 
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmClusterLinkMerge, self).__init__()
-
         self.service = GlobalModule.SERVICE_CLUSTER_LINK
-
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
-
         self._scenario_name = "ClusterLinkMerge"
-
         self.device_type = "leaf-device"
 
     @decorater_log
     def _creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
-        Explanation about parameter：
+        Convert EC message (XML) divided for each device into JSON.
+        Explanation about parameter:
             device_message: Message for each device
         Explanation about return value
             device_json_message: JSON message
@@ -86,14 +79,14 @@ class EmClusterLinkMerge(EmMergeScenario):
     @decorater_log
     def _gen_json_cluster_link_phy(self, json, xml, xml_ns):
         '''
-            Obtain inter-cluster physical IF information from xml message to be analyzed 
-            and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain inter-cluster physical IF information from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         cl_link_tag = xml_ns + "cluster-link"
@@ -133,8 +126,8 @@ class EmClusterLinkMerge(EmMergeScenario):
         '''
             Obtain inter-cluster physical IF information count
             and set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage
+            Explanation about parameter:
+                json:dictionary object for EC message storage
         '''
 
         json["device"]["cluster-link-physical-interface_value"] = \
@@ -143,14 +136,14 @@ class EmClusterLinkMerge(EmMergeScenario):
     @decorater_log
     def _gen_json_cluster_link_lag(self, json, xml, xml_ns):
         '''
-            Obtain inter-cluster LAGIF IF information from xml message to be analyzed and 
-set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain inter-cluster LAGIF IF information from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         cl_link_tag = xml_ns + "cluster-link"
@@ -202,8 +195,8 @@ set it for EC message storage dictionary object.
         '''
             Obtain inter-cluster LAGIF information count
             and set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage
+            Explanation about parameter:
+                json:dictionary object for EC message storage
         '''
         json["device"]["cluster-link-lag-interface_value"] = \
             len(json["device"]["cluster-link-lag-interface"])

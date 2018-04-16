@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmRestSeparateScenario.py
 '''
-Individual processing base for each scenario. 
+Individual processing base for each scenario.
 '''
 import re
 from flask import jsonify
@@ -30,7 +30,8 @@ class EmRestScenario(object):
     @decorater_log
     def execute(self, *args, **kwargs):
         '''
-        Launched from REST server and executes individual section of each scenario. 
+        Launched from REST server and executes
+        individual section of each scenario.
         Explanation about parameter:
             URI:  Request object corresponding to URI delivered from EC.
         Explanation about return value:
@@ -67,7 +68,7 @@ class EmRestScenario(object):
                            param_type,
                            is_none_ok=False):
         '''
-        Obtain URL parameter, conduct parameter check. 
+        Obtain URL parameter, conduct parameter check.
         '''
         error_code = "%s0101" % (self.error_code_top,)
         if request.args.get(param_name) == None and is_none_ok == False:
@@ -97,7 +98,7 @@ class EmRestScenario(object):
     @decorater_log
     def _error_response(self, ex_obj):
         '''
-        Create response for exceptional cases. 
+        Create response for exceptional cases.
         '''
         error_code = self._analysis_error(ex_obj.message)
         if error_code not in self._error_code_list:

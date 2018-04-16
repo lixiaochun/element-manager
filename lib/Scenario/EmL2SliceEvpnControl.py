@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmL2SliceEvpnControl.py
 '''
-Individual scenario to add L2 slice. 
+Individual scenario to add L2 slice.
 '''
 import json
 from lxml import etree
@@ -14,31 +14,25 @@ from EmCommonLog import decorater_log
 
 class EmL2SliceEvpnControl(EmMergeScenario):
     '''
-    Class for adding L2 slice.   
+    Class for adding L2 slice.
     '''
-
 
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmL2SliceEvpnControl, self).__init__()
-
         self._scenario_name = "L2SliceEvpnControl"
-
         self.service = GlobalModule.SERVICE_L2_SLICE
-
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
-
         self.device_type = "device-leaf"
 
     @decorater_log
     def _creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
-        Explanation about parameter：
+        Convert EC message (XML) divided for each device into JSON.
+        Explanation about parameter:
             device_message: Message for each device
         Explanation about return value
             device_json_message: JSON message
@@ -78,6 +72,7 @@ class EmL2SliceEvpnControl(EmMergeScenario):
                     "operation": None,
                     "name": None,
                     "vlan-id": 0,
+                    "qos": {}
                 }
             if cp_info.get("operation") == "delete":
                 cp_message["operation"] = "delete"
@@ -103,6 +98,29 @@ class EmL2SliceEvpnControl(EmMergeScenario):
             if (system_id is not None) and\
                     (system_id.get("operation") != "delete"):
                 cp_message["system-id"] = system_id.text
+
+            qos_info = self._find_xml_node(cp_info,
+                                           self._xml_ns + "qos")
+            if qos_info is not None:
+                inflow_shaping_rate = qos_info.find(
+                    self._xml_ns + "inflow-shaping-rate")
+                if inflow_shaping_rate is not None:
+                    cp_message["qos"]["inflow-shaping-rate"] = float(
+                        inflow_shaping_rate.text)
+
+                outflow_shaping_rate = qos_info.find(
+                    self._xml_ns + "outflow-shaping-rate")
+                if outflow_shaping_rate is not None:
+                    cp_message["qos"]["outflow-shaping-rate"] = float(
+                        outflow_shaping_rate.text)
+
+                remark_menu = qos_info.find(self._xml_ns + "remark-menu")
+                if remark_menu is not None:
+                    cp_message["qos"]["remark-menu"] = remark_menu.text
+
+                egress_menu = qos_info.find(self._xml_ns + "egress-menu")
+                if egress_menu is not None:
+                    cp_message["qos"]["egress-menu"] = egress_menu.text
 
             if (esi is not None and esi.get("operation") == "delete") and\
                     (system_id is not None and
@@ -130,7 +148,7 @@ class EmL2SliceEvpnControl(EmMergeScenario):
     @decorater_log
     def _gen_netconf_message(element, slice_name):
         '''
-        Device name：Create Netconf message (json letter strings). 
+        Device name:Create Netconf message (json letter strings).
         '''
         slice_elm = etree.Element("slice_name")
         slice_elm.text = slice_name

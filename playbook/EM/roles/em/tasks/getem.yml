@@ -1,0 +1,13 @@
+# Getting em
+  - name: wget src
+    shell: wget --no-check-certificate --no-cookies {{ item.url }} -P {{ rpm_path }}
+    with_items:
+      - "{{ files_em }}"
+    when: download_flag
+  - shell: tar xvfz {{ rpm_path }}/master.tar.gz -C {{ rpm_path }}
+    when: download_flag
+  - shell: cp -r {{ rpm_path }}/element-manager-master/lib {{ rpm_path }}
+    when: download_flag
+  - name: copy src
+    copy: src={{ installing_em_path }}/lib/ dest={{ em_path }}/lib
+    when: download_flag == false

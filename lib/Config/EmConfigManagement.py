@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmConfigManagement.py
 '''
-Config management module.
+コンフィグ管理モジュール
 '''
 from codecs import BOM_UTF8
 import os
@@ -52,11 +52,10 @@ class EmConfigManagement(object):
     __ParseListConfRestProcess = ['Rest_port_number']
     __ParseListConfScnario = [3, 4, 5]
 
-
     def read_if_process_conf(self, target_key):
         '''
         IF processing section definition acquisition.
-            Called out through the MAIN method when getting launched. 
+            Called out through the MAIN method when getting launched.
         Argument.
             target_key : Type key
         Return value.
@@ -71,8 +70,9 @@ class EmConfigManagement(object):
     def read_scenario_conf(self, target_scenario_key, target_order):
         '''
         Scenario definition acquisition.
-            Called out based on the order flow control class when order is requested.
-            (Service/order transaction management number should not be returned.)
+            Called out based on the order flow control class
+            when order is requested.(Service/order transaction
+            management number should not be returned.)
         Argument.
             target_scenario_key : Scenario key
             target_order : Order type
@@ -90,10 +90,15 @@ class EmConfigManagement(object):
         else:
             return result, None, None
 
-    def read_driver_conf(self, target_platform, target_os, target_firmversion):
+    def read_driver_conf(self,
+                         target_platform,
+                         target_os,
+                         target_firmversion,
+                         get_qos=False):
         '''
         Driver definition acquisition.
-            Called out through the common section on driver when controlling the start of the common section on driver.
+            Called out through the common section on driver
+            when controlling the start of the common section on driver.
         Argument.
             target_platform : Platform name
             target_os : OS name
@@ -102,6 +107,7 @@ class EmConfigManagement(object):
             Method results : True or False
             Individual driver name : str
             Individual driver class name : str
+            File address for QoS setting : str
         '''
         target_key = (self.__strip_space(target_platform),
                       self.__strip_space(target_os),
@@ -109,15 +115,18 @@ class EmConfigManagement(object):
         result, tmp_value = self.__read_conf_dict(self.__conf_dict_driver,
                                                   target_key,
                                                   self.__conf_driver)
-        if result:
-            return result, tmp_value[0], tmp_value[1]
+        if not result:
+            tmp_value = (None, None, None)
+        if get_qos:
+            return result, tmp_value[0], tmp_value[1], tmp_value[2]
         else:
-            return result, None, None
+            return result, tmp_value[0], tmp_value[1]
 
     def read_sys_common_conf(self, target_key):
         '''
         System common definition acquisition.
-            Called out by initialization method when initializing DB control and log class.
+            Called out by initialization method
+            when initializing DB control and log class.
         Argument.
             target_key : Type key
         Return value.
@@ -131,7 +140,7 @@ class EmConfigManagement(object):
 
     def read_service_type_scenario_conf(self):
         '''
-        Acquire the scenario list from the scenario cinfig. 
+        Acquire the scenario list from the scenario cinfig.
         Return value.
             Scenario list : dict
         '''
@@ -140,7 +149,7 @@ class EmConfigManagement(object):
     def read_if_process_rest_conf(self, target_key):
         '''
         REST IF processing section definition acquisition.
-            Called out through the MAIN method when getting launched. 
+            Called out through the MAIN method when getting launched.
         Argument.
             target_key : Type key
         Return value.
@@ -155,7 +164,8 @@ class EmConfigManagement(object):
     def read_scenario_rest_conf(self, target_key):
         '''
         Acquire the REST scenario definition.
-            Called out through the REST server module when executing RESTAPI request.
+            Called out through the REST server module
+            when executing RESTAPI request.
         Argument.
             target_key : Scenario key (set URL)
         Return value.
@@ -166,19 +176,18 @@ class EmConfigManagement(object):
                                      target_key,
                                      self.__conf_rest_scenario)
 
-
     def __init__(self, conf_dir_path=None):
         '''
         Constructor.
         '''
         self._conf_dir_path = conf_dir_path
 
-        self.__conf_dict_if_process = {}   
-        self.__conf_dict_scenario = {}    
-        self.__conf_dict_driver = {}      
-        self.__conf_dict_sys_common = {}   
-        self.__conf_dict_rest_if_process = {}   
-        self.__conf_dict_rest_scenario = {}    
+        self.__conf_dict_if_process = {}
+        self.__conf_dict_scenario = {}
+        self.__conf_dict_driver = {}
+        self.__conf_dict_sys_common = {}
+        self.__conf_dict_rest_if_process = {}
+        self.__conf_dict_rest_scenario = {}
 
         self.__conf_dict_if_process = self.__load_conf(
             self.__conf_dict_if_process, self.__conf_if_process)
@@ -197,16 +206,20 @@ class EmConfigManagement(object):
                          target_conf, recursive_flg=True):
         '''
         Definition acquisition.
-        (The definition should be fed in again when definition acquisition has been failed. 
-            Called out through definition acquisition method which is external IF.
+        (The definition should be fed in again
+         when definition acquisition has been failed.
+         Called out through definition
+         acquisition method which is external IF.
         Argument:
             conf_dict : Definition dictionary
             target_key : Key as the target for acquisition
             target_conf : Definition name
-            recursive_flg : Flag to execute re-reading (for recursive processing) 
+            recursive_flg : Flag to execute re-reading
+                            (for recursive processing)
         Return value:
             Acquisition results : Boolean
-            Defined value ; str or int or taple (Varies depending on the stored value)
+            Defined value ; str or int or taple
+                            (Varies depending on the stored value)
         '''
         if GlobalModule.EM_LOGGER is not None:
             GlobalModule.EM_LOGGER.info('101005 Load conf start (%s)' %
@@ -234,11 +247,13 @@ class EmConfigManagement(object):
 
     def __load_conf(self, set_dict, target_conf):
         '''
-        Take in the Conf file and acquire the target dictionary. 
-        The dictionary targetted for updating should be returned and updating does not proceed when dictionary acquisition fails. 
+        Take in the Conf file and acquire the target dictionary.
+        The dictionary targetted for updating should be returned and
+        updating does not proceed when dictionary acquisition fails.
         Argument:
             set_dict : The dictionary targetted for updating
-            Filepath : Absolute path of the definition file targetted for taking-in.
+            Filepath : Absolute path of the definition file
+                       targetted for taking-in.
         Return value:
             Updated definition dictionary : dict
         '''
@@ -257,7 +272,7 @@ class EmConfigManagement(object):
                     tmp_list, 6, 2, self.__ParseListConfScnario)
                 self.__conf_dict_scenario = return_dict
             elif target_conf == self.__conf_driver:
-                return_dict = self.__make_conf_dict_tuple_key(tmp_list, 5, 3)
+                return_dict = self.__make_conf_dict_tuple_key(tmp_list, 6, 3)
                 self.__conf_dict_driver = return_dict
             elif target_conf == self.__conf_sys_common:
                 return_dict = self.__make_conf_dict(tmp_list)
@@ -282,10 +297,11 @@ class EmConfigManagement(object):
     @staticmethod
     def __parse_int_conf_dict(conf_dict, target_list):
         '''
-        Take conf_dict keys out of the target_list, convert all their values into int format.
+        Take conf_dict keys out of the target_list,
+        convert all their values into int format.
         Argument:
             conf_dict : Definition dictionary
-            target_list : Storage list for keys targetted for conversion 
+            target_list : Storage list for keys targetted for conversion
         Return value:
             Updated definition dictionary : dict
         '''
@@ -301,22 +317,25 @@ class EmConfigManagement(object):
     def __make_conf_dict_tuple_key(self, conf_list, slice_count,
                                    slice_key, parse_list=None):
         '''
-        Store the definition fed in from the file to the definition dictionary 
+        Store the definition fed in from the file
+        to the definition dictionary
         which has tuple as the key.
-            Called out after taking the scenario definition and driver definition in from the file.
+            Called out after taking the scenario definition
+            and driver definition in from the file.
         Argument:
-            conf_list : Letter strings list obtained from the file 
+            conf_list : Letter strings list obtained from the file
             slice_count : Number of items in the scenario (driver) 1 group
             slice_key : Number of the keys in the scenario (driver) 1 group
-            parse_list : Index list of the items to be converted into numeric format. (should be set if necessary.)
+            parse_list : Index list of the items to be converted
+                         into numeric format. (should be set if necessary.)
         Return value:
             Definition dictionary : Dict
         '''
-        conf_dict = {}  
-        tmp_value_list = []   
-        tuple_value_flg = True    
+        conf_dict = {}
+        tmp_value_list = []
+        tuple_value_flg = True
         if slice_count - slice_key == 1:
-            tuple_value_flg = False   
+            tuple_value_flg = False
         index = 0
         count = 0
         for item in conf_list:
@@ -341,13 +360,14 @@ class EmConfigManagement(object):
     def __make_conf_dict(self, conf_list):
         '''
         Store the definition taken from the file to the dictionary.
-            Called out after taking the common definition for the system in from the file.
+            Called out after taking the common definition
+            for the system in from the file.
         Argument:
-            conf_list : Letter string list obtained from the file. 
+            conf_list : Letter string list obtained from the file.
         Return value:
             Definition dictionary : Dict
         '''
-        conf_dict = {}  
+        conf_dict = {}
         for value in conf_list:
             tmp_key_value = value.split(self.__SPLITSTR)
             if len(tmp_key_value) == 2:
@@ -357,14 +377,15 @@ class EmConfigManagement(object):
     def __make_conf_dict_if_process(self, conf_list):
         '''
         Create the definition dictionary for the IFProcess.
-            Called out after taking the IF processing section definition in from the file.
+            Called out after taking the IF processing section definition
+            in from the file.
         Argument:
             conf_list : Letter string list obtained from the file.
         Return value:
             Definition dictionary : Dict
         '''
-        conf_dict = {}  
-        capability_list = []  
+        conf_dict = {}
+        capability_list = []
         index = 0
         while index < len(conf_list):
             tmp_key_value = conf_list[index].split(self.__SPLITSTR)
@@ -380,17 +401,20 @@ class EmConfigManagement(object):
     def __open_conf_file(self, file_path):
         '''
         Read the Conf file, return each line as the KeyValue dictionary.
-            Called out at the beginning of definition acquisition processing for each.
+        Called out at the beginning of definition
+        acquisition processing for each.
         Argument:
-            file_path : File path for the definition file to be read-in 
+            file_path : File path for the definition file to be read-in
         Return value:
             Processing results : Boolean
-            Result of reading-in (make it into a list with each line treated as letter strings) : List
+            Result of reading-in
+                (make it into a list with each
+                line treated as letter strings) : List
         '''
         try:
-            open_file = open(file_path, 'r')     
-            conf_list = open_file.readlines()    
-            open_file.close()                   
+            open_file = open(file_path, 'r')
+            conf_list = open_file.readlines()
+            open_file.close()
         except IOError:
             return False, None
         return_list = []
@@ -407,3 +431,70 @@ class EmConfigManagement(object):
         if target_str is not None and " " in target_str:
             return_val = target_str.replace(" ", "")
         return return_val
+
+    def get_qos_conf(self, platform_name, driver_os, firmware_ver):
+        '''
+        Get the config file address for QoS and
+        read the QoS setting information.
+        Argument:
+            platform_name : name of platform
+            driver_os : OS of driver
+            firmware_ver : firmware version
+        Return value :
+            QoS Configration : dict
+        '''
+        driver_conf = self.read_driver_conf(platform_name,
+                                            driver_os,
+                                            firmware_ver,
+                                            True)
+
+        qos_conf_address = os.path.join(GlobalModule.EM_CONF_PATH,
+                                        driver_conf[3])
+        return self._load_qos_config(qos_conf_address)
+
+    def _load_qos_config(self, config_path):
+        '''
+        Read QoS setting information from QoS config file.
+        Argument:
+            file_address : config file address
+        Return value :
+            Remark menu config : dict conf_qos_remark
+            Egress queue menu config : dict conf_qos_egress
+        '''
+        splitter_conf = '='
+        try:
+            with open(config_path, 'r') as open_file:
+                conf_list = open_file.readlines()
+        except IOError:
+            raise
+
+        tmp_list = []
+        for value in conf_list:
+            if not(value.startswith('#')) and splitter_conf in value:
+                tmp_line = value.strip()
+                tmp_line = tmp_line.replace(BOM_UTF8, '')
+                tmp_list.append(tmp_line)
+
+        conf_qos_remark = {}
+        conf_qos_egress = {}
+        index = 0
+        tmp_value_list = []
+        for item in tmp_list:
+            tmp_k = item.split(splitter_conf)[0]
+            tmp_v = item.split(splitter_conf)[1]
+            tmp = (tmp_k, tmp_v)
+            tmp_value_list.append(tmp)
+        max_index = len(tmp_value_list) - 1
+        while index < max_index:
+            tmp_key = tmp_value_list[index][1]
+            tmp_value_ipv4 = tmp_value_list[index + 1][1]
+            tmp_value_ipv6 = tmp_value_list[index + 2][1]
+            if tmp_value_list[index][0].startswith("Remark"):
+                conf_qos_remark[tmp_key] = {
+                    "IPV4": tmp_value_ipv4, "IPV6": tmp_value_ipv6}
+            else:
+                conf_qos_egress[tmp_key] = {
+                    "IPV4": tmp_value_ipv4, "IPV6": tmp_value_ipv6}
+            index += 3
+
+        return conf_qos_remark, conf_qos_egress

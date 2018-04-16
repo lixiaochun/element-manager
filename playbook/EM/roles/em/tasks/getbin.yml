@@ -1,0 +1,10 @@
+# Getting em script
+
+  - name: wget jar
+    shell: wget --no-check-certificate --no-cookies {{ item.url }} -O {{ rpm_path }}/{{ folder_name_bin }}/{{ item.file_name }}
+    with_items:
+      - "{{ files_bin }}"
+
+
+
+    

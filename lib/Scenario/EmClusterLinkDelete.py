@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmClusterLinkDelete.py
 '''
-Individual scenario for deleting inter-cluster link.  
+Individual scenario for deleting inter-cluster link.
 '''
 import json
 from lxml import etree
@@ -14,31 +14,25 @@ from EmCommonLog import decorater_log
 
 class EmClusterLinkDelete(EmDeleteScenario):
     '''
-    Class for deleting inter-cluster link.   
+    Class for deleting inter-cluster link.
     '''
-
 
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmClusterLinkDelete, self).__init__()
-
         self.service = GlobalModule.SERVICE_CLUSTER_LINK
-
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
-
         self._scenario_name = "ClusterLinkDelete"
-
         self.device_type = "leaf-device"
 
     @decorater_log
     def _creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
-        Explanation about parameter：
+        Convert EC message (XML) divided for each device into JSON.
+        Explanation about parameter:
             device_message: Message for each device
         Explanation about return value
             device_json_message: JSON message
@@ -73,14 +67,14 @@ class EmClusterLinkDelete(EmDeleteScenario):
     @decorater_log
     def _gen_json_cluster_link(self, json, xml, xml_ns):
         '''
-            Obtain inter-cluster physical IF information from xml message to be analyzed and 
-            set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain inter-cluster physical IF information from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         cls_link_elm = xml.findall(xml_ns + "cluster-link")
@@ -96,8 +90,8 @@ class EmClusterLinkDelete(EmDeleteScenario):
         '''
             Obtain inter-cluster physical IF information count
             and set it for EC message storage dictionary object.
-            Explanation about parameter：
-                json：dictionary object for EC message storage
+            Explanation about parameter:
+                json:dictionary object for EC message storage
         '''
 
         json["device"]["cluster-link-interface_value"] = \

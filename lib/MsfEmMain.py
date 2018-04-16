@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: MsfEmMain.py
 '''
 main function module.
@@ -93,8 +93,8 @@ def receive_signal(signum, frame):
     '''
     The method to be called at the MAIN thread when receiving signal.
     Explanation about parameter:
-        signum: signal number  
-        frame: frame object 
+        signum: signal number
+        frame: frame object
     Explanation about the return value:
         None
     '''
@@ -108,6 +108,54 @@ def receive_signal(signum, frame):
 
     GlobalModule.NETCONFSSH.stop(param)
 
+    if signum == signal.SIGUSR2:
+        notify_em_changeover("start")
+
+
+def notify_em_changeover(kind):
+    '''
+    Send a starting system switching notification or
+    a ending system switching notification to EC.
+    '''
+    err_mes_conf = "Failed to get Config : %s"
+    is_ok, retry_num = (
+        GlobalModule.EM_CONFIG.read_sys_common_conf("Ec_rest_retry_num"))
+    if not is_ok:
+        raise IOError(err_mes_conf % ("Ec_rest_retry_num",))
+    is_ok, retry_interval = (
+        GlobalModule.EM_CONFIG.read_sys_common_conf("Ec_rest_retry_interval"))
+    if not is_ok:
+        raise IOError(err_mes_conf % ("Ec_rest_retry_interval",))
+
+    if kind == "start":
+        chgover_json_message = {
+            "controller":
+            {
+                "controller_type": "em",
+                "event": "start system switching"
+            }
+        }
+    elif kind == "end":
+        chgover_json_message = {
+            "controller":
+            {
+                "controller_type": "em",
+                "event": "end system switching"
+            }
+        }
+    ret = False
+    for num in range(int(retry_num) + 1):
+        ret = notice_system_switch_to_ec(chgover_json_message)
+        if ret:
+            break
+        else:
+            time.sleep(int(retry_interval))
+    if ret:
+        GlobalModule.EM_LOGGER.info(
+                '101010 Complete to system switch notification: \"%s\"' % kind)
+    else:
+        GlobalModule.EM_LOGGER.error(
+                '301011 Failed to system switch notification: \"%s\"' % kind)
 
 @_deco_count_request
 def send_request_by_curl(send_url, json_message=None, method="PUT"):
@@ -132,20 +180,13 @@ def send_request_by_curl(send_url, json_message=None, method="PUT"):
     return status_code
 
 
-def notice_systen_switch_complete_to_ec():
+def notice_system_switch_to_ec(message=None):
     '''
     Send a system switching notification to EC.
     '''
     GlobalModule.EM_LOGGER.debug("Start notice EC")
-    chgover_json_message = {
-        "controller":
-        {
-            "controller_type": "em",
-            "event": "end system switching"
-        }
-    }
     ec_uri = gen_ec_rest_api_uri('/v1/internal/ec_ctrl/statusnotify')
-    status_code = send_request_by_curl(ec_uri, chgover_json_message, "PUT")
+    status_code = send_request_by_curl(ec_uri, message, "PUT")
     if status_code != 200:
         GlobalModule.EM_LOGGER.debug(
             "Fault notice systen switch complete to ec " +
@@ -401,21 +442,9 @@ def msf_em_start():
     signal.signal(signal.SIGUSR1, receive_signal)
     signal.signal(signal.SIGUSR2, receive_signal)
 
-    is_ok, retry_num = (
-        GlobalModule.EM_CONFIG.read_sys_common_conf("Ec_rest_retry_num"))
-    if not is_ok:
-        raise IOError(err_mes_conf % ("Ec_rest_retry_num",))
-    is_ok, retry_interval = (
-        GlobalModule.EM_CONFIG.read_sys_common_conf("Ec_rest_retry_interval"))
-    if not is_ok:
-        raise IOError(err_mes_conf % ("Ec_rest_retry_interval",))
+    if system_status == EmSysCommonUtilityDB.STATE_CHANGE_OVER:
+        notify_em_changeover("end")
 
-    for num in range(int(retry_num) + 1):
-        ret = notice_systen_switch_complete_to_ec()
-        if ret:
-            break
-        else:
-            time.sleep(int(retry_interval))
 
 if __name__ == "__main__":
     SIGNAL_SLEEP_SECOND = 1.0

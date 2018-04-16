@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: em_monitor.py
 '''
 EM Monitoring Module for RA
@@ -25,7 +25,8 @@ SUCCESS_CODE = 0
 
 '''
 Function for server connection
-It connects to EM server, transmits/receives Hello and make it a success if the monitoring session is established.
+It connects to EM server, transmits/receives Hello
+and make it a success if the monitoring session is established.
 Every time it encounters exception, it ends the program with End Code 1.
 If the process completes successfully, it ends the program with End Code 0.
 '''
@@ -59,9 +60,9 @@ class EmMonitorSSHSession(transport.SSHSession):
                         break
                     count += 1
             except Exception as e:
-                cmd="logger -i self._channel = "+str(self._channel)
+                cmd = "logger -i self._channel = " + str(self._channel)
                 os.system(cmd)
-                cmd1="logger -i exception messages = "+str(e)
+                cmd1 = "logger -i exception messages = " + str(e)
                 os.system(cmd1)
             self._transport.close()
         self._channel = None
@@ -122,15 +123,16 @@ def connect(*args, **kwds):
         else:
             return connect_ssh(*args, **kwds)
 
+
 if __name__ == "__main__":
-    IPV4=sys.argv[2]
-    PORT=int(sys.argv[3])
-    USERNAME=sys.argv[4]
-    SSH_TIMEOUT=int(sys.argv[1])
+    IPV4 = sys.argv[2]
+    PORT = int(sys.argv[3])
+    USERNAME = sys.argv[4]
+    SSH_TIMEOUT = int(sys.argv[1])
     if sys.argv[5:]:
-        PASSWORD=sys.argv[5]
+        PASSWORD = sys.argv[5]
     else:
-        PASSWORD=""
+        PASSWORD = ""
 
     try:
         CONNECTION = connect(host=IPV4, port=PORT, username=USERNAME,

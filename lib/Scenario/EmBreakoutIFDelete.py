@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmBreakoutIFDelete.py
 '''
-Individual scenario for deletion of BreakoutIF. 
+Individual scenario for deletion of BreakoutIF.
 '''
 import json
 from lxml import etree
@@ -16,7 +16,6 @@ class EmBreakoutIFDelete(EmDeleteScenario):
     '''
     BreakoutIF deletion class
     '''
-
 
     @decorater_log
     def __init__(self):
@@ -37,7 +36,7 @@ class EmBreakoutIFDelete(EmDeleteScenario):
     @decorater_log
     def _creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
+        Convert EC message (XML) divided for each device into JSON.
         Explanation about parameter：
             device_message: Message for each device
         Explanation about return value
@@ -73,13 +72,14 @@ class EmBreakoutIFDelete(EmDeleteScenario):
     @decorater_log
     def _gen_json_breakout(self, json, xml, xml_ns):
         '''
-            Obtain BreakoutIF information from xml message to be analyzed and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain BreakoutIF information from xml message to be analyzed and
+            set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
         breakout_elm = self._find_xml_node(xml,
                                            xml_ns + "breakout-interface")

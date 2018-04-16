@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmInternalLinkDelete.py
 '''
-Individual scenario for deleting IF for internal Link.   
+Individual scenario for deleting IF for internal Link.
 '''
 import threading
 import json
@@ -16,25 +16,18 @@ from EmCommonLog import decorater_log
 
 class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
     '''
-    Class for deleting IF for internal Link.  
+    Class for deleting IF for internal Link.
     '''
-
-
 
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
-
         super(EmInternalLinkDelete, self).__init__()
-
         self.service = GlobalModule.SERVICE_INTERNAL_LINK
-
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
-
         self.timeout_flag = False
-
         self.device_type = "device"
 
     @decorater_log
@@ -42,7 +35,7 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conduct IF deletion control for internal link for each device. 
+        Conduct IF deletion control for internal link for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -405,7 +398,7 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
     @decorater_log
     def _find_timeout(self, condition):
         '''
-        Set time out flag and launch thread.  
+        Set time out flag and launch thread.
         Explanation about parameter:
             condition: Thread control information
         Explanation about return value:
@@ -424,13 +417,14 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
 
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
@@ -444,16 +438,16 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False
 
     @decorater_log
     def __creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
-        Explanation about parameter：
+        Convert EC message (XML) divided for each device into JSON.
+        Explanation about parameter:
             device_message: Message for each device
         Explanation about return value
             device_json_message: JSON message
@@ -489,12 +483,12 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_name(self, json, xml, xml_ns):
         '''
-            Obtain device name from xml message to be analyzed 
-            and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Obtain device name from xml message to be analyzed
+            and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
 
         name_elm = self._find_xml_node(xml, xml_ns + "name")
@@ -503,12 +497,12 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_internal_if(self, json, xml, xml_ns):
         '''
-            Obtain IF information for internal Link from xml message to be analyzed 
-            and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
+            Obtain IF information for internal Link from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
         '''
 
         internal_if_elm = self._find_xml_node(xml,
@@ -540,12 +534,13 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_internal_phy(self, json, xml_ns, internal_phy):
         '''
-            Obtain physical IF information for internal Link from xml message to be analyzed 
-            and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage
-                xml_ns：Name space
-                internal_phy：xml message to be analyzed
+            Obtain physical IF information for internal Link
+            from xml message to be analyzed and set it
+            for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml_ns:Name space
+                internal_phy:xml message to be analyzed
         '''
 
         internal_phy_name = internal_phy.find(xml_ns + "name").text
@@ -555,12 +550,12 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_internal_lag(self, json, xml_ns, itnal_lag):
         '''
-            Obtain LAG information for internal Link from xml message to be analyzed 
-and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage
-                xml_ns：Name space
-                itnal_lag：xml message to be analyzed
+            Obtain LAG information for internal Link from xml message to
+            be analyzed and set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml_ns:Name space
+                itnal_lag:xml message to be analyzed
         '''
         internal_lag_message = {
             "name": None,

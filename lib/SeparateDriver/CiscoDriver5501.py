@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: CiscoDriver5501.py
 '''
 Individual section on deriver (Cisco5501's driver)
@@ -44,7 +44,8 @@ class CiscoDriver5501(EmSeparateDriver):
             service_type : Service type
             order_type : Order type
         Return value :
-            Protocol processing section response : int (1:Normal, 2:Capability abnormal, 3:No response)
+            Protocol processing section response :
+                int (1:Normal, 2:Capability abnormal, 3:No response)
         '''
         tmp_device_info = None
         if device_info is not None:
@@ -125,6 +126,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                     self.name_internal_link,
                                     self.name_breakout,
                                     self.name_cluster_link,
+                                    self.name_recover_node,
+                                    self.name_recover_service,
                                     ]
         self.get_config_message = {
             self.name_l3_slice: (
@@ -200,7 +203,8 @@ class CiscoDriver5501(EmSeparateDriver):
                            top_tag="config"):
         '''
         Method to create each message.
-            Called out when service type is judged and message writing is created for each message.
+            Called out when service type is judged and
+            message writing is created for each message.
         Parameter:
             device_info : DB information
             ec_message : EC message
@@ -444,7 +448,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                    operation):
         '''
         Variable value to create message (Leaf) for Netconf.
-            Called out when creating message for Leaf. (After fixed message has been created.)
+            Called out when creating message for Leaf.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -580,7 +585,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                              operation):
         '''
         Variable value to create message (update B-Leaf) for Netconf.
-            Called out when creating message for Leaf. (After fixed message has been created.)
+            Called out when creating message for Leaf.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -633,7 +639,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                        operation):
         '''
         Variable value to create message (L3Slice) for Netconf.
-            Called out when creating message for L3Slice. (After fixed message has been created.)
+            Called out when creating message for L3Slice.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -746,6 +753,9 @@ class CiscoDriver5501(EmSeparateDriver):
                  "L3-CE-IF-ADDR6": tmp_1,
                  "L3-CE-IF-PREFIX6": cp["ce-interface"].get("prefix6"),
                  "L3-CE-IF-VLAN": str(cp["vlan-id"])}
+
+            tmp["QOS"] = self._get_cp_qos_info_from_ec(cp, device_info)
+
             if "vrrp" in cp:
                 is_vrrp = True
                 tmp_list = []
@@ -914,6 +924,26 @@ class CiscoDriver5501(EmSeparateDriver):
                                       int(cp["L3-CE-IF-MTU"]) + 14)
 
                 node_3 = self._set_xml_tag(node_2,
+                                           "qos",
+                                           "xmlns",
+                                           "http://cisco.com/ns/yang/" +
+                                           "Cisco-IOS-XR-qos-ma-cfg",
+                                           None)
+                node_4 = self._set_xml_tag(node_3, "input")
+                node_5 = self._set_xml_tag(node_4, "service-policy")
+                self._set_xml_tag(node_5,
+                                  "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                node_4 = self._set_xml_tag(node_3, "output")
+                node_5 = self._set_xml_tag(node_4, "service-policy")
+                self._set_xml_tag(node_5, "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
+
+                node_3 = self._set_xml_tag(node_2,
                                            "vrf",
                                            "xmlns",
                                            "http://cisco.com/ns/yang/" +
@@ -942,6 +972,26 @@ class CiscoDriver5501(EmSeparateDriver):
                                       None,
                                       None,
                                       int(cp["L3-CE-IF-MTU"]) + 14)
+
+                node_3 = self._set_xml_tag(node_2,
+                                           "qos",
+                                           "xmlns",
+                                           "http://cisco.com/ns/yang/" +
+                                           "Cisco-IOS-XR-qos-ma-cfg",
+                                           None)
+                node_4 = self._set_xml_tag(node_3, "input")
+                node_5 = self._set_xml_tag(node_4, "service-policy")
+                self._set_xml_tag(node_5,
+                                  "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                node_4 = self._set_xml_tag(node_3, "output")
+                node_5 = self._set_xml_tag(node_4, "service-policy")
+                self._set_xml_tag(node_5, "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
 
                 node_3 = self._set_xml_tag(node_2,
                                            "vrf",
@@ -1015,6 +1065,27 @@ class CiscoDriver5501(EmSeparateDriver):
                                       None,
                                       None,
                                       int(cp["L3-CE-IF-MTU"]) + 18)
+
+                node_3 = self._set_xml_tag(node_2,
+                                           "qos",
+                                           "xmlns",
+                                           "http://cisco.com/ns/yang/" +
+                                           "Cisco-IOS-XR-qos-ma-cfg",
+                                           None)
+                node_4 = self._set_xml_tag(node_3, "input")
+                node_5 = self._set_xml_tag(node_4, "service-policy")
+                self._set_xml_tag(node_5,
+                                  "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                node_4 = self._set_xml_tag(node_3, "output")
+                node_5 = self._set_xml_tag(node_4, "service-policy")
+                self._set_xml_tag(node_5, "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
+
                 node_3 = self._set_xml_tag(node_2,
                                            "vrf",
                                            "xmlns",
@@ -1210,6 +1281,7 @@ class CiscoDriver5501(EmSeparateDriver):
                     tmp_static = cp["ipv6"]
                     ip_ver = 6
                 else:
+                    ip_ver = None
                     continue
                 tmp = {}
 
@@ -1291,6 +1363,9 @@ class CiscoDriver5501(EmSeparateDriver):
                 ec_mes_cp_value += 1
 
             p_flg = tmp_db["protocol_flags"]
+
+            cp_qos = self._get_l3cp_qos_info_for_del(cp, device_info)
+            tmp["QOS"] = self._get_cp_qos_info_from_ec(cp_qos, device_info)
 
             if (cp_del and p_flg.get("vrrp")) or "vrrp" in cp:
                 is_vrrp = True
@@ -1524,6 +1599,28 @@ class CiscoDriver5501(EmSeparateDriver):
                         node_4, "owner", None, None, "etherbundle")
 
                 node_3 = self._set_xml_tag(node_2,
+                                           "qos",
+                                           "xmlns",
+                                           "http://cisco.com/ns/yang/" +
+                                           "Cisco-IOS-XR-qos-ma-cfg",
+                                           None)
+                node_4 = self._set_xml_tag(node_3, "input")
+                node_5 = self._set_xml_tag(
+                    node_4, "service-policy", self._ATRI_OPE, self._DELETE, None)
+                self._set_xml_tag(node_5,
+                                  "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                node_4 = self._set_xml_tag(node_3, "output")
+                node_5 = self._set_xml_tag(
+                    node_4, "service-policy", self._ATRI_OPE, self._DELETE, None)
+                self._set_xml_tag(node_5, "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
+
+                node_3 = self._set_xml_tag(node_2,
                                            "vrf",
                                            "xmlns",
                                            "http://cisco.com/ns/yang/" +
@@ -1557,6 +1654,28 @@ class CiscoDriver5501(EmSeparateDriver):
                                       None,
                                       None,
                                       self._get_owner(cp["L3-CE-IF-NAME"]))
+
+                node_3 = self._set_xml_tag(node_2,
+                                           "qos",
+                                           "xmlns",
+                                           "http://cisco.com/ns/yang/" +
+                                           "Cisco-IOS-XR-qos-ma-cfg",
+                                           None)
+                node_4 = self._set_xml_tag(node_3, "input")
+                node_5 = self._set_xml_tag(
+                    node_4, "service-policy", self._ATRI_OPE, self._DELETE, None)
+                self._set_xml_tag(node_5,
+                                  "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                node_4 = self._set_xml_tag(node_3, "output")
+                node_5 = self._set_xml_tag(
+                    node_4, "service-policy", self._ATRI_OPE, self._DELETE, None)
+                self._set_xml_tag(node_5, "service-policy-name",
+                                  None,
+                                  None,
+                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
 
                 node_3 = self._set_xml_tag(node_2,
                                            "vrf",
@@ -1810,50 +1929,68 @@ class CiscoDriver5501(EmSeparateDriver):
         static_ope_only_del = True
         cps = []
 
+        is_qos = False
+        is_static = False
+
         try:
             for cp in ec_message.get("device-leaf", {}).get("cp", ()):
                 tmp = {"L3-CE-IF-NAME": cp["name"],
-                       "L3-CE-IF-VLAN": cp["vlan-id"],
-                       }
+                       "L3-CE-IF-VLAN": cp["vlan-id"]}
+
+                if cp.get("qos"):
+                    is_qos = True
+                    cp_qos_del = self._get_l3cp_qos_info_for_del(
+                        cp, device_info)
+                    tmp["QOS-DEL"] = self._get_cp_qos_info_from_ec(
+                        cp_qos_del, device_info)
+                    cp_qos_replace = self._get_l3cp_qos_info_for_replace(
+                        cp, device_info)
+                    tmp["QOS"] = self._get_cp_qos_info_from_ec(
+                        cp_qos_replace, device_info)
+
                 static_obj = cp.get("static", {})
                 tmp_list = []
                 if (len(static_obj.get("route", ())) +
                         len(static_obj.get("route6", ())) == 0):
-                    return False
-                for route in static_obj.get("route", ()):
-                    tmp_static = {
-                        "L3-STATIC-ROUTE-ADD": route["address"],
-                        "L3-STATIC-ROUTE-PREFIX": route["prefix"],
-                        "L3-STATIC-ROUTE-NEXT": route["nexthop"],
-                        "L3-STATIC-IP-VERSION": 4,
-                        "OPERATION": route.get("operation")}
-                    static_ope_only_del = (static_ope_only_del and
-                                           bool(route.get("operation") ==
-                                                self._DELETE))
-                    tmp_list.append(tmp_static)
-                for route in static_obj.get("route6", ()):
-                    tmp_static = {
-                        "L3-STATIC-ROUTE-ADD":
-                        str(ipaddress.ip_address(route["address"])),
-                        "L3-STATIC-ROUTE-PREFIX": route["prefix"],
-                        "L3-STATIC-ROUTE-NEXT":
-                        str(ipaddress.ip_address(route["nexthop"])),
-                        "L3-STATIC-IP-VERSION": 6,
-                        "OPERATION": route.get("operation")}
-                    static_ope_only_del = (static_ope_only_del and
-                                           bool(route.get("operation") ==
-                                                self._DELETE))
-                    tmp_list.append(tmp_static)
+                    if not cp.get("qos"):
+                        return False
+                else:
+                    is_static = True
+                    for route in static_obj.get("route", ()):
+                        tmp_static = {
+                            "L3-STATIC-ROUTE-ADD": route["address"],
+                            "L3-STATIC-ROUTE-PREFIX": route["prefix"],
+                            "L3-STATIC-ROUTE-NEXT": route["nexthop"],
+                            "L3-STATIC-IP-VERSION": 4,
+                            "OPERATION": route.get("operation")}
+                        static_ope_only_del = (static_ope_only_del and
+                                               bool(route.get("operation") ==
+                                                    self._DELETE))
+                        tmp_list.append(tmp_static)
+                    for route in static_obj.get("route6", ()):
+                        tmp_static = {
+                            "L3-STATIC-ROUTE-ADD":
+                            str(ipaddress.ip_address(route["address"])),
+                            "L3-STATIC-ROUTE-PREFIX": route["prefix"],
+                            "L3-STATIC-ROUTE-NEXT":
+                            str(ipaddress.ip_address(route["nexthop"])),
+                            "L3-STATIC-IP-VERSION": 6,
+                            "OPERATION": route.get("operation")}
+                        static_ope_only_del = (static_ope_only_del and
+                                               bool(route.get("operation") ==
+                                                    self._DELETE))
+                        tmp_list.append(tmp_static)
                 tmp["STATIC"] = tmp_list
                 cps.append(tmp)
 
-            is_last_cp = False
-            is_last_static = False
-            operation = None
-            if static_ope_only_del:
-                operation = self._DELETE
-                is_last_cp, is_last_static = self._check_del_static_result(
-                    cps, device_info, slice_name)
+            if is_static:
+                is_last_cp = False
+                is_last_static = False
+                operation = None
+                if static_ope_only_del:
+                    operation = self._DELETE
+                    is_last_cp, is_last_static = self._check_del_static_result(
+                        cps, device_info, slice_name)
         except Exception as ex:
             self.common_util_log.logging(
                 device_name,
@@ -1862,13 +1999,123 @@ class CiscoDriver5501(EmSeparateDriver):
                 __name__)
             return False
 
-        self._set_static_cp_info(xml_obj,
-                                 cps,
-                                 vrf_name,
-                                 is_last_cp=is_last_cp,
-                                 is_last_static=is_last_static,
-                                 operation=operation)
+        if is_static:
+            self._set_static_cp_info(xml_obj,
+                                     cps,
+                                     vrf_name,
+                                     is_last_cp=is_last_cp,
+                                     is_last_static=is_last_static,
+                                     operation=operation)
+
+        if is_qos:
+            self._set_qos_cp_info_for_replace(xml_obj, cps)
+
         return True
+
+    @decorater_log
+    def _set_qos_cp_info_for_replace(self, xml_obj, cp_infos):
+
+        node_1 = self._set_xml_tag(xml_obj,
+                                   "interface-configurations",
+                                   "xmlns",
+                                   "http://cisco.com/ns/yang/" +
+                                   "Cisco-IOS-XR-ifmgr-cfg",
+                                   None)
+        for cp in cp_infos:
+            if not cp.get("QOS"):
+                continue
+
+            if ("Bundle-Ether" in cp["L3-CE-IF-NAME"] and
+                    cp["L3-CE-IF-VLAN"] == 0):
+                node_2 = self._set_xml_tag(node_1, "interface-configuration")
+                self._set_xml_tag(node_2, "active", None, None, "act")
+                self._set_xml_tag(
+                    node_2, "interface-name", None, None, cp["L3-CE-IF-NAME"])
+                self._set_xml_tag(node_2, "interface-virtual")
+
+            elif ("Bundle-Ether" not in cp["L3-CE-IF-NAME"] and
+                  cp["L3-CE-IF-VLAN"] == 0):
+                node_2 = self._set_xml_tag(node_1, "interface-configuration")
+                self._set_xml_tag(node_2, "active", None, None, "act")
+                self._set_xml_tag(
+                    node_2, "interface-name", None, None, cp["L3-CE-IF-NAME"])
+
+            elif cp["L3-CE-IF-VLAN"] != 0:
+                node_2 = self._set_xml_tag(node_1, "interface-configuration")
+                self._set_xml_tag(node_2, "active", None, None, "act")
+                self._set_xml_tag(node_2,
+                                  "interface-name",
+                                  None,
+                                  None,
+                                  "%s.%s" % (cp["L3-CE-IF-NAME"],
+                                             cp["L3-CE-IF-VLAN"])
+                                  )
+                self._set_xml_tag(node_2,
+                                  "interface-mode-non-physical",
+                                  None,
+                                  None,
+                                  "default")
+
+            self._set_l3_qos_info_for_replace(node_2, cp)
+
+    def _set_l3_qos_info_for_replace(self, if_node, cp):
+        node_3 = self._set_xml_tag(if_node,
+                                   "qos",
+                                   "xmlns",
+                                   "http://cisco.com/ns/yang/" +
+                                   "Cisco-IOS-XR-qos-ma-cfg",
+                                   None)
+        if self._check_replace_policy(cp, "remark"):
+            node_4 = self._set_xml_tag(node_3, "input")
+            self._set_l3_qos_policy_for_replace(node_4, cp, "remark")
+        if (cp["QOS"].get("EGRESS-MENU") and
+                self._check_replace_policy(cp, "egress")):
+            node_4 = self._set_xml_tag(node_3, "output")
+            self._set_l3_qos_policy_for_replace(node_4, cp, "egress")
+
+    @decorater_log
+    def _check_replace_policy(self, cp, menu="remark"):
+        menu_key, rate_key = self._get_qos_menu_key_for_replace(menu)
+        before_policy = self._gen_policy_name(
+            cp["QOS-DEL"][menu_key].get("IPV4"),
+            cp["QOS-DEL"][rate_key])
+        after_policy = self._gen_policy_name(
+            cp["QOS"][menu_key].get("IPV4"),
+            cp["QOS"][rate_key])
+        return before_policy != after_policy
+
+    @decorater_log
+    def _set_l3_qos_policy_for_replace(self, parent_node, cp, menu="remark"):
+        menu_key, rate_key = self._get_qos_menu_key_for_replace(menu)
+        policy_node = self._set_xml_tag(parent_node, "service-policy",
+                                        self._ATRI_OPE, self._DELETE)
+        self._set_xml_tag(policy_node,
+                          "service-policy-name",
+                          None,
+                          None,
+                          self._gen_policy_name(
+                              cp["QOS-DEL"][menu_key].get("IPV4"),
+                              cp["QOS-DEL"][rate_key]
+                          ))
+        policy_node = self._set_xml_tag(parent_node, "service-policy")
+        self._set_xml_tag(policy_node,
+                          "service-policy-name",
+                          None,
+                          None,
+                          self._gen_policy_name(
+                              cp["QOS"][menu_key].get("IPV4"),
+                              cp["QOS"][rate_key]))
+
+    @staticmethod
+    @decorater_log
+    def _get_qos_menu_key_for_replace(menu="remark"):
+        if menu == "remark":
+            menu_key = "REMARK-MENU"
+            rate_key = "INFLOW-RATE"
+        else:
+            menu_key = "EGRESS-MENU"
+            rate_key = "OUTFLOW-RATE"
+        return menu_key, rate_key
 
     @decorater_log
     def _gen_ce_lag_variable_message(self,
@@ -1878,7 +2125,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                      operation):
         '''
         Variable value to create message (CeLag) for Netconf.
-            Called out when creating message for CeLag. (After fixed message has been created.)
+            Called out when creating message for CeLag.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -1983,7 +2231,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                             operation):
         '''
         Variable value to create message (InternalLag) for Netconf.
-            Called out when creating message for InternalLag. (After fixed message has been created.)
+            Called out when creating message for InternalLag.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2019,7 +2268,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                                ec_message,
                                                device_info):
         '''
-        Variable value to create message (add Link for internal use) for Netconf.
+        Variable value to create message
+        (add Link for internal use) for Netconf.
             Called out when adding Link for internal use.
         Parameter:
             xml_obj : xml object
@@ -2091,7 +2341,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                                ec_message,
                                                device_info):
         '''
-        Variable value to create message (delete Link for internal use) for Netconf.
+        Variable value to create message
+        (delete Link for internal use) for Netconf.
             Called out when deleting Link for internal use.
         Parameter:
             xml_obj : xml object
@@ -2188,7 +2439,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                        operation):
         '''
         Variable value to create message (breakout) for Netconf.
-            Called out when creating message for breakout. (After fixed message has been created.)
+            Called out when creating message for breakout.
+            (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2227,7 +2479,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                            operation):
         '''
         Variable value to create message (cluster-link) for Netconf.
-           Called out when creating message for cluster-link. (After fixed message has been created.)
+           Called out when creating message for cluster-link.
+           (After fixed message has been created.)
         Parameter:
             xml_obj : xml object
             device_info : Device information
@@ -2807,7 +3060,8 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _get_device_from_ec(self, device_mes, service=None):
         '''
-        Obtain EC message information regarding device expansion. (common for spine, leaf)
+        Obtain EC message information regarding device expansion.
+        (common for spine, leaf)
         '''
 
         dev_reg_info = {}
@@ -2999,7 +3253,8 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _get_del_cluster_if_info(self, if_name,  db_info):
         '''
-        Obtain information of deleting Link between clusters from EC message. (regardless of physical or LAG)
+        Obtain information of deleting Link between clusters from EC message.
+        (regardless of physical or LAG)
         '''
         if_type = None
         cl_row = {}
@@ -3054,7 +3309,8 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _get_cluster_if_info(self, if_info, if_type=None):
         '''
-        Obtain information of Link between clusters from EC message. (regardless of physical or LAG).
+        Obtain information of Link between clusters from EC message.
+        (regardless of physical or LAG).
         '''
         tmp = {
             "IF-TYPE": if_type,
@@ -3127,7 +3383,8 @@ class CiscoDriver5501(EmSeparateDriver):
                                        operation=None,
                                        db_info=None):
         '''
-        Obtain EC message/DB information regarding internal Link (LAG) for deletion.
+        Obtain EC message/DB information
+        regarding internal Link (LAG) for deletion.
         '''
         inner_ifs = []
 
@@ -3174,7 +3431,8 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _get_internal_if_info(self, if_info, if_type=None):
         '''
-        Obtain information of internal Link from EC message. (regardless of physical or LAG)
+        Obtain information of internal Link from EC message.
+        (regardless of physical or LAG)
         '''
 
         op_node_type = None
@@ -3219,7 +3477,8 @@ class CiscoDriver5501(EmSeparateDriver):
 
     def _check_del_static_result(self, cps, device_info, slice_name):
         '''
-        Judgment on whether static totally disappears from device or totally disappears from Slice or not after being deleted.
+        Judgment on whether static totally disappears from device or
+        totally disappears from Slice or not after being deleted.
         '''
         is_last_cp = True
         is_last_static = True
@@ -3240,7 +3499,8 @@ class CiscoDriver5501(EmSeparateDriver):
 
     def _get_ec_static_count(self, if_name, vlan_id, cps):
         '''
-        Count static route inside the applicable CP (IF name,vlan_id). (EC message)
+        Count static route inside the applicable CP
+        (IF name,vlan_id). (EC message)
         '''
         for tmp_cp in cps:
             if (tmp_cp["L3-CE-IF-NAME"] == if_name and
@@ -3250,8 +3510,8 @@ class CiscoDriver5501(EmSeparateDriver):
 
     def _get_db_static_count(self, if_name, vlan_id, db_info):
         '''
-        Count static route inside the applicable CP (IF name,vlan_id) (inside DB).
-        But, do not check whether slice is the same or not.
+        Count static route inside the applicable CP (IF name,vlan_id)
+        (inside DB).But, do not check whether slice is the same or not.
         '''
         count = 0
         for tmp_cp in db_info.get("static_detail", ()):
@@ -3377,7 +3637,8 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _set_ospf_infra_plane(self, xml_obj, service=None, lp_addr=None):
         '''
-        Set the fixed section of IPv4 OSPF settings on MSF infrastructure side as xml of argument.
+        Set the fixed section of IPv4 OSPF settings on
+        MSF infrastructure side as xml of argument.
         '''
         node_1 = self._set_xml_tag(xml_obj,
                                    "ospf",
@@ -3430,7 +3691,7 @@ class CiscoDriver5501(EmSeparateDriver):
     def _set_trackingobject(self, xml_obj, inner_ifs, operation=None):
         '''
         Set the tracking object settings as xml of argument.
-            inner_ifs: [{IF-TYPE:IF種別,IF-NAME:IF名}]
+            inner_ifs: [{IF-TYPE:interface type,IF-NAME:interface name}]
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
 
@@ -3463,16 +3724,18 @@ class CiscoDriver5501(EmSeparateDriver):
         '''
         Designate the tracking object name.
 
-        Naming method：
-            The first two letters (common regardless of IF type)：
+        Naming method:
+            The first two letters (common regardless of IF type):
                 Two letters at the beginning
                 Cope with IF name from conf_separate_driver_cisco.conf
                 Obtain the first two letters of the tracking object name.
-            After the third letter (LAG)：
-                Write down the letter at the "X" in the Bundle-EtherX by adding "0" for the first number to make it double digits.
+            After the third letter (LAG):
+                Write down the letter at the "X" in the Bundle-EtherX
+                by adding "0" for the first number to make it double digits.
                 (e.g. "BE01" for the Bundle-Ether1)
-            After the third letter (physical)：
-                Write down the letters at the "X","Y","Z","W" in TenGigEX/Y/Z/W by adding "0" for the first number to make it double digits.
+            After the third letter (physical):
+                Write down the letters at the "X","Y","Z","W" in TenGigEX/Y/Z/W
+                by adding "0" for the first number to make it double digits.
                 (e.g. "TE00000001" for the TenGigE0/0/0/1)
         '''
         tmp_if_name = None
@@ -3537,10 +3800,10 @@ class CiscoDriver5501(EmSeparateDriver):
         Set global-af of MP-BGP settings under global-afs.
         '''
         node_8 = self._set_xml_tag(xml_obj, "global-af")
-        self._set_xml_tag(node_8, "af-name", None, None, "vp-nv4-unicast")
+        self._set_xml_tag(node_8, "af-name", None, None, "vpnv4-unicast")
         self._set_xml_tag(node_8, "enable")
         node_8 = self._set_xml_tag(xml_obj, "global-af")
-        self._set_xml_tag(node_8, "af-name", None, None, "vp-nv6-unicast")
+        self._set_xml_tag(node_8, "af-name", None, None, "vpnv6-unicast")
         self._set_xml_tag(node_8, "enable")
 
     @decorater_log
@@ -3646,7 +3909,8 @@ class CiscoDriver5501(EmSeparateDriver):
         '''
         Shuld be set in case that VLANIF uses BGP.
         Argument.
-            params : variable argument (parameter group necessary for bgp settings )
+            params : variable argument
+                     (parameter group necessary for bgp settings )
                 vrf_name     : VRF name
                 as_number    : AS number
                 vrf_rd       : VRF's RD
@@ -3703,7 +3967,8 @@ class CiscoDriver5501(EmSeparateDriver):
         '''
         Shuld be set in case that VLANIF uses VRRP.
         Argument.
-            params : Variable argument (parameter group necessary for bgp settings )
+            params : Variable argument
+                     (parameter group necessary for bgp settings )
                 vrf_name     : VRF name
                 as_number    : AS number
                 vrf_rd       : VRF's RD
@@ -3734,7 +3999,8 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _set_internal_links(self, if_node, phy_ifs, lag_ifs, lag_mem_ifs):
         '''
-        Conduct all the IF settings of internal Link. (regardless of physical or LAG)
+        Conduct all the IF settings of internal Link.
+        (regardless of physical or LAG)
         '''
         for tmp_if in phy_ifs:
             self._set_internal_link(if_node, tmp_if, self._if_type_phy)
@@ -3793,8 +4059,38 @@ class CiscoDriver5501(EmSeparateDriver):
                               None)
         return node_2
 
+    @decorater_log
     def _set_internal_link_qos(self, if_node, operation=None):
-        pass
+        attr, attr_val = self._get_attr_from_operation(operation)
+        node_3 = self._set_xml_tag(if_node,
+                                   "qos",
+                                   "xmlns",
+                                   "http://cisco.com/ns/yang/" +
+                                   "Cisco-IOS-XR-qos-ma-cfg",
+                                   None)
+        node_4 = self._set_xml_tag(node_3, "input")
+        node_5 = self._set_xml_tag(node_4,
+                                   "service-policy",
+                                   attr,
+                                   attr_val,
+                                   None)
+        self._set_xml_tag(node_5,
+                          "service-policy-name",
+                          None,
+                          None,
+                          "in_msf_policy")
+        node_4 = self._set_xml_tag(node_3, "output")
+        node_5 = self._set_xml_tag(node_4,
+                                   "service-policy",
+                                   attr,
+                                   attr_val,
+                                   None)
+        self._set_xml_tag(node_5,
+                          "service-policy-name",
+                          None,
+                          None,
+                          "out_msf_policy_scheduling")
+        return node_3
 
     @decorater_log
     def _set_del_internal_link(self, if_node, if_info, if_type):
@@ -3967,11 +4263,15 @@ class CiscoDriver5501(EmSeparateDriver):
                             inner_if_names=(),
                             **params):
         '''
-        Set each area of IPv4 OSPF settings on MSF infrastructure side. (including IF settings of internal Link)
-            params items to be set : is_lb : Set the loopback IF when it says "True".
+        Set each area of IPv4 OSPF settings on MSF infrastructure side.
+        (including IF settings of internal Link)
+            params items to be set : is_lb :
+                                    Set the loopback IF when it says "True".
                          operation : Operation type
-                             cost : Cost value  dictionary of {IF name:cost value}
-                    dev_reg_info  : Device information  (for b-leaf related settings)
+                             cost : Cost value  dictionary
+                                    of {IF name:cost value}
+                    dev_reg_info  : Device information
+                                    (for b-leaf related settings)
         '''
         is_lb = params.get("is_lb", False)
         operation = params.get("operation")
@@ -4047,10 +4347,13 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _set_ospf_area_virtual_link(self, area_node, dev_reg_info):
         '''
-        Set each area of IPv4 OSPF settings on MSF infrastructure side. (including IF settings of internal Link)
-            params items to be set : is_lb : Set the loopback IF when it says "True".
+        Set each area of IPv4 OSPF settings on MSF infrastructure side.
+        (including IF settings of internal Link)
+            params items to be set : is_lb :
+                                     Set the loopback IF when it says "True".
                          operation : Operation type
-                             cost : Cost value  dictionary of {IF name:cost value}
+                             cost : Cost value  dictionary of
+                                     {IF name:cost value}
         '''
         vir_link = dev_reg_info.get("VIRTUAL-LINK-ROUTER-ID")
         if vir_link:
@@ -4131,14 +4434,14 @@ class CiscoDriver5501(EmSeparateDriver):
             node_8, "update-source-interface", None, None, "Loopback0")
         node_9 = self._set_xml_tag(node_8, "neighbor-afs")
         node_10 = self._set_xml_tag(node_9, "neighbor-af")
-        self._set_xml_tag(node_10, "af-name", None, None, "vp-nv4-unicast")
+        self._set_xml_tag(node_10, "af-name", None, None, "vpnv4-unicast")
         self._set_xml_tag(node_10, "activate")
         self._set_xml_tag(
             node_10, "route-policy-in", None, None, "VPN_import")
         self._set_xml_tag(
             node_10, "route-policy-out", None, None, "VPN_export")
         node_10 = self._set_xml_tag(node_9, "neighbor-af")
-        self._set_xml_tag(node_10, "af-name", None, None, "vp-nv6-unicast")
+        self._set_xml_tag(node_10, "af-name", None, None, "vpnv6-unicast")
         self._set_xml_tag(node_10, "activate")
         self._set_xml_tag(
             node_10, "route-policy-in", None, None, "VPN_import")
@@ -4198,8 +4501,9 @@ class CiscoDriver5501(EmSeparateDriver):
 
         is_set = False
         for tmp_cp in cps:
-            if len(tmp_cp.get(static_ip_name, ())) != 0:
-                is_set = True
+            for route in tmp_cp.get(static_ip_name, ()):
+                if route.get("L3-STATIC-IP-VERSION") == ip_ver:
+                    is_set = True
         if not is_set:
             return
 
@@ -4369,7 +4673,7 @@ class CiscoDriver5501(EmSeparateDriver):
                                   **params):
         '''
         Set the vrrp's interface inside the vrrp's interfaces.
-            params contents : operation：Operation type
+            params contents : operation:Operation type
                            ip_ver ; ip version(4: abbreviated)
         '''
         ip_ver = params.get("ip_ver", 4)
@@ -4512,3 +4816,125 @@ class CiscoDriver5501(EmSeparateDriver):
         for br_if in breakout_ifs:
             re.search("([0-9]{1,}/[0-9]{1,}/[0-9]{1,}/[0-9]{1,}.*)",
                       br_if["IF-NAME"]).groups()[0]
+
+    @decorater_log
+    def _get_cp_qos_info_from_ec(self, cp_info_ec, db_info):
+        '''
+        Add QoS information from EC to CP information to set.
+        argument:
+            cp_info_ec: dict CP information input from EC
+            db_info: dict DB information
+        return value:
+            cp_info_em : dict QoS information for device setting
+        '''
+        cp_info_em = {}
+
+        conf_qos_remark, conf_qos_egress = GlobalModule.EM_CONFIG.get_qos_conf(
+            db_info["device"].get("platform_name"),
+            db_info["device"].get("os_name"),
+            db_info["device"].get("firm_version"))
+
+        tmp_remark_menu = cp_info_ec["qos"].get("remark-menu")
+        for tmp_conf_key in conf_qos_remark.keys():
+            if tmp_remark_menu == tmp_conf_key:
+                tmp_remark_menu = conf_qos_remark[tmp_conf_key]
+                break
+
+        cp_info_em["REMARK-MENU"] = tmp_remark_menu
+
+        tmp_egress_menu = cp_info_ec["qos"].get("egress-menu")
+        for tmp_conf_key in conf_qos_egress.keys():
+            if tmp_egress_menu == tmp_conf_key:
+                tmp_egress_menu = conf_qos_egress[tmp_conf_key]
+                break
+
+        cp_info_em["EGRESS-MENU"] = tmp_egress_menu
+
+        if cp_info_ec["qos"].get("inflow-shaping-rate") is not None:
+            tmp_val = round(cp_info_ec["qos"].get("inflow-shaping-rate"))
+            cp_info_em["INFLOW-RATE"] = int(tmp_val)
+        else:
+            cp_info_em["INFLOW-RATE"] = 100
+
+        if cp_info_ec["qos"].get("outflow-shaping-rate") is not None:
+            tmp_val = round(cp_info_ec["qos"].get("outflow-shaping-rate"))
+            cp_info_em["OUTFLOW-RATE"] = int(tmp_val)
+        else:
+            cp_info_em["OUTFLOW-RATE"] = 100
+
+        return cp_info_em
+
+    @decorater_log
+    def _gen_policy_name(self, menu_name, flow_value):
+        '''
+        Generate configuration for device setting from QoS menu and flow value.
+        argument:
+            menu_name: str policy name
+            flow_value: int Inflow / outflow value
+        return value:
+            converted policy name : str
+        '''
+        return menu_name + "_" + str(flow_value)
+
+    @decorater_log
+    def _get_l3cp_qos_info_for_del(self, cp_info, device_info):
+        '''
+        Set QoS information for deleting L3CP.
+        argument:
+            cp_info: dict  L3CP information to be deleted
+            device_info: dict DB information
+        return value:
+            QoS information for deleting L3CP : dict
+        '''
+        tmp = {"qos": {}}
+
+        qos = self._get_l3_qos_info_from_db(cp_info, device_info)
+        if not qos:
+            return tmp
+
+        tmp["qos"]["inflow-shaping-rate"] = qos.get("inflow_shaping_rate")
+        tmp["qos"]["outflow-shaping-rate"] = qos.get("outflow_shaping_rate")
+        tmp["qos"]["remark-menu"] = qos.get("remark_menu")
+        tmp["qos"]["egress-menu"] = qos.get("egress_queue_menu")
+
+        return tmp
+
+    @decorater_log
+    def _get_l3cp_qos_info_for_replace(self, cp_info, device_info):
+        '''
+        Set QoS information for replacing L3CP.
+        argument:
+            cp_info: dict  L3CP information to be replaced
+            device_info: dict DB  information
+        return value:
+            QoS information for replacing L3CP : dict
+        '''
+        tmp = {"qos": {}}
+
+        qos = self._get_l3_qos_info_from_db(cp_info, device_info)
+
+        if cp_info.get("qos", {}).get("remark-menu"):
+            tmp_rate = cp_info["qos"].get("inflow-shaping-rate")
+            tmp_menu = cp_info["qos"].get("remark-menu")
+        else:
+            tmp_rate = qos.get("inflow_shaping_rate")
+            tmp_menu = qos.get("remark_menu")
+        tmp["qos"]["inflow-shaping-rate"] = tmp_rate
+        tmp["qos"]["remark-menu"] = tmp_menu
+
+        tmp["qos"]["outflow-shaping-rate"] = (
+            cp_info.get("qos", {}).get("outflow-shaping-rate"))
+        tmp["qos"]["egress-menu"] = (
+            cp_info.get("qos", {}).get("egress-menu"))
+
+        return tmp
+
+    @decorater_log
+    def _get_l3_qos_info_from_db(self, cp_info, device_info):
+        target_cp = {}
+        for cp in device_info.get("cp"):
+            if (cp_info.get("name") == cp.get("if_name") and
+                    cp_info.get("vlan-id") == cp.get("vlan").get("vlan_id")):
+                target_cp = cp
+                break
+        return target_cp.get("qos", {})

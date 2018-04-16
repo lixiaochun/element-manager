@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmCeLagMerge.py
 '''
-Individual scenario to add LAG for CE. 
+Individual scenario to add LAG for CE.
 '''
 import threading
 import json
@@ -18,7 +18,6 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
     '''
     Class to add LAG for CE.
     '''
-
 
     @decorater_log
     def __init__(self):
@@ -41,7 +40,7 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
             self, device_message,
             transaction_id, order_type, condition, device_name, force):
         '''
-        Conduct adding LAG control for CE for each device. 
+        Conduct adding LAG control for CE for each device.
         Explanation about parameter:
             device_message: Message for each device
             transaction_id: Transaction ID
@@ -382,7 +381,7 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _find_timeout(self, condition):
         '''
-        Set time out flag and launch thread.  
+        Set time out flag and launch thread.
         Explanation about parameter:
             condition: Thread control information
         Explanation about return value:
@@ -401,13 +400,14 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _judg_transaction_status(self, transaction_status):
         '''
-        Make judgment on transaction status of transaction management information table. 
+        Make judgment on transaction status of
+        transaction management information table.
         Explanation about parameter:
             transaction_status: Transaction status
         Explanation about return value:
-            Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
+            Necessity for updating transaction status :
+                boolean (True:Update necessary,False:Update unnecessary)
         '''
-
 
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
@@ -421,15 +421,15 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True  
+            return True
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False  
+        return False
 
     @decorater_log
     def __creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
+        Convert EC message (XML) divided for each device into JSON.
         Explanation about parameter：
             device_message: Message for each device
         Explanation about return value
@@ -465,13 +465,14 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_name(self, json, xml, xml_ns):
         '''
-            Obtain device name from xml message to be analyzed and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain device name from xml message to be analyzed and
+            set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         name_elm = self._find_xml_node(xml, xml_ns + "name")
@@ -480,13 +481,14 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
     @decorater_log
     def _gen_json_ce_lag_if(self, json, xml, xml_ns):
         '''
-            Obtain LAG information for CE from xml message to be analyzed and set it for EC message storage dictionary object. 
-            Explanation about parameter：
-                json：dictionary object for EC message storage 
-                xml：xml message to be analyzed 
-                xml_ns：Name space
-                service：Service name
-                order：Order name
+            Obtain LAG information for CE from xml message to be analyzed and
+            set it for EC message storage dictionary object.
+            Explanation about parameter:
+                json:dictionary object for EC message storage
+                xml:xml message to be analyzed
+                xml_ns:Name space
+                service:Service name
+                order:Order name
         '''
 
         ce_tag = xml_ns + "ce-lag-interface"
@@ -495,6 +497,7 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
             ce_lag_message = \
                 {
                     "name": None,
+                    "lag-id": 0,
                     "minimum-links": 0,
                     "link-speed": None,
                     "leaf-interface_value": 0,
@@ -513,6 +516,8 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
 
             ce_lag_message["name"] = \
                 ce_lag.find(xml_ns + "name").text
+            ce_lag_message["lag-id"] = \
+                int(ce_lag.find(xml_ns + "lag-id").text)
             ce_lag_message["minimum-links"] = \
                 int(ce_lag.find(xml_ns + "minimum-links").text)
             ce_lag_message["link-speed"] = \

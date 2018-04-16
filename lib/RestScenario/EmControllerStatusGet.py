@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmControllerStatusGet.py.
 '''
 Scenario to obtain controller status
@@ -25,12 +25,11 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     Class to obtain controller status
     '''
 
-    EM_STATUS_10 = "startready"  
-    EM_STATUS_50 = "changeover"  
-    EM_STATUS_90 = "stopready"  
-    EM_STATUS_100 = "inservice"  
-    EM_STATUS_UK = "unknown"    
-
+    EM_STATUS_10 = "startready"
+    EM_STATUS_50 = "changeover"
+    EM_STATUS_90 = "stopready"
+    EM_STATUS_100 = "inservice"
+    EM_STATUS_UK = "unknown"
 
     @decorater_log
     def __init__(self):
@@ -69,7 +68,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _get_url_param(self, request):
         '''
-        Obtain URL parameter. 
+        Obtain URL parameter.
         '''
         if request is None:
             raise ValueError("Request object is NULL")
@@ -81,8 +80,8 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _scenario_main(self, *args, **kwargs):
         '''
-        Scenario processing section. 
-        Obtain log data.  
+        Scenario processing section.
+        Obtain log data.
         '''
         get_info = self.get_info
         request_count = kwargs.get("request_date_list", ())
@@ -106,7 +105,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _gen_response(self,  get_info_list, os_info, request_count):
         '''
-        Create response.  
+        Create response.
         '''
         tmp_json = self._gen_response_json(
             get_info_list, os_info)
@@ -118,7 +117,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _gen_response_json(self, get_info_list, os_info):
         '''
-        Create Json for response. 
+        Create Json for response.
         '''
 
         res_json = {}
@@ -147,7 +146,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _analysis_get_info(self, get_info):
         '''
-        Analyze the get_info's URL parameter, decide the items to obtain. 
+        Analyze the get_info's URL parameter, decide the items to obtain.
         '''
         get_info_list = []
         tmp = get_info if get_info else ""
@@ -162,7 +161,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _set_shell_command_parameter(self, get_info_list):
         '''
-        Create command line argument for controller_status, sh. 
+        Create command line argument for controller_status, sh.
         '''
         top_param = 0
         nproc_param = 0
@@ -195,7 +194,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _exec_shell_controller_status(self, get_info_list):
         '''
-        Execute controller_status, sh. 
+        Execute controller_status, sh.
         '''
         comm_param = self._set_shell_command_parameter(get_info_list)
         isout, shell_file_name = (
@@ -229,7 +228,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
                                shell_result_txt,
                                get_info_list):
         '''
-        Store the shell script result.  
+        Store the shell script result.
         '''
         result_shell = {}
         result_json = json.loads(shell_result_txt)
@@ -309,7 +308,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def __get_status_str(self, em_status):
         '''
-        Convert EM status to letter strings.  
+        Convert EM status to letter strings.
         '''
         em_status_str = ""
 

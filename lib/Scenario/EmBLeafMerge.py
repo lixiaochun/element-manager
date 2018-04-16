@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmBLeafMerge.py
 '''
 Individual scenario for B-Leaf expansion.
@@ -17,7 +17,6 @@ class EmBLeafMerge(EmBLeafScenario, EmLeafMerge):
     '''
     B-Leaf expansion class (take-over from Leaf expansion scenario)
     '''
-
 
     @decorater_log
     def __init__(self):
@@ -39,7 +38,7 @@ class EmBLeafMerge(EmBLeafScenario, EmLeafMerge):
     @decorater_log
     def _creating_json(self, device_message):
         '''
-        Convert EC message (XML) divided for each device into JSON. 
+        Convert EC message (XML) divided for each device into JSON.
         Explanation about parameter：
             device_message: Message for each device
         Explanation about return value

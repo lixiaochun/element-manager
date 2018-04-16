@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmDBControl.py
 '''
 DB Control module.
@@ -11,6 +11,7 @@ from uuid import UUID
 import GlobalModule
 from EmCommonLog import decorater_log
 from EmSysCommonUtilityDB import EmSysCommonUtilityDB
+
 
 class EmDBControl(object):
     '''
@@ -85,14 +86,14 @@ class EmDBControl(object):
                 'db_error_message = %s' % (ex_message,))
             raise
 
-
     @decorater_log
     def __connect_db(self):
         '''
-        Explanation about the parameters to be connected to each DB:
+        Connected to each DB
+        Explanation about the parameters:
             url : Location of each DB
         Return value:
-            conn : Connection object to each DB 
+            conn : Connection object to each DB
         '''
         conn = self.engine.connect()
         GlobalModule.EM_LOGGER.info('105001 Database Control Start')
@@ -103,7 +104,7 @@ class EmDBControl(object):
     @decorater_log
     def __close_db(conn):
         '''
-        Close the connection to each DB. 
+        Close the connection to each DB.
         Explanation about parameter:
             connect : Connection object to each DB
         Return value:
@@ -117,7 +118,7 @@ class EmDBControl(object):
     @decorater_log
     def __close_result(result):
         '''
-        Close the ResultProxy object. 
+        Close the ResultProxy object.
         Parameter:
             result : ResultProxy object
         Return value:
@@ -130,10 +131,10 @@ class EmDBControl(object):
     @decorater_log
     def __check_parameter(param, parms_class, not_null=False, b_size=None):
         '''
-        Confirm the type of the argument to be delivered as the SQL.  
+        Confirm the type of the argument to be delivered as the SQL.
         Parameter:
             param : Argument targetted for checking
-            parms_class : type of DB 
+            parms_class : type of DB
             not_null : NOT NULL restriction (default is set to False)
             b_size : Length of the item (byte size)
         Return value:
@@ -165,10 +166,10 @@ class EmDBControl(object):
     @decorater_log
     def __gen_upsert_sql(table_name, where_query_str, *table_cols):
         '''
-        Create INSERT/UPDATE sentences. 
+        Create INSERT/UPDATE sentences.
         Parameter:
             table_name : Table name
-            where_query_str : List of letter strings which start with where and can work as phrases.  
+            where_query_str : List of letter strings which start with where and can work as phrases.
             *table_cols : DB item name (set any numbers you like)
         Return value:
             INSERT sentence : str
@@ -217,7 +218,7 @@ class EmDBControl(object):
     @decorater_log
     def __gen_delete_sql(table_name, where_query_str):
         '''
-        Create DELETE sentence. 
+        Create DELETE sentence.
         Parameter:
             table_name : Table name
             where_query_str : List of letter strings which start with where.
@@ -259,7 +260,7 @@ class EmDBControl(object):
             ,{ row1 ; value , row2 : value , row3 : value ...} (second line)
             ...
         )
-        For your information, in case of the "0" line, blank tuple should be returned. 
+        For your information, in case of the "0" line, blank tuple should be returned.
         Parameter:
             result:ResultProxy object
         Return value:
@@ -300,7 +301,7 @@ class EmDBControl(object):
             result = conn.execute(sql, where_tuple)
             out_data = self.__output_select_result(result)
             is_ok = True
-        except Exception, ex_message:  
+        except Exception, ex_message:
             GlobalModule.EM_LOGGER.error(
                 '305003 Database Control Error')
             GlobalModule.EM_LOGGER.debug(
@@ -322,7 +323,7 @@ class EmDBControl(object):
                          db_control=None,
                          conn=None):
         '''
-        Conduct DB processing of data reading style (SQL issue). 
+        Conduct DB processing of data reading style (SQL issue).
         Parameter:
             select_query : SELECT sentence (str)
             insert_query : INSERT sentence (str)
@@ -364,7 +365,7 @@ class EmDBControl(object):
 
                     result = conn.execute(insert_query, upsert_param)
                 return_val = True
-        except Exception, ex_message:  
+        except Exception, ex_message:
             if is_auto_commit:
                 GlobalModule.EM_LOGGER.error(
                     '305003 Database Control Error')
@@ -379,11 +380,10 @@ class EmDBControl(object):
                 self.__close_db(conn)
         return return_val
 
-
     @decorater_log
     def read_transactionid_list(self):
         '''
-        The method which returns only transaction ID from the transaction management information table. 
+        The method which returns only transaction ID from the transaction management information table.
         Explanation about parameter:
             None
         Return value:
@@ -422,7 +422,7 @@ class EmDBControl(object):
             conn.execute(delete_trans_mgmt)
             db_trans.commit()
             is_ok = True
-        except Exception, ex_message:  
+        except Exception, ex_message:
             if db_trans:
                 db_trans.rollback()
             GlobalModule.EM_LOGGER.error(
@@ -439,8 +439,8 @@ class EmDBControl(object):
                                                     transaction_id,
                                                     conn=None):
         '''
-        The method which deletes the data likned with the transaction_ID in the equipment status management table 
-        all at once based on the DB control information. 
+        The method which deletes the data likned with the transaction_ID in the equipment status management table
+        all at once based on the DB control information.
         Explanation about parameter:
             transaction_id:Tansaction ID
         Return value:
@@ -480,8 +480,7 @@ class EmDBControl(object):
                                     order_text=None,
                                     conn=None):
         '''
-        
-        The method which registers/updates/deletes the information in the transaction management information table 
+        The method which registers/updates/deletes the information in the transaction management information table
         based on the DB control information.
         Explanation about parameter:
             db_control:DB control
@@ -574,7 +573,7 @@ class EmDBControl(object):
                                       transaction_status=None,
                                       conn=None):
         '''
-        The method which registers/updates/deletes the information of the equipment status management information table 
+        The method which registers/updates/deletes the information of the equipment status management information table
         based on the DB control information.
         Explanation about parameter:
             db_control:DB control
@@ -634,7 +633,7 @@ class EmDBControl(object):
     @decorater_log
     def read_device_status_mgmt_info(self, transaction_id):
         '''
-        The method which returns the information on the equipment status management information table. 
+        The method which returns the information on the equipment status management information table.
         Explanation about parameter:
             transaction_id:Transaction ID
         Return value:
@@ -682,12 +681,12 @@ class EmDBControl(object):
                                  rr_loopback_prefix=None,
                                  conn=None):
         '''
-        Registers/updates/deletes the information of the equipment registration information table 
+        Registers/updates/deletes the information of the equipment registration information table
         based on the DB control information.
         Explanation about parameter:
             db_control:DB control
             device_name:Equipment name
-            device_type:Device type 
+            device_type:Device type
             platform_name:Platform name
             os:os
             firm_version:Firm version
@@ -701,16 +700,16 @@ class EmDBControl(object):
             snmp_community:SNMP community name
             ntp_server_address:NTP server's IPv4 address
             as_number:Self AS number
-            pim_other_rp_address:IPv4 address when other router is RP 
+            pim_other_rp_address:IPv4 address when other router is RP
             pim_self_rp_address:IPv4 address when yourself is RP
             pim_rp_address:RP's IPv4address
             vpn_type: VPN type
             virtual_link_id:Opposite B-Leaf equipment's router-id
             ospf_range_area_address:OSPF route collective setting address
             ospf_range_area_prefix:Pre-fix of the OSPF route collective setting address
-            cluster_ospf_area:OSPF_AREA in case of multi cludter 
+            cluster_ospf_area:OSPF_AREA in case of multi cludter
             rr_loopback_address:Loopback address for RR
-            rr_loopback_prefix:Pre-fix of the loopback address for RR 
+            rr_loopback_prefix:Pre-fix of the loopback address for RR
         Return value:
             Execution result : boolean(True or False)
         '''
@@ -881,15 +880,16 @@ class EmDBControl(object):
                           metric=None,
                           esi=None,
                           system_id=None,
-                          shaping_rate=None,
+                          inflow_shaping_rate=None,
+                          outflow_shaping_rate=None,
                           remark_menu=None,
                           egress_queue_menu=None,
                           conn=None):
         '''
-        The method which registers/updates/deletes the information of the VLAN interface information table 
+        The method which registers/updates/deletes the information of the VLAN interface information table
         based on the DB control information.
         Explanation about parameter:
-            db_control:DB control 
+            db_control:DB control
             device_name:Device name
             if_name:IF name
             vlan_id:VLAN ID
@@ -899,9 +899,9 @@ class EmDBControl(object):
             vni:VNI value
             multicast_group:Multi cast group's IPv4 address
             ipv4_address:IPv4 address for CE
-            ipv4_prefix:Pre-fix of the IPv4 address for CE 
+            ipv4_prefix:Pre-fix of the IPv4 address for CE
             ipv6_address:IPv6 address for CE
-            ipv6_prefix:Pre-fix of the IPv6 address for CE  
+            ipv6_prefix:Pre-fix of the IPv6 address for CE
             bgp_flag:Flag which uses BGP
             ospf_flag:Flag which uses OSPF
             static_flag:Flag which uses Static
@@ -911,9 +911,10 @@ class EmDBControl(object):
             metric:metric value
             esi:ESI
             system_id:LACP system-id
-            shaping_rate:QoS_Shaping rate limit value  
-            remark_menu:QoS_Remark menu
-            egress_queue_menu:QoS_Egress queue menu
+            inflow_shaping_rate:QoS inflow traffic limit value
+            outflow_shaping_rate:QoS outflow traffic limit value
+            remark_menu:QoS remark menu
+            egress_queue_menu:QoS eggress queue menu
         Return value:
             Execution result : boolean(True or False)
         '''
@@ -945,7 +946,10 @@ class EmDBControl(object):
             is_ok = is_ok and self.__check_parameter(metric, int)
             is_ok = is_ok and self.__check_parameter(esi, str)
             is_ok = is_ok and self.__check_parameter(system_id, str)
-            is_ok = is_ok and self.__check_parameter(shaping_rate, float)
+            is_ok = is_ok and self.__check_parameter(
+                inflow_shaping_rate, float)
+            is_ok = is_ok and self.__check_parameter(
+                outflow_shaping_rate, float)
             is_ok = is_ok and self.__check_parameter(remark_menu, str)
             is_ok = is_ok and self.__check_parameter(egress_queue_menu, str)
 
@@ -977,7 +981,8 @@ class EmDBControl(object):
         tmp_list.append(metric)
         tmp_list.append(esi)
         tmp_list.append(system_id)
-        tmp_list.append(shaping_rate)
+        tmp_list.append(inflow_shaping_rate)
+        tmp_list.append(outflow_shaping_rate)
         tmp_list.append(remark_menu)
         tmp_list.append(egress_queue_menu)
         upsert_param = tuple(tmp_list)
@@ -1016,7 +1021,8 @@ class EmDBControl(object):
                                   "metric",
                                   "esi",
                                   "system_id",
-                                  "shaping_rate",
+                                  "inflow_shaping_rate",
+                                  "outflow_shaping_rate",
                                   "remark_menu",
                                   "egress_queue_menu"))
 
@@ -1056,17 +1062,19 @@ class EmDBControl(object):
                          device_name,
                          lag_if_name,
                          lag_type=None,
+                         lag_if_id=None,
                          minimum_links=None,
                          link_speed=None,
                          conn=None):
         '''
-        The method which registers/updates/deletes the information of the LAG interface information table 
+        The method which registers/updates/deletes the information of the LAG interface information table
         based on the DB control information.
         Parameter:
             db_control:DB control
             device_name: Device name
             lag_if_name:LAG IF name
             lag_type:LAG type
+            lag_if_id:LAGIFID
             minimum_links:LAG member count
             link_speed:Link speed
         Return value:
@@ -1099,6 +1107,7 @@ class EmDBControl(object):
         where_param = tuple(tmp_list)
 
         tmp_list.append(lag_type)
+        tmp_list.append(lag_if_id)
         tmp_list.append(minimum_links)
         tmp_list.append(link_speed)
         upsert_param = tuple(tmp_list)
@@ -1118,6 +1127,7 @@ class EmDBControl(object):
                                   "device_name",
                                   "lag_if_name",
                                   "lag_type",
+                                  "lag_if_id",
                                   "minimum_links",
                                   "link_speed"))
 
@@ -1159,10 +1169,10 @@ class EmDBControl(object):
                                device_name,
                                conn=None):
         '''
-        The method which registers/updates/deletes the information of the LAG member interface information table 
+        The method which registers/updates/deletes the information of the LAG member interface information table
         based on the DB control information.
         Parameter:
-            db_control:DB control 
+            db_control:DB control
             lag_if_name:LAG IF name
             if_name:IF name
             device_name:Device name
@@ -1254,7 +1264,7 @@ class EmDBControl(object):
                                   bgp_community_wildcard,
                                   conn=None):
         '''
-        Registers/updates/deletes the information of the BPG basic setting table for Leaf  
+        Registers/updates/deletes the information of the BPG basic setting table for Leaf
         based on the DB control information.
         Parameter:
             db_control:DB control
@@ -1323,7 +1333,7 @@ class EmDBControl(object):
     @decorater_log
     def read_leaf_bgp_basic_info(self, device_name):
         '''
-        Returns the information of the BGP basic table for Leaf. 
+        Returns the information of the BGP basic table for Leaf.
         Parameter:
             device_name:Device name
         Return value:
@@ -1354,7 +1364,7 @@ class EmDBControl(object):
                               router_id=None,
                               conn=None):
         '''
-        The method which registers/updates/deletes the information of the VRF detailed information table  
+        The method which registers/updates/deletes the information of the VRF detailed information table
         based on the DB control information.
         Parameter:
             db_control:DB control
@@ -1363,12 +1373,13 @@ class EmDBControl(object):
             vlan_id:VLAN ID
             slice_name:Slice name
             vrf_name:VRF name
-            rt:RT（Route Target）value
-            rd:RD（Route Distinguisher）value
+            rt:RT(Route Target)Value
+            rd:RD(Route Distinguisher)Value
             router_id:Router ID
         Return value:
             Execution result : boolean(True or False)
         '''
+
         table_name = self.table_VrfDetailInfo
 
         is_not_null = True
@@ -1444,7 +1455,7 @@ class EmDBControl(object):
     @decorater_log
     def read_vrf_detail_info(self, device_name):
         '''
-        The method which returns the information of the VRF detailed information table. 
+        The method which returns the information of the VRF detailed information table.
         Parameter:
             device_name:Device name
         Return value:
@@ -1475,7 +1486,7 @@ class EmDBControl(object):
                                priority=None,
                                conn=None):
         '''
-        The method which registers/updates/deletes the information of the VRRP detailed information table  
+        The method which registers/updates/deletes the information of the VRRP detailed information table
         based on the DB control information.
         Parameter:
             db_control:DB control
@@ -1560,7 +1571,7 @@ class EmDBControl(object):
     @decorater_log
     def read_vrrp_detail_info(self, device_name):
         '''
-        The method which returns the information of the VRRP detailed information table. 
+        The method which returns the information of the VRRP detailed information table.
         Parameter:
             device_name:Device name
         Return value:
@@ -1585,10 +1596,10 @@ class EmDBControl(object):
                                 track_if_name,
                                 conn=None):
         '''
-        The method which returns the information of the VRRP track interface information table. 
+        The method which returns the information of the VRRP track interface information table.
         Parameter:
             db_control:DB control
-            vrrp_group_id：VRRP group ID
+            vrrp_group_id:VRRP group ID
             track_if_name:Track IF name
         Return value:
             Execution result : boolean(True or False)
@@ -1650,7 +1661,6 @@ class EmDBControl(object):
             Execution result : boolean(True or False)
             Refer to the VRRP track interface information table : tuple
         '''
-
         if not self.__check_parameter(device_name, str, not_null=True):
             GlobalModule.EM_LOGGER.error('305003 Database Control Error')
             return False, None
@@ -1676,6 +1686,7 @@ class EmDBControl(object):
                               if_name,
                               vlan_id,
                               slice_name,
+                              master=None,
                               remote_as_number=None,
                               local_ipv4_address=None,
                               remote_ipv4_address=None,
@@ -1683,14 +1694,15 @@ class EmDBControl(object):
                               remote_ipv6_address=None,
                               conn=None):
         '''
-        The method which registers/updates/deletes the information of the BGP detailed information table  
+        The method which registers/updates/deletes the information of the BGP detailed information table
         based on the DB control information.
-        Parameter：
+        Parameter:
             db_control:DB control
             device_name:Device name
             if_name:IF name
             vlan_id:VLAN ID
             slice_name:Slice name
+            master:Priority
             remote_as_number:CE's AS number
             local_ipv4_address:IPv4address for CE
             remote_ipv4_address:IPv4address for CE
@@ -1707,6 +1719,9 @@ class EmDBControl(object):
         is_ok = is_ok and self.__check_parameter(
             slice_name, str, not_null=True)
         if db_control != self.__delete_flg:
+            is_ok = (
+                is_ok and
+                self.__check_parameter(master, bool))
             is_ok = (
                 is_ok and
                 self.__check_parameter(remote_as_number, int, not_null=True))
@@ -1734,6 +1749,7 @@ class EmDBControl(object):
         tmp_list.append(slice_name)
         where_param = tuple(tmp_list)
 
+        tmp_list.append(master)
         tmp_list.append(remote_as_number)
         tmp_list.append(local_ipv4_address)
         tmp_list.append(remote_ipv4_address)
@@ -1758,6 +1774,7 @@ class EmDBControl(object):
                                   "if_name",
                                   "vlan_id",
                                   "slice_name",
+                                  "master",
                                   "remote_as_number",
                                   "local_ipv4_address",
                                   "remote_ipv4_address",
@@ -1776,7 +1793,7 @@ class EmDBControl(object):
     @decorater_log
     def read_bgp_detail_info(self, device_name):
         '''
-        The method hich returns the information of the BGP detailed information table. 
+        The method hich returns the information of the BGP detailed information table.
         Parameter:
             device_name:Device name
         Return value:
@@ -1807,7 +1824,7 @@ class EmDBControl(object):
                                        nexthop,
                                        conn=None):
         '''
-        The method which registers/updates/deletes the information of the static route detailed information table  
+        The method which registers/updates/deletes the information of the static route detailed information table
         based on the DB control information.
         Parameter:
             db_control:DB control
@@ -1902,7 +1919,7 @@ class EmDBControl(object):
     @decorater_log
     def read_static_route_detail_info(self, device_name):
         '''
-        The method which returns the information of the static route detailed information table. 
+        The method which returns the information of the static route detailed information table.
         Parameter:
             device_name:Device name
         Return value:
@@ -1923,8 +1940,7 @@ class EmDBControl(object):
     @decorater_log
     def write_simultaneous_table(self, functions, params):
         '''
-        
-        Establish the DB connection which carries transaction and execute one by one using the parameter 
+        Establish the DB connection which carries transaction and execute one by one using the parameter
         which has the method featuring data-feeding style.
         Parameter:
             functions:Method list
@@ -1961,7 +1977,8 @@ class EmDBControl(object):
             self.write_inner_link_if_info.__name__:
                 self.write_inner_link_if_info,
             self.write_system_status_info.__name__:
-                self.write_system_status_info
+                self.write_system_status_info,
+            self.recover_if_info.__name__: self.recover_if_info
         }
 
         con = None
@@ -1979,7 +1996,7 @@ class EmDBControl(object):
 
             db_trans.commit()
             is_insert = True
-        except Exception, ex_message:  
+        except Exception, ex_message:
             if db_trans:
                 db_trans.rollback()
             GlobalModule.EM_LOGGER.error(
@@ -1999,7 +2016,7 @@ class EmDBControl(object):
                                condition,
                                conn=None):
         '''
-        The method which registers/updates/deletes the information of the physical interface information table  
+        The method which registers/updates/deletes the information of the physical interface information table
         based on the DB control information.
         Parameter:
             db_control:DB control
@@ -2063,7 +2080,7 @@ class EmDBControl(object):
     @decorater_log
     def read_physical_if_info(self, device_name):
         '''
-        The method which returns the information of the physical interface information table. 
+        The method which returns the information of the physical interface information table.
         Parameter:
             device_name:Device name
         Return value:
@@ -2092,8 +2109,7 @@ class EmDBControl(object):
                                    igp_cost=None,
                                    conn=None):
         '''
-        
-            The method which registers/updates/deletes the information of the link interface information table among the clusters  
+            The method which registers/updates/deletes the information of the link interface information table among the clusters
             based on the DB control information.
         Parameter:
             db_control:DB control
@@ -2198,13 +2214,13 @@ class EmDBControl(object):
                                breakout_num=None,
                                conn=None):
         '''
-        The method which registers/updates/deletes the information of the BreakoutIF information table   
+        The method which registers/updates/deletes the information of the BreakoutIF information table
         based on the DB control information.
         Parameter:
             db_control:DB control
             device_name:Device name
             base_interface:breakout base IF name
-            speed:Speed after breakout 
+            speed:Speed after breakout
             breakout_num:Breakout number
         Return value:
             Execution result : boolean(True or False)
@@ -2266,7 +2282,7 @@ class EmDBControl(object):
     @decorater_log
     def read_breakout_if_info(self, device_name):
         '''
-        The method which returns the information of the Breakout IF information table. 
+        The method which returns the information of the Breakout IF information table.
         Parameter:
             device_name:Device name
         Return value:
@@ -2295,7 +2311,7 @@ class EmDBControl(object):
                                  internal_link_ip_prefix=None,
                                  conn=None):
         '''
-        The method which registers/updates/deletes the information of the internal Link interface information table 
+        The method which registers/updates/deletes the information of the internal Link interface information table
         based on the DB control information.
         Parameter:
             db_control:DB control
@@ -2373,7 +2389,7 @@ class EmDBControl(object):
     @decorater_log
     def read_inner_link_if_info(self, device_name):
         '''
-        The method which returns the information of the internal Link IF information table. 
+        The method which returns the information of the internal Link IF information table.
         Parameter:
             device_name:Device name
         Return value:
@@ -2397,7 +2413,7 @@ class EmDBControl(object):
                                  service_status,
                                  conn=None):
         '''
-        The method which registers/updates/deletes the information of the system status information table   
+        The method which registers/updates/deletes the information of the system status information table
         based on the DB control information.
         Explanation about parameter:
             db_control:DB control
@@ -2453,7 +2469,7 @@ class EmDBControl(object):
     @decorater_log
     def read_system_status_info(self):
         '''
-        The method which returns the information of the system status information table. 
+        The method which returns the information of the system status information table.
         Explanation about parameter:
         Return value:
             Execution result : boolean(True or False)
@@ -2465,3 +2481,59 @@ class EmDBControl(object):
         q_str = self.__gen_select_sql(table_name, where_query_str)
 
         return self.__execute_read_sql((), q_str)
+
+    @decorater_log
+    def recover_if_info(self,
+                        conn,
+                        db_control,
+                        table_name,
+                        if_name_column,
+                        if_name_new,
+                        **key_dict):
+        '''
+        Update the IF name of each table.
+        Explanation about parameter:
+            db_control:DB control
+            table_type:table name
+            if_name_column:IFname column
+            if_name_new:IF name after update
+            conn:DB connection
+            key_dict:key=column name、value=column value
+        Return value:
+            Execution result : boolean(True or False)
+        '''
+        is_ok = self.__check_parameter(if_name_new,
+                                       str, not_null=True)
+        if not is_ok:
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            GlobalModule.EM_LOGGER.debug("if_name_new = %s" % if_name_new)
+            return False
+
+        tmp_list = []
+        where_query_str = []
+        for column_name, value in key_dict.items():
+            tmp_list.append(value)
+            if where_query_str:
+                where_query_str.append("    AND   " + column_name + "= %s")
+            else:
+                where_query_str.append("    WHERE")
+                where_query_str.append("          " + column_name + " = %s")
+        where_param = tuple(tmp_list)
+
+        upsert_column = if_name_column
+        upsert_param = (if_name_new,)
+
+        select_query = self.__gen_select_sql(table_name, where_query_str)
+
+        update_query = \
+            self.__gen_upsert_sql(table_name, where_query_str,
+                                  upsert_column)[1]
+
+        return self.__exec_write_sql(select_query,
+                                     None,
+                                     update_query,
+                                     None,
+                                     upsert_param,
+                                     where_param,
+                                     db_control,
+                                     conn)

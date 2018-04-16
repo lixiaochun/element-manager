@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2017 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
 # Filename: EmOrderflowControl.py
 '''
 Order flow control module.
@@ -28,7 +28,7 @@ class EmOrderflowControl(threading.Thread):
 
     '''
 
-    timeout_flag = False  
+    timeout_flag = False
     rpc_name = '{urn:ietf:params:xml:ns:netconf:base:1.0}'
 
     __target_scenario_module = None
@@ -89,7 +89,8 @@ class EmOrderflowControl(threading.Thread):
                                 read_transaction_info(transaction_id)
 
                             if read_tra_inf_result is False:
-                                raise IOError('Failed getting table information.')
+                                raise IOError(
+                                    'Failed getting table information.')
 
                             elif tra_table_inf is None:
                                 pass
@@ -132,8 +133,8 @@ class EmOrderflowControl(threading.Thread):
     @decorater_log
     def run(self):
         '''
-        Launched as default after Thread is launched by Thread object.    
-        Method foe override. 
+        Launched as default after Thread is launched by Thread object.
+        Method foe override.
         '''
 
         while not self.stop_event.is_set():
@@ -197,7 +198,7 @@ class EmOrderflowControl(threading.Thread):
     @decorater_log
     def stop(self):
         '''
-        Stop thread. 
+        Stop thread.
         Explanation about parameter:
             None
         Explanation about return value:
@@ -210,7 +211,7 @@ class EmOrderflowControl(threading.Thread):
     @decorater_log
     def _order_main(self, ec_message, session_id):
         '''
-        Wait for request from Netconf server, conduct order control after receiving request. 
+        Wait for request from Netconf server, conduct order control after receiving request.
         Explanation about parameter:
             ec_message:EC message
             session_id:Session ID
@@ -243,7 +244,8 @@ class EmOrderflowControl(threading.Thread):
 
             GlobalModule.EM_LOGGER.debug('Order Analysis Error')
 
-            raise StopIteration('Service type, Order type, Analysis of device number is failed.')
+            raise StopIteration(
+                'Service type, Order type, Analysis of device number is failed.')
 
         scenario_select_result, scenario_name, order_timer =\
             self._select_em_scenario(service_kind, order_kind)
@@ -318,7 +320,7 @@ class EmOrderflowControl(threading.Thread):
         transaction_status = GlobalModule.TRA_STAT_PROC_RUN
 
         GlobalModule.EM_LOGGER.debug(
-            'Transaction status update(init state→processing)')
+            'Transaction status update(init state -> processing)')
 
         rep_tra_stat_result = self._replace_transaction_status(
             db_control,
@@ -351,7 +353,8 @@ class EmOrderflowControl(threading.Thread):
 
         scenario_name_em = 'Em' + scenario_name
 
-        GlobalModule.EM_LOGGER.debug('Generate start class name.:%s', scenario_name_em)
+        GlobalModule.EM_LOGGER.debug(
+            'Generate start class name.:%s', scenario_name_em)
 
         lib_path = GlobalModule.EM_LIB_PATH
 
@@ -361,7 +364,7 @@ class EmOrderflowControl(threading.Thread):
             imp.find_module(scenario_name_em,
                             [os.path.join(lib_path, 'Scenario')])
 
-        GlobalModule.EM_LOGGER.debug('Serch module.')
+        GlobalModule.EM_LOGGER.debug('Search module.')
 
         self.__target_scenario_module =\
             imp.load_module(scenario_name_em, filepath, filename, data)
@@ -453,7 +456,7 @@ class EmOrderflowControl(threading.Thread):
         transaction_status = GlobalModule.TRA_STAT_EDIT_CONF
 
         GlobalModule.EM_LOGGER.debug(
-            'Transaction status update(processing→Edit-config)')
+            'Transaction status update(processing -> Edit-config)')
 
         rep_tra_stat_result = self._replace_transaction_status(
             db_control,
@@ -519,7 +522,7 @@ class EmOrderflowControl(threading.Thread):
         transaction_status = GlobalModule.TRA_STAT_CONF_COMMIT
 
         GlobalModule.EM_LOGGER.debug(
-            'Transaction status update(Edit-config→Confirmed-commit)')
+            'Transaction status update(Edit-config -> Confirmed-commit)')
 
         rep_tra_stat_result = self._replace_transaction_status(
             db_control,
@@ -585,7 +588,7 @@ class EmOrderflowControl(threading.Thread):
         transaction_status = GlobalModule.TRA_STAT_COMMIT
 
         GlobalModule.EM_LOGGER.debug(
-            'Transaction status update(Confirmed-commit→Commit)')
+            'Transaction status update(Confirmed-commit -> Commit)')
 
         rep_tra_stat_result = self._replace_transaction_status(
             db_control,
@@ -655,7 +658,7 @@ class EmOrderflowControl(threading.Thread):
         transaction_status = GlobalModule.TRA_STAT_PROC_END
 
         GlobalModule.EM_LOGGER.debug(
-            'Transaction status update(Commit→Finished successfully)')
+            'Transaction status update(Commit -> Finished successfully)')
 
         rep_tra_stat_result = self._replace_transaction_status(
             db_control,
@@ -720,7 +723,7 @@ class EmOrderflowControl(threading.Thread):
             order_kind,
             order_contents):
         '''
-        Launch transaction status (order management information) writing in common utility for the system and write the value. 
+        Launch transaction status (order management information) writing in common utility for the system and write the value.
         Explanation about parameter:
             db_control:DB control (registration, update)
             transaction_id:Transaction ID
@@ -777,7 +780,7 @@ class EmOrderflowControl(threading.Thread):
     @decorater_log
     def _analysis_service(self, element):
         '''
-        Analize Service type in received Netconf.   
+        Analize Service type in received Netconf.
         Explanation about parameter:
             element:config section
         Explanation about return value:
@@ -849,17 +852,16 @@ class EmOrderflowControl(threading.Thread):
                                     rpc_name,
                                     svc_ns):
         '''
-        Analyze operation type of receiving Netconf.  
+        Analyze operation type of receiving Netconf.
         Explanation about parameter:
             context:config section
             service_kind:Service type
-            config_ptn: Config pattern 
+            config_ptn: Config pattern
             rpc_name:RPC name space
             svc_ns:Service name space
         Explanation about return value:
             Order type:str
         '''
-
 
         for event, element in context:
             if (event == 'start' and
@@ -882,7 +884,7 @@ class EmOrderflowControl(threading.Thread):
     @decorater_log
     def _select_em_scenario(service_kind, order_kind):
         '''
-        Obtain scenario name, timer value from config based on Service type and Order type as the key information. 
+        Obtain scenario name, timer value from config based on Service type and Order type as the key information.
         Explanation about parameter:
             service_kind:Service type
             order_kind:Order type
@@ -900,7 +902,7 @@ class EmOrderflowControl(threading.Thread):
     @decorater_log
     def _monitor_transaction(self, transaction_id, tra_mng_stat, device_num):
         '''
-        Monitor order management information DB regularly, notify the sync instruction to individual processing of each scenario. 
+        Monitor order management information DB regularly, notify the sync instruction to individual processing of each scenario.
         Explanation about parameter:
             transaction_id:Transaction ID
             tra_mng_stat:Transaction status
@@ -1029,19 +1031,19 @@ class EmOrderflowControl(threading.Thread):
     @decorater_log
     def _analysis_order_manage(dev_mng_tra_stat):
         '''
-        Analyze order management information. 
+        Analyze order management information.
         Explanation about parameter:
             dev_mng_tra_stat:Transaction status
         Explanation about return value:
             Analysis result:int
                 1:Finished successfully
                 2:Rollback completed
-                3:Processing has failed.（Validation check NG）
-                4:Processing has failed.（Inadequate request ）
-                5:Processing has failed.（Matching NG）
-                6:Processing has failed.（Stored information None）
-                7:Processing has failed.（Temporary）
-                8:Processing has failed.（Other）
+                3:Processing has failed.(Validation check NG)
+                4:Processing has failed.(Inadequate request)
+                5:Processing has failed.(Matching NG)
+                6:Processing has failed.(Stored information None)
+                7:Processing has failed.(Temporary)
+                8:Processing has failed.(Other)
         '''
 
         anaiy_order = GlobalModule.ORDER_RES_OK
@@ -1073,7 +1075,7 @@ class EmOrderflowControl(threading.Thread):
     @decorater_log
     def _find_timeout():
         '''
-        In case that order completion waiting timer has timed out, send "NG" to Netconf server. 
+        In case that order completion waiting timer has timed out, send "NG" to Netconf server.
         Explanation about parameter:
             None
         Explanation about return value:
