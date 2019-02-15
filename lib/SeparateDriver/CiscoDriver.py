@@ -9,6 +9,7 @@ import json
 from lxml import etree
 from EmSeparateDriver import EmSeparateDriver
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 import GlobalModule
 from codecs import BOM_UTF8
 import os
@@ -28,7 +29,7 @@ class CiscoDriver(EmSeparateDriver):
     _XC_NS = "xc"
     _XC_NS_MAP = "urn:ietf:params:xml:ns:netconf:base:1.0"
 
-    @decorater_log
+    @decorater_log_in_out
     def connect_device(self,
                        device_name, device_info, service_type, order_type):
         '''
@@ -434,6 +435,7 @@ class CiscoDriver(EmSeparateDriver):
         Return value.
             Creation result : Boolean
         '''
+
         self._set_ospf_infra_plane(xml_obj, self.name_internal_link)
 
         self._set_infra_ldp(xml_obj, self.name_internal_link)
@@ -2922,7 +2924,7 @@ class CiscoDriver(EmSeparateDriver):
                         if_name = (self._set_vlan_if_name(db_vrrp["if_name"],
                                                           db_vrrp["vlan_id"]))
                         vlan = db_vrrp.get("vlan_id")
-                        group_id = db_vrrp.get("gropu_id")
+                        group_id = db_vrrp.get("group_id")
                         priority = db_vrrp.get("priority")
                         ipv4_addr = db_vrrp["virtual"]["ipv4_address"]
                         ipv4_addr = (db_vrrp["virtual"].get("ipv4_address")
@@ -3263,7 +3265,7 @@ class CiscoDriver(EmSeparateDriver):
         is_last_cp = True
         is_last_static = True
         for db_cp in device_info.get("cp", ()):
-            if db_cp.get("protocol_flags", {}).get("static", False) == False:
+            if db_cp.get("protocol_flags", {}).get("static", False) is False:
                 continue
             if db_cp.get("slice_name") != slice_name:
                 is_last_cp = False
@@ -3277,7 +3279,7 @@ class CiscoDriver(EmSeparateDriver):
 
     def _get_ec_static_count(self, if_name, vlan_id, cps):
         '''
-        (EC message)
+        Count the no. of static routes inside the applicable CP(IF name,vlan_id)(EC message)
         '''
         for tmp_cp in cps:
             if (tmp_cp["L3-CE-IF-NAME"] == if_name and
@@ -3763,7 +3765,7 @@ class CiscoDriver(EmSeparateDriver):
     def _check_new_breakifs(self, if_name):
         '''
         Check whether it is the breakoutIF which will be newly set
-        when IF name is edit-config. Conduct IF settings of internal Link.
+        when IF name is edit-config.
         '''
         for breakout_prefix in self._base_breakout_if_prefixs:
             if breakout_prefix + "/" in if_name:

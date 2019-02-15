@@ -13,6 +13,7 @@ import traceback
 import GlobalModule
 from EmSeparateDriver import EmSeparateDriver
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 
 
 class JuniperDriverMX240(EmSeparateDriver):
@@ -26,7 +27,7 @@ class JuniperDriverMX240(EmSeparateDriver):
     _ATTR_OPE = "operation"
     _XML_LOG = "set xml node (parent = %s):\n%s"
 
-    @decorater_log
+    @decorater_log_in_out
     def connect_device(self, device_name,
                        device_info, service_type, order_type):
         '''
@@ -54,7 +55,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                                 service_type,
                                                 order_type)
 
-    @decorater_log
+    @decorater_log_in_out
     def update_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
         '''
@@ -82,7 +83,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                                        order_type,
                                                        ec_message)
 
-    @decorater_log
+    @decorater_log_in_out
     def delete_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
         '''
@@ -96,7 +97,7 @@ class JuniperDriverMX240(EmSeparateDriver):
             diff_info : Information about difference
         Return value :
             Processing finish status : int (1:Successfully deleted
-                                2:バValidation check NG
+                                2:Validation check NG
                                 3:Deletion unsuccessful)
         '''
         if service_type in (self.name_spine,
@@ -111,7 +112,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                                        order_type,
                                                        ec_message)
 
-    @decorater_log
+    @decorater_log_in_out
     def reserve_device_setting(self, device_name, service_type, order_type):
         '''
         Driver individual section tentative setting control.
@@ -136,7 +137,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                                         service_type,
                                                         order_type)
 
-    @decorater_log
+    @decorater_log_in_out
     def enable_device_setting(self, device_name, service_type, order_type):
         '''
         Driver individual section established control.
@@ -160,7 +161,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                                        service_type,
                                                        order_type)
 
-    @decorater_log
+    @decorater_log_in_out
     def disconnect_device(self, device_name, service_type, order_type):
         '''
         Driver individual section disconnection control.
@@ -242,6 +243,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                 "Cannot connect to other RE, ignoring it" in message:
             is_result = True
         return is_result, message
+
 
     @decorater_log
     def _set_configuration_node(self, xml_obj):
@@ -536,6 +538,7 @@ class JuniperDriverMX240(EmSeparateDriver):
             else:
                 tmp = int(mtu) + 14
         return tmp
+
 
     @decorater_log
     def _set_slice_protocol_routing_options(self, conf_node, vrf_name=None):
@@ -846,6 +849,7 @@ class JuniperDriverMX240(EmSeparateDriver):
             self._XML_LOG % (conf_node.tag, etree.tostring(node_1)),
             __name__)
         return node_2
+
 
     @decorater_log
     def _get_ce_lag_from_ec(self,
@@ -1296,9 +1300,11 @@ class JuniperDriverMX240(EmSeparateDriver):
         db_ifs = len(self._get_db_cp_ifs(device_info, slice_name))
         return bool(del_if_count == db_ifs)
 
+
     @decorater_log
     def _gen_l3_slice_fix_message(self, xml_obj, operation):
-        '''L3Slice
+        '''
+        L3Slice
         Fixed value to create message (L3Slice) for Netconf.
             Called out when creating message for L3Slice.
         Parameter:
@@ -1334,6 +1340,7 @@ class JuniperDriverMX240(EmSeparateDriver):
             Creation result : Boolean (Write properly using override method)
         '''
         return True
+
 
     @decorater_log
     def _gen_l3_slice_replace_message(self,
@@ -1578,6 +1585,7 @@ class JuniperDriverMX240(EmSeparateDriver):
 
         return True
 
+
     @decorater_log
     def _comparsion_sw_db_l3_slice(self, message, db_info):
         '''
@@ -1719,7 +1727,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                              if db_info.get("vrrp_detail") else []):
                     if (cp_dict["if_name"] == vrrp.get("if_name") and
                             cp_dict["vlan"] == vrrp.get("vlan_id")):
-                        cp_dict["vrrp_group_id"] = vrrp.get("gropu_id")
+                        cp_dict["vrrp_group_id"] = vrrp.get("group_id")
                         cp_dict["vrrp_v_ipv4_addr"] = (
                             vrrp["virtual"].get("ipv4_address")
                             if vrrp.get("virtual") is not None else None)
@@ -1796,6 +1804,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                         cp_data["ipv4_addr"]):
                     is_return = False
                     break
+
 
         node_1 = ns_p.ns_find_node(config_node,
                                    "routing-instances",

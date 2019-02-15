@@ -9,6 +9,7 @@ import json
 from lxml import etree
 from EmSeparateDriver import EmSeparateDriver
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 import GlobalModule
 from codecs import BOM_UTF8
 import os
@@ -31,7 +32,7 @@ class CiscoDriver5501(EmSeparateDriver):
     _XC_NS = "xc"
     _XC_NS_MAP = "urn:ietf:params:xml:ns:netconf:base:1.0"
 
-    @decorater_log
+    @decorater_log_in_out
     def connect_device(self,
                        device_name, device_info, service_type, order_type):
         '''
@@ -288,7 +289,6 @@ class CiscoDriver5501(EmSeparateDriver):
             Called out when adding L3Slice.
         Parameter:
             xml_obj : xml object
-            operation : Designate "delete" when deleting.
         Return value.
             Creation result : Boolean
         '''
@@ -604,7 +604,8 @@ class CiscoDriver5501(EmSeparateDriver):
         try:
             ospf_mes = device_mes["ospf"]
             area_id = ospf_mes.get("area-id")
-            if (area_id is None or len(area_id) == 0) and operation == self._DELETE:
+            if (area_id is None or len(area_id) == 0) and \
+                    operation == self._DELETE:
                 area_id = device_info.get("device", {}).get(
                     "ospf", {}).get("area_id")
             lp_addr = device_info["device"]["loopback_if"]["address"]
@@ -935,13 +936,17 @@ class CiscoDriver5501(EmSeparateDriver):
                                   "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["REMARK-MENU"].get("IPV4"),
+                                      cp["QOS"]["INFLOW-RATE"]))
                 node_4 = self._set_xml_tag(node_3, "output")
                 node_5 = self._set_xml_tag(node_4, "service-policy")
                 self._set_xml_tag(node_5, "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["EGRESS-MENU"].get("IPV4"),
+                                      cp["QOS"]["OUTFLOW-RATE"]))
 
                 node_3 = self._set_xml_tag(node_2,
                                            "vrf",
@@ -985,13 +990,17 @@ class CiscoDriver5501(EmSeparateDriver):
                                   "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["REMARK-MENU"].get("IPV4"),
+                                      cp["QOS"]["INFLOW-RATE"]))
                 node_4 = self._set_xml_tag(node_3, "output")
                 node_5 = self._set_xml_tag(node_4, "service-policy")
                 self._set_xml_tag(node_5, "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["EGRESS-MENU"].get("IPV4"),
+                                      cp["QOS"]["OUTFLOW-RATE"]))
 
                 node_3 = self._set_xml_tag(node_2,
                                            "vrf",
@@ -1078,13 +1087,17 @@ class CiscoDriver5501(EmSeparateDriver):
                                   "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["REMARK-MENU"].get("IPV4"),
+                                      cp["QOS"]["INFLOW-RATE"]))
                 node_4 = self._set_xml_tag(node_3, "output")
                 node_5 = self._set_xml_tag(node_4, "service-policy")
                 self._set_xml_tag(node_5, "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["EGRESS-MENU"].get("IPV4"),
+                                      cp["QOS"]["OUTFLOW-RATE"]))
 
                 node_3 = self._set_xml_tag(node_2,
                                            "vrf",
@@ -1606,19 +1619,25 @@ class CiscoDriver5501(EmSeparateDriver):
                                            None)
                 node_4 = self._set_xml_tag(node_3, "input")
                 node_5 = self._set_xml_tag(
-                    node_4, "service-policy", self._ATRI_OPE, self._DELETE, None)
+                    node_4, "service-policy", self._ATRI_OPE,
+                    self._DELETE, None)
                 self._set_xml_tag(node_5,
                                   "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["REMARK-MENU"].get("IPV4"),
+                                      cp["QOS"]["INFLOW-RATE"]))
                 node_4 = self._set_xml_tag(node_3, "output")
                 node_5 = self._set_xml_tag(
-                    node_4, "service-policy", self._ATRI_OPE, self._DELETE, None)
+                    node_4, "service-policy", self._ATRI_OPE,
+                    self._DELETE, None)
                 self._set_xml_tag(node_5, "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["EGRESS-MENU"].get("IPV4"),
+                                      cp["QOS"]["OUTFLOW-RATE"]))
 
                 node_3 = self._set_xml_tag(node_2,
                                            "vrf",
@@ -1663,19 +1682,25 @@ class CiscoDriver5501(EmSeparateDriver):
                                            None)
                 node_4 = self._set_xml_tag(node_3, "input")
                 node_5 = self._set_xml_tag(
-                    node_4, "service-policy", self._ATRI_OPE, self._DELETE, None)
+                    node_4, "service-policy", self._ATRI_OPE,
+                    self._DELETE, None)
                 self._set_xml_tag(node_5,
                                   "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["REMARK-MENU"].get("IPV4"), cp["QOS"]["INFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["REMARK-MENU"].get("IPV4"),
+                                      cp["QOS"]["INFLOW-RATE"]))
                 node_4 = self._set_xml_tag(node_3, "output")
                 node_5 = self._set_xml_tag(
-                    node_4, "service-policy", self._ATRI_OPE, self._DELETE, None)
+                    node_4, "service-policy", self._ATRI_OPE,
+                    self._DELETE, None)
                 self._set_xml_tag(node_5, "service-policy-name",
                                   None,
                                   None,
-                                  self._gen_policy_name(cp["QOS"]["EGRESS-MENU"].get("IPV4"), cp["QOS"]["OUTFLOW-RATE"]))
+                                  self._gen_policy_name(
+                                      cp["QOS"]["EGRESS-MENU"].get("IPV4"),
+                                      cp["QOS"]["OUTFLOW-RATE"]))
 
                 node_3 = self._set_xml_tag(node_2,
                                            "vrf",
@@ -2986,7 +3011,7 @@ class CiscoDriver5501(EmSeparateDriver):
                         if_name = (self._set_vlan_if_name(db_vrrp["if_name"],
                                                           db_vrrp["vlan_id"]))
                         vlan = db_vrrp.get("vlan_id")
-                        group_id = db_vrrp.get("gropu_id")
+                        group_id = db_vrrp.get("group_id")
                         priority = db_vrrp.get("priority")
                         ipv4_addr = db_vrrp["virtual"]["ipv4_address"]
                         ipv4_addr = (db_vrrp["virtual"].get("ipv4_address")
@@ -3042,14 +3067,16 @@ class CiscoDriver5501(EmSeparateDriver):
         dev_reg_info = {}
         tmp = ospf_mes.get("virtual-link")
         if tmp is not None:
-            if (not tmp.get("router-id")) and (tmp.get("operation") != "delete"):
+            if (not tmp.get("router-id")) and \
+                    (tmp.get("operation") != "delete"):
                 raise ValueError("VirtualLink info not enough information")
             dev_reg_info["VIRTUAL-LINK-OPERATION"] = tmp.get("operation")
             dev_reg_info["VIRTUAL-LINK-ROUTER-ID"] = tmp.get("router-id")
 
         tmp = ospf_mes.get("range")
         if tmp is not None:
-            if (not tmp.get("address") or tmp.get("prefix") is None) and (tmp.get("operation") != "delete"):
+            if (not tmp.get("address") or tmp.get("prefix") is None) and \
+                    (tmp.get("operation") != "delete"):
                 raise ValueError("ospf range info not enough information")
             dev_reg_info["RANGE-OPERATION"] = tmp.get("operation")
             dev_reg_info["RANGE-ADDRESS"] = tmp.get("address")
@@ -3483,7 +3510,7 @@ class CiscoDriver5501(EmSeparateDriver):
         is_last_cp = True
         is_last_static = True
         for db_cp in device_info.get("cp", ()):
-            if db_cp.get("protocol_flags", {}).get("static", False) == False:
+            if db_cp.get("protocol_flags", {}).get("static", False) is False:
                 continue
             if db_cp.get("slice_name") != slice_name:
                 is_last_cp = False
@@ -3686,6 +3713,10 @@ class CiscoDriver5501(EmSeparateDriver):
         if service in (self.name_spine, self.name_leaf):
             node_3 = self._set_xml_tag(node_2, "global")
             self._set_xml_tag(node_3, "router-id", None, None, router_id)
+
+#
+#
+#
 
     @decorater_log
     def _set_trackingobject(self, xml_obj, inner_ifs, operation=None):
@@ -3907,7 +3938,7 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _set_slice_bgp(self, xml_obj, **params):
         '''
-        Shuld be set in case that VLANIF uses BGP.
+        Should be set in case that VLANIF uses BGP.
         Argument.
             params : variable argument
                      (parameter group necessary for bgp settings )
@@ -3965,7 +3996,7 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _set_slice_vrrp(self, xml_obj, **params):
         '''
-        Shuld be set in case that VLANIF uses VRRP.
+        Should be set in case that VLANIF uses VRRP.
         Argument.
             params : Variable argument
                      (parameter group necessary for bgp settings )
@@ -4305,12 +4336,14 @@ class CiscoDriver5501(EmSeparateDriver):
             (dev_reg_info.get("VIRTUAL-LINK-ROUTER-ID") or
              dev_reg_info.get("RANGE-ADDRESS"))):
             self._set_ospf_area_virtual_link(node_6, dev_reg_info)
-        if dev_reg_info and dev_reg_info.get("VIRTUAL-LINK-OPERATION") == self._DELETE:
+        if dev_reg_info and \
+                dev_reg_info.get("VIRTUAL-LINK-OPERATION") == self._DELETE:
             self._set_xml_tag(node_6,
                               "virtual-link-scopes",
                               attr_d,
                               attr_val_d)
-        if dev_reg_info and dev_reg_info.get("RANGE-OPERATION") == self._DELETE:
+        if dev_reg_info and \
+                dev_reg_info.get("RANGE-OPERATION") == self._DELETE:
             self._set_xml_tag(node_6,
                               "area-ranges",
                               attr_d,

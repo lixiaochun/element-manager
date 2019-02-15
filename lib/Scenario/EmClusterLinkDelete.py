@@ -17,15 +17,21 @@ class EmClusterLinkDelete(EmDeleteScenario):
     Class for deleting inter-cluster link.
     '''
 
+
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
+
         super(EmClusterLinkDelete, self).__init__()
+
         self.service = GlobalModule.SERVICE_CLUSTER_LINK
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self._scenario_name = "ClusterLinkDelete"
+
         self.device_type = "leaf-device"
 
     @decorater_log
@@ -73,8 +79,6 @@ class EmClusterLinkDelete(EmDeleteScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         cls_link_elm = xml.findall(xml_ns + "cluster-link")

@@ -24,10 +24,15 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
         '''
         Constructor
         '''
+
         super(EmInternalLinkMerge, self).__init__()
+
         self.service = GlobalModule.SERVICE_INTERNAL_LINK
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.timeout_flag = False
+
         self.device_type = "device"
 
     @decorater_log
@@ -153,7 +158,8 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
                 device_name, "internal-link", order_type, json_message)
 
         if is_comdriver_result == GlobalModule.COM_UPDATE_VALICHECK_NG:
-            GlobalModule.EM_LOGGER.debug("update_device_setting validation checkNG")
+            GlobalModule.EM_LOGGER.debug(
+                "update_device_setting validation checkNG")
             GlobalModule.EM_LOGGER.warning(
                 "204004 Scenario:InternalLinkMerge Device:%s \
                 NG:9(Processing failure(validation checkNG))", device_name)
@@ -476,8 +482,6 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         vpn_type = self._find_xml_node(xml, xml_ns + "vpn-type")
@@ -508,8 +512,6 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
         breakout_elm = self._find_xml_node(xml,
                                            xml_ns + "breakout-interface")
@@ -576,11 +578,14 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
         internal_phy_name = internal_phy.find(xml_ns + "name").text
         internal_phy_opp = internal_phy.find(
             xml_ns + "opposite-node-name").text
+        internal_phy_vlan = int(internal_phy.find(xml_ns + "vlan-id").text)
         internal_phy_addr = internal_phy.find(xml_ns + "address").text
         internal_phy_pre = int(internal_phy.find(xml_ns + "prefix").text)
+
         json["device"]["internal-physical"].append(
             {"name": internal_phy_name,
              "opposite-node-name": internal_phy_opp,
+             "vlan-id": internal_phy_vlan,
              "address": internal_phy_addr,
              "prefix": internal_phy_pre})
 
@@ -598,6 +603,7 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
             "name": None,
             "opposite-node-name": None,
             "lag-id": 0,
+            "vlan-id": 0,
             "minimum-links": 0,
             "link-speed": None,
             "address": None,
@@ -619,6 +625,8 @@ class EmInternalLinkMerge(EmSeparateScenario.EmScenario):
             itnal_lag.find(xml_ns + "name").text
         internal_lag_message["lag-id"] = \
             int(itnal_lag.find(xml_ns + "lag-id").text)
+        internal_lag_message["vlan-id"] = \
+            int(itnal_lag.find(xml_ns + "vlan-id").text)
         internal_lag_message["opposite-node-name"] = \
             itnal_lag.find(xml_ns + "opposite-node-name").text
         internal_lag_message["minimum-links"] = \

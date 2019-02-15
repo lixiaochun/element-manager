@@ -23,17 +23,25 @@ class EmScenario(threading.Thread):
         '''
         Constructor
         '''
+
         super(EmScenario, self).__init__()
+
         self.device_name_list = []
+
         self.device_cond_dict = {}
+
         self.device_thread_dict = {}
+
         self.com_driver_list = {}
+
         self.force = False
+
         self.service_type_list = {}
         scenario_conf = \
             GlobalModule.EM_CONFIG.read_service_type_scenario_conf()
         for key, value in scenario_conf.items():
             self.service_type_list[value[2]] = key[0]
+
         self.daemon = True
         self.que_events = Queue.Queue(10)
         self.start()
@@ -108,6 +116,7 @@ class EmScenario(threading.Thread):
                 device_thread_con.notify()
                 device_thread_con.release()
 
+
     @decorater_log
     def __scenario_main(self, ec_message, transaction_id, order_type):
         '''
@@ -120,6 +129,7 @@ class EmScenario(threading.Thread):
         Explanation about return value:
             None
         '''
+
 
         self.device_name_list, device_xml_dict = self._analyze_ec_message(
             ec_message)
@@ -310,7 +320,7 @@ class EmScenario(threading.Thread):
             self.service_type_list[service_type_num])
 
         if connect_device_flg is True:
-            GlobalModule.EM_LOGGER.debug("With device connection")
+            GlobalModule.EM_LOGGER.debug("Device is connected")
 
             is_comdriver_result = self.com_driver_list[
                 device_name].disconnect_device(
@@ -322,7 +332,7 @@ class EmScenario(threading.Thread):
                 GlobalModule.EM_LOGGER.debug("disconnect_device NG")
 
         if db_ng_flg is False:
-            GlobalModule.EM_LOGGER.debug("DB connection other than NG")
+            GlobalModule.EM_LOGGER.debug("Other than the case of DB connection NG")
 
             is_db_result = \
                 GlobalModule.EMSYSCOMUTILDB. \
@@ -343,8 +353,7 @@ class EmScenario(threading.Thread):
                 return_table_info[0]["transaction_status"])
 
             if need_update is True:
-                GlobalModule.EM_LOGGER.debug(
-                    "Transaction state update required")
+                GlobalModule.EM_LOGGER.debug("Transaction status needs to be updated")
 
                 is_db_result = \
                     GlobalModule.EMSYSCOMUTILDB. \

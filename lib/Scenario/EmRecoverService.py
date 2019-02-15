@@ -17,6 +17,7 @@ class EmRecoverService(EmRecover.EmRecover):
     Scenario class for recover service
     '''
 
+
     @decorater_log
     def __init__(self):
         '''

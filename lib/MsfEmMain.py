@@ -152,10 +152,11 @@ def notify_em_changeover(kind):
             time.sleep(int(retry_interval))
     if ret:
         GlobalModule.EM_LOGGER.info(
-                '101010 Complete to system switch notification: \"%s\"' % kind)
+            '101010 Complete to system switch notification: \"%s\"' % kind)
     else:
         GlobalModule.EM_LOGGER.error(
-                '301011 Failed to system switch notification: \"%s\"' % kind)
+            '301011 Failed to system switch notification: \"%s\"' % kind)
+
 
 @_deco_count_request
 def send_request_by_curl(send_url, json_message=None, method="PUT"):
@@ -235,9 +236,13 @@ def get_service_order_list():
     scenario_conf = \
         GlobalModule.EM_CONFIG.read_service_type_scenario_conf()
 
+    service_conf = \
+        GlobalModule.EM_CONFIG.read_service_conf_list()
+
+    for key in service_conf.keys():
+        service_list.append(key[0])
+
     for key in scenario_conf.keys():
-        if key[0] not in service_list:
-            service_list.append(key[0])
         if key[1] not in order_list:
             order_list.append(key[1])
 
@@ -348,7 +353,9 @@ def msf_em_start():
         raise IOError(err_mes_conf % ("Em_log_level",))
 
     log_lev = logging.DEBUG
-    if conf_log_level == "DEBUG":
+    if conf_log_level == "TRACE":
+        log_lev = GlobalModule.TRACE_LOG_LEVEL
+    elif conf_log_level == "DEBUG":
         log_lev = logging.DEBUG
     elif conf_log_level == "INFO":
         log_lev = logging.INFO

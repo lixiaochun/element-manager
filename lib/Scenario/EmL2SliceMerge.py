@@ -24,10 +24,15 @@ class EmL2SliceMerge(EmSeparateScenario.EmScenario):
         '''
         Constructor
         '''
+
         super(EmL2SliceMerge, self).__init__()
+
         self.service = GlobalModule.SERVICE_L2_SLICE
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.timeout_flag = False
+
         self.device_type = "device-leaf"
 
     @decorater_log
@@ -132,7 +137,7 @@ class EmL2SliceMerge(EmSeparateScenario.EmScenario):
 
         if is_db_result is False:
             GlobalModule.EM_LOGGER.debug(
-                "write_transaction_device_status_list(2:Edit-config) NG")
+                "write_transaction_device_status_list(2:During executing Edit-config) NG")
             GlobalModule.EM_LOGGER.warning(
                 "204004 Scenario:L2SliceMerge Device:%s NG:14(Processing failure (Other))",
                 device_name)
@@ -153,7 +158,8 @@ class EmL2SliceMerge(EmSeparateScenario.EmScenario):
                 device_name, "l2-slice", order_type, json_message)
 
         if is_comdriver_result == GlobalModule.COM_UPDATE_VALICHECK_NG:
-            GlobalModule.EM_LOGGER.debug("update_device_setting validation check NG")
+            GlobalModule.EM_LOGGER.debug(
+                "update_device_setting validation check NG")
             GlobalModule.EM_LOGGER.warning(
                 "204004 Scenario:L2SliceMerge Device:%s NG:9(Processing failure(validation check NG))",
                 device_name)

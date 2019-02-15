@@ -19,6 +19,7 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
     Class to add LAG for CE.
     '''
 
+
     @decorater_log
     def __init__(self):
         '''
@@ -409,6 +410,7 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
                 boolean (True:Update necessary,False:Update unnecessary)
         '''
 
+
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
 
@@ -421,10 +423,10 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True
+            return True  
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False
+        return False  
 
     @decorater_log
     def __creating_json(self, device_message):
@@ -471,8 +473,6 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         name_elm = self._find_xml_node(xml, xml_ns + "name")
@@ -487,8 +487,6 @@ class EmCeLagMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         ce_tag = xml_ns + "ce-lag-interface"

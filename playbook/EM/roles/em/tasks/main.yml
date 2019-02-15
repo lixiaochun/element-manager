@@ -83,14 +83,14 @@
       state=present
       backrefs=yes
       regexp='Em_Rest_server_address.*'
-      line='em_rest_address={{ em_rest_address }}'
+      line='Em_Rest_server_address={{ em_rest_address }}'
   - name: em_main.conf data set 8
     lineinfile: >-
       dest='{{ em_path }}/conf/conf_sys_common.conf'
       state=present
       backrefs=yes
       regexp='Em_port_number.*'
-      line='em_rest_port={{ em_rest_port }}'
+      line='Em_port_number={{ em_rest_port }}'
   - name: em_main.conf data set 9
     lineinfile: >-
       dest='{{ em_path }}/conf/conf_sys_common.conf'
@@ -104,7 +104,7 @@
       state=present
       backrefs=yes
       regexp='Em_log_file_path.*'
-      line='Em_log_file_path={{ em_path }}/{{ log_path }}'
+      line='Em_log_file_path={{ em_path }}/{{ log_path }}/application.log'
   - name: em_main.conf data set 12
     lineinfile: >-
       dest='{{ em_path }}/conf/conf_sys_common.conf'
@@ -124,41 +124,27 @@
       dest='{{ em_path }}/bin/em_ctl.sh'
       state=present
       backrefs=yes
-      regexp='IPV4=.*'
+      regexp='^IPV4=.*'
       line='IPV4="{{ em_netconf_address }}"'
   - name: em_ctl.sh data set 2
     lineinfile: >-
       dest='{{ em_path }}/bin/em_ctl.sh'
       state=present
       backrefs=yes
-      regexp='PORT=.*'
-      line='PORT={{ em_netconf_port }}'
-  - name: em_ctl.sh data set 1
-    lineinfile: >-
-      dest='{{ em_path }}/bin/em_ctl.sh'
-      state=present
-      backrefs=yes
-      regexp='IPV4=.*'
-      line='IPV4="{{ em_netconf_address }}"'
-  - name: em_ctl.sh data set 2
-    lineinfile: >-
-      dest='{{ em_path }}/bin/em_ctl.sh'
-      state=present
-      backrefs=yes
-      regexp='PORT=.*'
+      regexp='^PORT=.*'
       line='PORT={{ em_netconf_port }}'
   - name: em_ctl.sh data set 3
     lineinfile: >-
       dest='{{ em_path }}/bin/em_ctl.sh'
       state=present
       backrefs=yes
-      regexp='EC_HOST=.*'
+      regexp='^EC_HOST=.*'
       line='EC_HOST="{{ ec_rest_address }}"'
   - name: em_ctl.sh data set 4
     lineinfile: >-
       dest='{{ em_path }}/bin/em_ctl.sh'
       state=present
       backrefs=yes
-      regexp='EC_PORT=.*'
-      line='EC_PORT={{ ec_rest_port }}'
+      regexp='^EC_PORT=.*'
+      line='EC_PORT="{{ ec_rest_port }}"'
   - include: getem.yml

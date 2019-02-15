@@ -42,6 +42,7 @@ CREATE TABLE DeviceRegistrationInfo(
     cluster_ospf_area       text,
     rr_loopback_address     text,
     rr_loopback_prefix      Integer,
+    irb_type                text,
     PRIMARY KEY (device_name)
 );
 
@@ -80,6 +81,13 @@ CREATE TABLE VlanIfInfo(
     outflow_shaping_rate float,
     remark_menu       text,
     egress_queue_menu text,
+    clag_id           Integer,
+    speed             text,
+    irb_ipv4_address  text,
+    irb_ipv4_prefix   Integer,
+    virtual_mac_address text,
+    virtual_gateway_address text,
+    virtual_gateway_prefix  Integer,
     PRIMARY KEY (device_name, if_name, vlan_id, slice_name),
     FOREIGN KEY (device_name)
         REFERENCES DeviceRegistrationInfo (device_name)
@@ -118,15 +126,30 @@ CREATE TABLE L3VpnLeafBgpBasicInfo(
         REFERENCES DeviceRegistrationInfo(device_name)
 );
 
+CREATE TABLE ACLInfo(
+    device_name             text NOT NULL,
+    acl_id                  int  NOT NULL,
+    if_name                 text,
+    vlan_id                 Integer,
+    PRIMARY KEY (device_name,acl_id),
+    FOREIGN KEY (device_name)
+        REFERENCES DeviceRegistrationInfo(device_name)
+);
+
 CREATE TABLE VrfDetailInfo(
     device_name     text    NOT NULL,
     if_name         text    NOT NULL,
     vlan_id         Integer NOT NULL,
     slice_name      text    NOT NULL,
     vrf_name        text    NOT NULL,
+    vrf_id          Integer, 
     rt              text    NOT NULL,
     rd              text    NOT NULL,
     router_id       text    NOT NULL,
+    l3_vni          Integer,
+    l3_vlan_id      Integer,
+    vrf_loopback_interface_address  text,
+    vrf_loopback_interface_prefix   Integer,
     PRIMARY KEY (device_name, if_name, vlan_id, slice_name),
     FOREIGN KEY (device_name, if_name, vlan_id, slice_name)
         REFERENCES VlanIfInfo(device_name,if_name,vlan_id,slice_name) ON UPDATE CASCADE
@@ -204,6 +227,57 @@ CREATE TABLE ClusterLinkIfInfo(
         REFERENCES DeviceRegistrationInfo (device_name)
 );
 
+CREATE TABLE DummyVlanifInfo(
+    device_name             text     NOT NULL,
+    vlan_id                 Integer  NOT NULL,
+    slice_name              text     NOT NULL,
+    vni                     Integer,
+    irb_ipv4_address        text,
+    irb_ipv4_prefix         Integer,
+    vrf_name                text,
+    vrf_id                  Integer,
+    rt                      text,
+    rd                      text,
+    router_id               text,
+    vrf_loopback_interface_address text,
+    vrf_loopback_interface_prefix  Integer,
+    PRIMARY KEY (device_name,vlan_id,slice_name),
+    FOREIGN KEY (device_name)
+        REFERENCES DeviceRegistrationInfo(device_name)
+);
+
+CREATE TABLE MultiHomingInfo(
+    device_name     text    NOT NULL,
+    anycast_id      Integer NOT NULL,
+    anycast_address text    NOT NULL,
+    clag_if_address text    NOT NULL,
+    clag_if_prefix  Integer NOT NULL,
+    backup_address  text    NOT NULL,
+    peer_address    text    NOT NULL,
+    PRIMARY KEY (device_name),
+    FOREIGN KEY (device_name)
+        REFERENCES DeviceRegistrationInfo(device_name) 
+);
+
+CREATE TABLE ACLDetailInfo(
+    device_name             text NOT NULL,
+    acl_id                  int  NOT NULL,
+    term_name               text NOT NULL,
+    action                  text NOT NULL,
+    direction               text NOT NULL,
+    source_mac_address      text,
+    destination_mac_address text,
+    source_ip_address       text,
+    destination_ip_address  text,
+    source_port  	        Integer,
+    destination_port        Integer,
+    protocol                text,
+    acl_priority            Integer,
+    PRIMARY KEY (device_name,acl_id,term_name),
+    FOREIGN KEY (device_name,acl_id)
+        REFERENCES ACLInfo(device_name,acl_id) ON UPDATE CASCADE
+);
+
 CREATE TABLE EmSystemStatusInfo(
     service_status  Integer NOT NULL,
     PRIMARY KEY (service_status)
@@ -213,9 +287,11 @@ CREATE TABLE InnerLinkIfInfo(
     device_name                  text    NOT NULL,
     if_name                      text    NOT NULL,
     if_type                      Integer NOT NULL,
+    vlan_id                      Integer,
     link_speed                   text,
     Internal_link_ip_address     text,
     Internal_link_ip_prefix      Integer,
+    cost                         Integer,
     PRIMARY KEY (device_name, if_name),
     FOREIGN KEY (device_name)
         REFERENCES DeviceRegistrationInfo (device_name)

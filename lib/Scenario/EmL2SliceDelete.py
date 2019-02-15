@@ -24,10 +24,15 @@ class EmL2SliceDelete(EmSeparateScenario.EmScenario):
         '''
         Constructor
         '''
+
         super(EmL2SliceDelete, self).__init__()
+
         self.service = GlobalModule.SERVICE_L2_SLICE
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.timeout_flag = False
+
         self.device_type = "device"
 
     @decorater_log
@@ -153,7 +158,8 @@ class EmL2SliceDelete(EmSeparateScenario.EmScenario):
                 device_name, "l2-slice", order_type, json_message)
 
         if is_comdriver_result == GlobalModule.COM_DELETE_VALICHECK_NG:
-            GlobalModule.EM_LOGGER.debug("delete_device_setting validation check NG")
+            GlobalModule.EM_LOGGER.debug(
+                "delete_device_setting validation check NG")
             GlobalModule.EM_LOGGER.warning(
                 "204004 Scenario:L2SliceDelete Device:%s NG:9(Processing failure(validation check NG))",
                 device_name)

@@ -24,10 +24,15 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
         '''
         Constructor
         '''
+
         super(EmSpineMerge, self).__init__()
+
         self.service = GlobalModule.SERVICE_SPINE
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.timeout_flag = False
+
         self.device_type = "device"
 
     @decorater_log
@@ -201,7 +206,8 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
                 device_name, self.service, order_type, json_message)
 
         if is_comdriver_result == GlobalModule.COM_UPDATE_VALICHECK_NG:
-            GlobalModule.EM_LOGGER.debug("update_device_setting validation check NG")
+            GlobalModule.EM_LOGGER.debug(
+                "update_device_setting validation check NG")
             GlobalModule.EM_LOGGER.warning(
                 "204004 Scenario:SpineMerge Device:%s NG:9(Processing failure(validation check NG))",
                 device_name)
@@ -570,8 +576,6 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         name_elm = self._find_xml_node(xml, xml_ns + "name")
@@ -586,8 +590,6 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         equ_elm = self._find_xml_node(xml, xml_ns + "equipment")
@@ -612,8 +614,6 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         breakout_elm = self._find_xml_node(xml,
@@ -641,8 +641,6 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
         internal_if_elm = self._find_xml_node(xml,
                                               xml_ns + "internal-interface")
@@ -672,17 +670,19 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
+                internal_phy:xml message to be analyzed
         '''
         internal_phy_name = internal_phy.find(xml_ns + "name").text
         internal_phy_opp = internal_phy.find(
             xml_ns + "opposite-node-name").text
+        internal_phy_vlan = int(internal_phy.find(xml_ns + "vlan-id").text)
         internal_phy_addr = internal_phy.find(xml_ns + "address").text
         internal_phy_pre = int(internal_phy.find(xml_ns + "prefix").text)
+
         json["device"]["internal-physical"].append(
             {"name": internal_phy_name,
              "opposite-node-name": internal_phy_opp,
+             "vlan-id": internal_phy_vlan,
              "address": internal_phy_addr,
              "prefix": internal_phy_pre})
 
@@ -695,13 +695,13 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
+                itnal_lag:xml message to be analyzed
         '''
         internal_lag_message = {
             "name": None,
             "opposite-node-name": None,
             "lag-id": 0,
+            "vlan-id": 0,
             "minimum-links": 0,
             "link-speed": 0,
             "address": None,
@@ -725,6 +725,8 @@ class EmSpineMerge(EmSeparateScenario.EmScenario):
             itnal_lag.find(xml_ns + "opposite-node-name").text
         internal_lag_message["lag-id"] = \
             int(itnal_lag.find(xml_ns + "lag-id").text)
+        internal_lag_message["vlan-id"] = \
+            int(itnal_lag.find(xml_ns + "vlan-id").text)
         internal_lag_message["minimum-links"] = \
             int(itnal_lag.find(xml_ns + "minimum-links").text)
         internal_lag_message["link-speed"] = \

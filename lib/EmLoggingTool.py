@@ -12,7 +12,7 @@ import time
 
 class Formatter(logging.Formatter):
     """
-    Log formatter class.
+     Log formatter class.
     Modify dateFormat(datefmt).
     """
 

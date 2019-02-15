@@ -22,11 +22,17 @@ class EmMergeScenario(EmSeparateScenario.EmScenario):
         '''
         Constructor
         '''
+
         super(EmMergeScenario, self).__init__()
+
         self._xml_ns = ""
+
         self.timeout_flag = False
+
         self._scenario_name = ""
+
         self.service = ""
+
         self.error_code01 = "104001"
         self.error_code02 = "204004"
         self.error_code03 = "104002"
@@ -160,7 +166,8 @@ class EmMergeScenario(EmSeparateScenario.EmScenario):
                 device_name, self.service, order_type, json_message)
 
         if is_comdriver_result == GlobalModule.COM_UPDATE_VALICHECK_NG:
-            GlobalModule.EM_LOGGER.debug("update_device_setting validation check NG")
+            GlobalModule.EM_LOGGER.debug(
+                "update_device_setting validation check NG")
             GlobalModule.EM_LOGGER.warning(
                 "%s Scenario:%s Device:%s NG:9(Processing failure(validation check NG))",
                 self.error_code02, self._scenario_name, device_name)

@@ -6,16 +6,20 @@
 Individual section on deriver (base class)
 '''
 import json
+import os
 import re
+import imp
 import traceback
+from codecs import BOM_UTF8
 from lxml import etree
 import ipaddress
 import GlobalModule
+import copy
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 from EmNetconfProtocol import EmNetconfProtocol
 from EmDriverCommonUtilityDB import EmDriverCommonUtilityDB
 from EmDriverCommonUtilityLog import EmDriverCommonUtilityLog
-from EmRecoverUtil import EmRecoverUtil
 
 
 class EmSeparateDriver(object):
@@ -31,7 +35,8 @@ class EmSeparateDriver(object):
                   "Validation": "Validation Error",
                   "Call_NG_Method": "Call EmSeparateDriver IF: %s NG",
                   "NetConf_Fault": "Could not %s Device ERROR",
-                  "Recover": "Rebuild recover message Error  %s"}
+                  "Recover": "Rebuild recover message Error  %s",
+                  "RecoverUtilSelect": "Recover Service Utility Select NG %s"}
 
     log_level_debug = "DEBUG"
     log_level_warn = "WARN"
@@ -69,6 +74,7 @@ class EmSeparateDriver(object):
         self.name_cluster_link = GlobalModule.SERVICE_CLUSTER_LINK
         self.name_recover_node = GlobalModule.SERVICE_RECOVER_NODE
         self.name_recover_service = GlobalModule.SERVICE_RECOVER_SERVICE
+        self.name_acl_filter = GlobalModule.SERVICE_ACL_FILTER
 
         self._MERGE = GlobalModule.ORDER_MERGE
         self._DELETE = GlobalModule.ORDER_DELETE
@@ -96,6 +102,8 @@ class EmSeparateDriver(object):
                                  self._gen_breakout_variable_message),
             self.name_cluster_link: (self._gen_cluster_link_fix_message,
                                      self._gen_cluster_link_variable_message),
+            self.name_acl_filter: (self._gen_acl_filter_fix_message,
+                                   self._gen_acl_filter_variable_message),
         }
 
         self._validation_methods = {
@@ -108,6 +116,7 @@ class EmSeparateDriver(object):
             self.name_internal_link: self._validation_internal_link,
             self.name_breakout: self._validation_breakout,
             self.name_cluster_link: self._validation_cluster_link,
+            self.name_acl_filter: self._validation_acl_filter,
         }
 
         self.net_protocol = EmNetconfProtocol()
@@ -116,9 +125,11 @@ class EmSeparateDriver(object):
         self.list_enable_service = []
         self.get_config_message = {}
 
-        self.recover_util = EmRecoverUtil()
+        self.lib_path = GlobalModule.EM_LIB_PATH
 
-    @decorater_log
+        self.internal_link_vlan_config = self._get_internal_link_vlan_config()
+
+    @decorater_log_in_out
     def connect_device(self, device_name,
                        device_info, service_type, order_type):
         '''
@@ -140,7 +151,7 @@ class EmSeparateDriver(object):
             return 3
         return self.net_protocol.connect_device(device_info)
 
-    @decorater_log
+    @decorater_log_in_out
     def update_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
         '''
@@ -164,11 +175,9 @@ class EmSeparateDriver(object):
                 not self._send_control_signal(device_name, "lock")[0]:
             return self._update_error
 
-        if service_type == self.name_recover_node:
-            result = self._update_device_setting_recover_node(
-                device_name, service_type, order_type, ec_message)
-        elif service_type == self.name_recover_service:
-            result = self._update_device_setting_recover_service(
+        if service_type == self.name_recover_node or\
+                service_type == self.name_recover_service:
+            result = self._update_device_setting_recover(
                 device_name, service_type, order_type, ec_message)
         else:
             result = self._update_device_setting_other(
@@ -176,17 +185,113 @@ class EmSeparateDriver(object):
         return result
 
     @decorater_log
-    def _update_device_setting_recover_node(self, device_name, service_type,
-                                            order_type, ec_message=None):
+    def _update_device_setting_recover(self, device_name, service_type,
+                                       order_type, ec_message=None):
         '''
-        Driver individual section edit control.
-            Implement processing of "recover node".
-            Launch from the common section on driver,
-            transmit device control signal to protocol processing section.
+        Selection of Utility for Recovery
+            Generate instance of the applicable utility for recovery
         Parameter:
             device_name : Device name
             service_type : Service type
             order_type : Order type
+         Return value :
+            Processing finish status : int (1:Successfully updated
+                                2:Validation check NG
+                                3:Updating unsuccessful)
+        '''
+        recover_util_cls_dict = self._get_recover_list(service_type)
+
+        if service_type == self.name_recover_node:
+            for _, value in sorted(recover_util_cls_dict.items()):
+                target_recover_util_class_ins = self._select_recover_util(
+                    value[1])
+                tmp_ec = copy.copy(ec_message)
+                tmp_ec_json = json.loads(tmp_ec)
+
+                if not target_recover_util_class_ins:
+                    result = self._update_error
+                    break
+                elif tmp_ec_json["device"]["node-type"].lower() == value[0]:
+                    result = self._update_device_setting_recover_node(
+                        device_name, order_type, value[0],
+                        target_recover_util_class_ins, ec_message=ec_message)
+        else:
+            result = self._update_device_setting_recover_service(
+                device_name, order_type,
+                ec_message=ec_message)
+
+        return result
+
+    @decorater_log
+    def _get_recover_list(self, service_type):
+        '''
+        Obtain list of service applicable for service restoration based on service definition config.
+        Parameter：
+            None
+        Return Value：
+            Service LIst : dict
+                {Restoration Order:(Service type, Applicable utility class name),.....}
+        '''
+        recover_node_list, recover_service_list = \
+            GlobalModule.EM_CONFIG.read_service_conf_recover()
+
+        if service_type == self.name_recover_node:
+            recover_util_cls_dict = recover_node_list
+        else:
+            recover_util_cls_dict = recover_service_list
+
+        return recover_util_cls_dict
+
+    @decorater_log
+    def _select_recover_util(self, recover_util_cls_name):
+        '''
+        Create utility instance for restoration
+            Create instance of the applicable utility for restoration
+        Parameter：
+            recover_util_cls_name：Name of utility class for restoration
+        Return value :
+            Instance of utlitiy class for restoration
+        '''
+
+        try:
+            filepath, filename, data =\
+                imp.find_module(recover_util_cls_name,
+                                [os.path.join(
+                                    self.lib_path,
+                                    'SeparateDriver/RecoverUtility')])
+            target_recover_util_module =\
+                imp.load_module(
+                    recover_util_cls_name, filepath, filename, data)
+            target_recover_util_class_ins =\
+                getattr(target_recover_util_module, recover_util_cls_name)()
+
+            return target_recover_util_class_ins
+
+        except (AttributeError, ImportError, IOError) as e:
+            self.common_util_log.logging(
+                "", self.log_level_error,
+                self.Logmessage["RecoverUtilSelect"] % (
+                    recover_util_cls_name,),
+                __name__)
+            return None
+
+    @decorater_log
+    def _update_device_setting_recover_node(self,
+                                            device_name,
+                                            order_type,
+                                            recover_service_type,
+                                            recover_service_util_ins,
+                                            ec_message=None):
+        '''
+        Edit control of individual section on driver
+            Conduct processing of service for restoration expansion
+            Get launched from driver common section,
+            and send device control signal to protocol processing section
+        Parameter:
+            device_name : Device name
+            order_type : Order type
+            recover_service_type : Service to be restored(leaf,b-leaf,etc)
+            recover_service_util_ins : Utility class instance to be restored
             ec_message : EC message
         Return value :
             Processing finish status : int (1:Successfully updated
@@ -201,28 +306,15 @@ class EmSeparateDriver(object):
         if not is_db_result:
             return self._update_error
 
-        ec_message_dict = json.loads(ec_message)
-        node_type = ec_message_dict.get("device", {}).get("node-type")
-        if node_type == self._node_type_leaf:
-            create_result, recover_ec_message = \
-                self.recover_util.create_recover_leaf(
-                    ec_message, device_info)
-            recover_service_type = self.name_leaf
-        elif node_type == self._node_type_b_leaf:
-            create_result, recover_ec_message = \
-                self.recover_util.create_recover_b_leaf(
-                    ec_message, device_info)
-            recover_service_type = self.name_b_leaf
-        else:
-            self.common_util_log.logging(
-                device_name, self.log_level_debug,
-                "unknown node-type error node-type=%s" %
-                node_type, __name__)
-            return self._update_error
+        create_result, _, recover_ec_message = \
+            recover_service_util_ins.create_recover_message(
+                ec_message, device_info, service_type)
+
         if not create_result or recover_ec_message is None:
             self.common_util_log.logging(device_name, self.log_level_warn,
                                          self.Logmessage["Recover"] %
-                                         ("Leaf/B-Leaf",), __name__)
+                                         (recover_service_type.upper(),),
+                                         __name__)
             return self._update_error
 
         result = self._edit_config_for_recover(
@@ -244,8 +336,10 @@ class EmSeparateDriver(object):
         return self._update_ok
 
     @decorater_log
-    def _update_device_setting_recover_service(self, device_name, service_type,
-                                               order_type, ec_message=None):
+    def _update_device_setting_recover_service(self,
+                                               device_name,
+                                               order_type,
+                                               ec_message=None):
         '''
         Driver individual section edit control.
             Implement processing of "recover service".
@@ -253,7 +347,6 @@ class EmSeparateDriver(object):
             transmit device control signal to protocol processing section.
         Parameter:
             device_name : Device name
-            service_type : Service type
             order_type : Order type
             ec_message : EC message
         Return value :
@@ -269,17 +362,55 @@ class EmSeparateDriver(object):
         if not is_db_result:
             return self._update_error
 
-        result = self._recover_ce_lag(device_name, ec_message, device_info)
-        if result == self._update_ok:
-            result = self._recover_cluster_link(
-                device_name, ec_message, device_info)
-        if result == self._update_ok:
-            result = self._recover_l2_slice(
-                device_name, ec_message, device_info)
-        if result == self._update_ok:
-            result = self._recover_l3_slice(
-                device_name, ec_message, device_info)
+        recover_util_cls_dict = self._get_recover_list(service_type)
 
+        result = self._update_ok
+
+        for _, value in sorted(recover_util_cls_dict.items()):
+            target_recover_util_class_ins = self._select_recover_util(
+                value[1])
+            if not target_recover_util_class_ins:
+                result = self._update_error
+                break
+
+            create_result, recover_db_info_list, recover_ec_message_list = \
+                target_recover_util_class_ins.create_recover_message(
+                    ec_message, device_info, service_type)
+            if not create_result:
+                self.common_util_log.logging(
+                    device_name, self.log_level_warn,
+                    self.Logmessage["Recover"] %
+                    (value[0].upper(),), __name__)
+                result = self._update_error
+                break
+
+            if isinstance(recover_ec_message_list, list):
+                idx = 0
+                for idx in range(len(recover_ec_message_list)):
+                    recover_db_info = recover_db_info_list[idx]
+                    recover_ec_message = recover_ec_message_list[idx]
+                    result = self._edit_config_for_recover(
+                        device_name, value[0],
+                        recover_db_info, recover_ec_message)
+                    if result != self._update_ok:
+                        self.common_util_log.logging(
+                            device_name, self.log_level_debug,
+                            "edit-config error [%s] result=%s" %
+                            (value[0].upper(), result,), __name__)
+                        break
+                if result != self._update_ok:
+                    break
+            elif recover_ec_message_list is not None:
+                result = self._edit_config_for_recover(
+                    device_name, value[0], recover_db_info_list,
+                    recover_ec_message_list)
+
+                if result != self._update_ok:
+                    self.common_util_log.logging(
+                        device_name, self.log_level_debug,
+                        "edit-config error [%s] result=%s" %
+                        (value[0].upper(), result,), __name__)
+                    break
         if result == self._update_ok:
             if not self._send_control_signal(device_name,
                                              "validate",
@@ -287,150 +418,6 @@ class EmSeparateDriver(object):
                 return self._update_error
 
         return result
-
-    @decorater_log
-    def _recover_ce_lag(self, device_name, ec_message, device_info):
-        '''
-        Recovery CELAG
-            Perform CELAG restoration processing of service reconfiguration.
-            Transmit device control signal to protocol processing section.
-        Parameter:
-            device_name : Device name
-            ec_message : EC message
-            device_info : devie information
-        Return value :
-            Processing finish status : int (1:Successfully updated
-                                2:Validation check NG
-                                3:Updating unsuccessful)
-        '''
-        create_result, recover_db_info, recover_ec_message = \
-            self.recover_util.create_recover_ce_lag(
-                ec_message, device_info)
-        if not create_result:
-            self.common_util_log.logging(
-                device_name, self.log_level_warn,
-                self.Logmessage["Recover"] % ("CE-LAG",), __name__)
-            return self._update_error
-        if recover_ec_message is not None:
-            result = self._edit_config_for_recover(
-                device_name, self.name_celag, recover_db_info, recover_ec_message)
-            if result != self._update_ok:
-                self.common_util_log.logging(
-                    device_name, self.log_level_debug,
-                    "edit-config error [CE-LAG] result=%s" % result, __name__)
-                return result
-        return self._update_ok
-
-    @decorater_log
-    def _recover_cluster_link(self, device_name, ec_message, device_info):
-        '''
-        Recovery CLUSTER_LINK
-            Perform CLUSTER_LINK restoration processing of service reconfiguration.
-            Transmit device control signal to protocol processing section.
-        Parameter:
-            device_name : Device name
-            ec_message : EC message
-            device_info : devie information
-        Return value :
-            Processing finish status : int (1:Successfully updated
-                                2:Validation check NG
-                                3:Updating unsuccessful)
-        '''
-        create_result, recover_db_info, recover_ec_message = \
-            self.recover_util.create_recover_cluster_link(
-                ec_message, device_info)
-        if not create_result:
-            self.common_util_log.logging(
-                device_name, self.log_level_warn,
-                self.Logmessage["Recover"] % ("CLUSTER-LINK",), __name__)
-            return self._update_error
-        if recover_ec_message is not None:
-            result = self._edit_config_for_recover(
-                device_name, self.name_cluster_link,
-                recover_db_info, recover_ec_message)
-            if result != self._update_ok:
-                self.common_util_log.logging(
-                    device_name, self.log_level_debug,
-                    "edit-config error [CLUSTER-LINK] result=%s" %
-                    result, __name__)
-                return result
-        return self._update_ok
-
-    @decorater_log
-    def _recover_l2_slice(self, device_name, ec_message, device_info):
-        '''
-        Recovery L2_SLICE
-            Perform L2_SLICE restoration processing of service reconfiguration.
-            Transmit device control signal to protocol processing section.
-        Parameter:
-            device_name : Device name
-            ec_message : EC message
-            device_info : devie information
-        Return value :
-            Processing finish status : int (1:Successfully updated
-                                2:Validation check NG
-                                3:Updating unsuccessful)
-        '''
-        create_result, recover_db_info_list, recover_ec_message_list = \
-            self.recover_util.create_recover_l2_slice(
-                ec_message, device_info)
-        if not create_result:
-            self.common_util_log.logging(
-                device_name, self.log_level_warn,
-                self.Logmessage["Recover"] % ("L2-SLICE",), __name__)
-            return self._update_error
-        idx = 0
-        for idx in range(len(recover_ec_message_list)):
-            recover_db_info = recover_db_info_list[idx]
-            recover_ec_message = recover_ec_message_list[idx]
-            result = self._edit_config_for_recover(
-                device_name, self.name_l2_slice,
-                recover_db_info, recover_ec_message)
-            if result != self._update_ok:
-                self.common_util_log.logging(
-                    device_name, self.log_level_debug,
-                    "edit-config error [L2-SLICE] result=%s" %
-                    result, __name__)
-                return result
-        return self._update_ok
-
-    @decorater_log
-    def _recover_l3_slice(self, device_name, ec_message, device_info):
-        '''
-        Recovery L3_SLICE
-            Perform L3_SLICE restoration processing of service reconfiguration.
-            Transmit device control signal to protocol processing section.
-        Parameter:
-            device_name : Device name
-            ec_message : EC message
-            device_info : devie information
-        Return value :
-            Processing finish status : int (1:Successfully updated
-                                2:Validation check NG
-                                3:Updating unsuccessful)
-        '''
-        create_result, recover_db_info_list, recover_ec_message_list = \
-            self.recover_util.create_recover_l3_slice(
-                ec_message, device_info)
-        if not create_result:
-            self.common_util_log.logging(
-                device_name, self.log_level_warn,
-                self.Logmessage["Recover"] % ("L3-SLICE",), __name__)
-            return self._update_error
-        idx = 0
-        for idx in range(len(recover_ec_message_list)):
-            recover_db_info = recover_db_info_list[idx]
-            recover_ec_message = recover_ec_message_list[idx]
-            result = self._edit_config_for_recover(
-                device_name, self.name_l3_slice,
-                recover_db_info, recover_ec_message)
-            if result != self._update_ok:
-                self.common_util_log.logging(
-                    device_name, self.log_level_debug,
-                    "edit-config error [L3-SLICE] result=%s" %
-                    result, __name__)
-                return result
-        return self._update_ok
 
     @decorater_log
     def _update_device_setting_other(self, device_name,
@@ -451,6 +438,7 @@ class EmSeparateDriver(object):
                                 2:Validation check NG
                                 3:Updating unsuccessful)
         '''
+
         is_db_result, device_info = \
             self.common_util_db.read_configureddata_info(
                 device_name, service_type)
@@ -465,14 +453,15 @@ class EmSeparateDriver(object):
         if (self._send_control_signal(device_name,
                                       "edit-config",
                                       send_message,
-                                      service_type)[0] is False or
+                                      service_type,
+                                      order_type)[0] is False or
                 self._send_control_signal(device_name,
                                           "validate")[0] is False):
             return self._update_error
         else:
             return self._update_ok
 
-    @decorater_log
+    @decorater_log_in_out
     def delete_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
         '''
@@ -483,7 +472,7 @@ class EmSeparateDriver(object):
             device_name : Device name
             service_type : Service type
             order_type : Order type
-            ec_message : EC message
+            diff_info : Information on difference
         Return value :
             Processing finish status : int (1:Successfully deleted
                                 2:Validation check NG
@@ -518,7 +507,7 @@ class EmSeparateDriver(object):
         else:
             return self._update_ok
 
-    @decorater_log
+    @decorater_log_in_out
     def reserve_device_setting(self, device_name, service_type, order_type):
         '''
         Driver individual section tentative setting control.
@@ -538,7 +527,7 @@ class EmSeparateDriver(object):
             return False
         return self._send_control_signal(device_name, "confirmed-commit")[0]
 
-    @decorater_log
+    @decorater_log_in_out
     def enable_device_setting(self, device_name, service_type, order_type):
         '''
         Driver individual section established control.
@@ -572,7 +561,7 @@ class EmSeparateDriver(object):
                 self.Logmessage["NetConf_Fault"] % ("unlock",), __name__)
         return True
 
-    @decorater_log
+    @decorater_log_in_out
     def disconnect_device(self, device_name, service_type, order_type):
         '''
         Driver individual section disconnection control.
@@ -603,7 +592,7 @@ class EmSeparateDriver(object):
                 self.Logmessage["NetConf_Fault"] % ("disconnect",), __name__)
         return True
 
-    @decorater_log
+    @decorater_log_in_out
     def get_device_setting(self,
                            device_name,
                            service_type,
@@ -644,7 +633,7 @@ class EmSeparateDriver(object):
         else:
             return True, return_message
 
-    @decorater_log
+    @decorater_log_in_out
     def execute_comparing(self, device_name,
                           service_type, order_type, device_signal):
         '''
@@ -678,6 +667,7 @@ class EmSeparateDriver(object):
         Service type analysis
             Called out when starting external IF, check whether service type is suitable.
         Parameter:
+
             device_name : service_type
             service_type : Service type
         Return value
@@ -709,8 +699,8 @@ class EmSeparateDriver(object):
             service_type : Service type
             operation : Operation
         Return value.
-            Processed result ; Boolean ????esult of send_control_signal)
-            Message ; str ????esult of send_control_signal)
+            Processed result ; Boolean result of send_control_signal)
+            Message ; str Result of send_control_signal)
         '''
         self.common_util_log.logging(
             device_name, self.log_level_debug,
@@ -925,7 +915,7 @@ class EmSeparateDriver(object):
         Parameter:
             cudr_val : CUDR texts (the spot which says "YY" in the "XXX.XXX.XXX.XXX/YY" (0-32))
         Return value:
-            Converted IP address ; str  (XXX.XXX.XXX.XXX)
+            Converted IP address  ; str  (XXX.XXX.XXX.XXX)
         '''
         if ip_ver == 4:
             tmp_addr = u"0.0.0.0/%d" % (cidr_val,)
@@ -938,7 +928,7 @@ class EmSeparateDriver(object):
     def _validation(self, device_name, service_type, device_info):
         '''
         Validation check
-            Called out after message has been created.
+            Called out when creating message
         Parameter:
             device_name : Device name
             service_type : Service type
@@ -961,8 +951,8 @@ class EmSeparateDriver(object):
     def _comparsion_process_sw_db(self, device_name,
                                   service_type, receive_message, db_info):
         '''
-        SW-DB comparison processing (check information matching).
-            Called out after obtaining db data.
+        SW-DB comparison processing(Information matching check)
+            Get called out after obtaining db data
         Parameter:
             device_name : Device name
             service_type : Service type
@@ -1005,10 +995,10 @@ class EmSeparateDriver(object):
     @decorater_log
     def _comparsion_pair(self, netconf_val, db_val):
         '''
-        Compare two items taken as argument.
+        Compare two items which have been obtained asthe argument
         Argument:
-            netconf_val:Target for comparison(node tag)
-            db_val: Target for comparison
+            netconf_val:Object to be compared (node tag)
+            db_val: Object to be compared
         Return value
             Comparison result : true,false
         '''
@@ -1205,6 +1195,29 @@ class EmSeparateDriver(object):
             self.log_level_error,
             self.Logmessage["Call_NG_Method"] %
             ("_gen_cluster_link_fix_message"),
+            __name__)
+        self.common_util_log.logging(
+            " ", self.log_level_debug,
+            "params : xml_obj = %s , operation = %s" % (xml_obj, operation),
+            __name__)
+        return False
+
+    @decorater_log
+    def _gen_acl_filter_fix_message(self, xml_obj, operation):
+        '''
+        Fixed value to create message (acl-filter) for Netconf.
+            Called out when creating message for acl-filter.
+        Parameter:
+            xml_obj : xml object
+            operation : Designate "delete" when deleting
+        Return value
+            Creation result : Boolean (Write properly using override method)
+        '''
+        self.common_util_log.logging(
+            " ",
+            self.log_level_error,
+            self.Logmessage["Call_NG_Method"] %
+            ("_gen_acl_filter_fix_message"),
             __name__)
         self.common_util_log.logging(
             " ", self.log_level_debug,
@@ -1453,6 +1466,36 @@ class EmSeparateDriver(object):
         return False
 
     @decorater_log
+    def _gen_acl_filter_variable_message(self,
+                                         xml_obj,
+                                         device_info,
+                                         ec_message,
+                                         operation):
+        '''
+        Variable value to create message (acl-filter) for Netconf.
+           Called out when creating message for acl-filter(After fixed message has been created)
+        Parameter:
+            xml_obj : xml object
+            device_info : Device information
+            ec_message : EC message
+            operation : Designate "delete" when deleting
+        Return value
+            Creation result : Boolean (Write properly using override method)
+        '''
+        self.common_util_log.logging(
+            " ",
+            self.log_level_error,
+            self.Logmessage["Call_NG_Method"] %
+            ("_gen_acl_filter_message"),
+            __name__)
+        self.common_util_log.logging(
+            " ", self.log_level_debug,
+            "params : xml_obj=%s ,device_info=%s ,ec_message=%s operation=%s" %
+            (xml_obj, device_info, ec_message, operation),
+            __name__)
+        return False
+
+    @decorater_log
     def _validation_spine(self, device_info):
         '''
         Validation check(Spine)
@@ -1597,14 +1640,30 @@ class EmSeparateDriver(object):
         return True
 
     @decorater_log
+    def _validation_acl_filter(self, device_info):
+        '''
+        Validation check( acl_filter )
+            Called out when checking validation of acl_filer
+        Parameter:
+            device_info : Device informaiton
+        Return value :
+            Check result : Boolean (Should always be "True" unless override occurs.)
+        '''
+        self.common_util_log.logging(
+            " ", self.log_level_debug,
+            "%s validation is ok : device_info = %s" %
+            (self.name_acl_filter, device_info), __name__)
+        return True
+
+    @decorater_log
     def _parse_receive_info(self, receive_message):
         '''
-        Response message analysis (xml).
-            Called out before SW-DB comparison processing.
+        Response message analysis(xml)
+            Called out before SW-DB comparison processing
         Parameter:
             receive_message : Response message
         Return value :
-            Analysis result : xml object
+            Analysis result : XML object
         '''
         try:
             xml_obj = etree.fromstring(receive_message)
@@ -1676,12 +1735,10 @@ class EmSeparateDriver(object):
         '''
         Perform validation (Non device access) and edit-config in recovery.
         Parameter:
-            device_name : Device name
-            service_type : Service type
-            recover_db_info : DB information for recovery
-            recover_ec_message : EC message information for recovery
+            ec_message : Recovery expansion/"recover service" EC message
+            db_info : DB information
         Return value :
-            Success : _update_ok  /  Failure : _update_error
+            Result : Success：_update_ok  Failure：_update_error
         '''
         is_message_result, send_message = self._gen_message(
             device_name, service_type, recover_db_info, recover_ec_message,
@@ -1697,3 +1754,30 @@ class EmSeparateDriver(object):
                                          service_type)[0]:
             return self._update_error
         return self._update_ok
+
+    def _get_internal_link_vlan_config(self):
+        '''
+        Read config from conf_internal_link_vlan.conf
+        '''
+        splitter_conf = '='
+        config_path = os.path.join(GlobalModule.EM_CONF_PATH,
+                                   'conf_internal_link_vlan.conf')
+        try:
+            with open(config_path, 'r') as open_file:
+                conf_list = open_file.readlines()
+        except IOError:
+            raise
+
+        os_list = []
+        for value in conf_list:
+            if not(value.startswith('#')) and splitter_conf in value:
+                tmp_line = value.strip()
+                tmp_line = tmp_line.replace(BOM_UTF8, '')
+                os_name = tmp_line.split(splitter_conf)[1]
+                os_list.append(os_name)
+
+        self.common_util_log.logging(None,
+                                     self.log_level_debug,
+                                     "vlan_IL_list={0}".format(os_list),
+                                     __name__)
+        return os_list

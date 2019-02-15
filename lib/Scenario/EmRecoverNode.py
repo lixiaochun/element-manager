@@ -15,6 +15,7 @@ class EmRecoverNode(EmRecover.EmRecover):
     Scenario class for recover node
     '''
 
+
     @decorater_log
     def __init__(self):
         '''

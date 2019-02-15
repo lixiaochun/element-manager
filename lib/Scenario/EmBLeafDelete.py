@@ -103,9 +103,9 @@ class EmBLeafDelete(EmBLeafUpdate):
 
         if is_db_result is False:
             GlobalModule.EM_LOGGER.debug(
-                " write_transaction_device_status_list(1:processing) NG")
+                " write_transaction_device_status_list(1: During processing) NG")
             GlobalModule.EM_LOGGER.warning(
-                "%s Scenario:%s Device:%s NG:13(Processing failure (temporary))",
+                "%s Scenario:%s Device:%s NG:13(Processing failed (temporal))",
                 self.error_code_03, self.scenario_name, device_name)
             GlobalModule.EM_LOGGER.info(
                 "%s Scenario:%s Device:%s end",
@@ -113,7 +113,7 @@ class EmBLeafDelete(EmBLeafUpdate):
             return
 
         GlobalModule.EM_LOGGER.debug(
-            "write_transaction_device_status_list(1:processing) OK")
+            "write_transaction_device_status_list(1: During processing) OK")
 
         is_comdriver_result = self.com_driver_list[device_name].start(
             device_name)
@@ -121,7 +121,7 @@ class EmBLeafDelete(EmBLeafUpdate):
         if is_comdriver_result is False:
             GlobalModule.EM_LOGGER.debug("start NG")
             GlobalModule.EM_LOGGER.warning(
-                "%s Scenario:%s Device:%s NG:13(Processing failure (temporary))",
+                "%s Scenario:%s Device:%s NG:13(Processing failed (temporal))",
                 self.error_code_03, self.scenario_name, device_name)
 
             self._find_subnormal(transaction_id, order_type, device_name,
@@ -234,6 +234,7 @@ class EmBLeafDelete(EmBLeafUpdate):
             Necessity for updating transaction status :
                 boolean (True:Update necessary,False:Update unnecessary)
         '''
+
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
 

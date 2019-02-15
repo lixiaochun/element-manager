@@ -5,12 +5,15 @@
 '''
 Protocol processing section (Netconf)
 '''
+import traceback
 import time
 import json
 from ncclient import manager
 from ncclient import operations
 import GlobalModule
+import EmNetconfClient
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 
 
 class EmNetconfProtocol(object):
@@ -22,7 +25,7 @@ class EmNetconfProtocol(object):
     __CONNECT_CAPABILITY_NG = 2
     __CONNECT_NO_RESPONSE = 3
 
-    @decorater_log
+    @decorater_log_in_out
     def connect_device(self, device_info):
         '''
         Device connection control
@@ -44,7 +47,6 @@ class EmNetconfProtocol(object):
             Connection result :
                 int (1:Normal, 2: Capability Abnormal 3:No response)
         '''
-
         parse_json = json.loads(device_info)
 
         device_info_dict = parse_json["device_info"]
@@ -105,14 +107,15 @@ class EmNetconfProtocol(object):
 
         for count in range(retry_num_val):
             try:
-                self.__connection = manager.connect(
+                self.__connection = EmNetconfClient.connect_ssh(
                     host=self.__device_ip,
                     port=port_number,
                     username=username,
                     password=password,
                     timeout=timeout_val,
                     hostkey_verify=False,
-                    device_params=device_params)
+                    device_params=device_params,
+                    device_info=device_info_dict)
 
                 break
 
@@ -121,7 +124,7 @@ class EmNetconfProtocol(object):
                     "Connect Error:%s", str(type(exception)))
                 GlobalModule.EM_LOGGER.debug(
                     "Connect Error args: %s", str(exception.args))
-
+                GlobalModule.EM_LOGGER.debug(traceback.format_exc())
                 GlobalModule.EM_LOGGER.debug(
                     "Connection Wait Counter: %s", count)
 
@@ -154,7 +157,7 @@ class EmNetconfProtocol(object):
 
         return self.__CONNECT_OK
 
-    @decorater_log
+    @decorater_log_in_out
     def send_control_signal(self, message_type, send_message):
         '''
         Transmit device control signal
@@ -179,7 +182,6 @@ class EmNetconfProtocol(object):
                            (Returns "NetconfSendOK" to return value 1
                             when rpc-error is received successfully.))
         '''
-
         is_judg_result, judg_message_type = self.__judg_control_signal(
             message_type)
 
@@ -285,7 +287,7 @@ class EmNetconfProtocol(object):
 
         return True, receive_message
 
-    @decorater_log
+    @decorater_log_in_out
     def disconnect_device(self):
         '''
         Device disconnection control
@@ -295,7 +297,6 @@ class EmNetconfProtocol(object):
         Explanation about return value:
         Judgment result : boolean (True:Normal,False:Abnormal)
         '''
-
         try:
             self.__connection.close_session()
 
@@ -315,6 +316,7 @@ class EmNetconfProtocol(object):
         '''
         Constructor
         '''
+
         self.__connection = None
         self.__device_ip = None
         self.__capability_list = \

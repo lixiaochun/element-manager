@@ -1,7 +1,7 @@
 ## Element Manager Configuration Specifications
 
 **Version 1.0**
-**March 28, 2018**
+**December 7, 2018**
 **Copyright(c) 2018 Nippon Telegraph and Telephone Corporation**
 
 ### Configuration Definitions
@@ -17,6 +17,7 @@ Configurations are classified and defined by their usage. Also, they are distrib
 |conf_driver.conf|It defines the files to be started for each platform name, OS and firmware version that is required for operating Driver Individual Part.|
 |conf_sys_common.conf|It defines the common configuration items (DB server address, port number, Data Base name, DB access user name, DB access user password, configured value for confirm-timeout, etc.) that are necessary for EM.|
 |conf_separate_driver_cisco.conf|Configurations that are used in the Individual Driver (cisco) but not used in the Configuration Management Function. It defines the detailed information of the variable parameters that are necessary for injecting data to Cisco devices.|
+|conf_internal_link_vlan.conf|VLAN ID setting config for internal link. (Internal link configuration for Beluganos opposing device.) |
 
 ### Rules of Description for Configurations
 
@@ -64,7 +65,7 @@ The table below shows the detail of items which are managed in this configuratio
 |No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
 |:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
 |1|REST Server Address|Rest_server_address|I/F Process Part Definition: REST Server Address|Yes|0.0.0.0|Text|Process cannot be started.|-|
-|2|Port Number|Rest_port_number|I/F Process Part Definition: Port Number|Yes|8080|Numeral|Process cannot be started.|-|
+|2|Port Number|Port_number|I/F Process Part Definition: Port Number|Yes|8080|Numeral|Process cannot be started.|-|
 |3|Controller Status Acquisition Shell Script Path|Statusget_shell_file_path|I/F Process Part Definition: Path for Controller Status Acquisition Shell Script|Yes|'../bin/controller_status.sh|Text|Process for acquiring controller status fails|-|
 
 ### conf_scenario.conf
@@ -83,6 +84,9 @@ For the clear description, please refer to the following file.
 |4|Waiting Time of Order Request for each scenario|Scenario_Timer_Order_Wait|The guard timer (ms) for each scenario. It watches that the time between the order reception and the configuration completion of all devices does not exceed the specified value.|Yes|Numeral|
 |5|Service Transaction ID for each scenario|Scenario_Service_Transaction_No|An ID (Service Type) which is used by transaction management in Order Flow Control|Yes|Numeral|
 |6|Order Transaction ID for each scenario|Scenario_Order_Transaction_No|The service type to run each scenario individual process from Order Flow Control|Yes|Numeral|
+
+**Append lines each time when the items to be configured by each scenario are increased in the future.
+**
 
 ### conf_scenario_rest.conf
 
@@ -130,22 +134,23 @@ The table below shows the detail of items which are managed in this configuratio
 |6|Timer Value: confirmed-commit Configuration Time (ms)|Timer_confirmed-commit|the timer value (ms) set in confirmed-commit|Yes|30000|Numeral|-|-|
 |7|Timer Value: confirmed-commit EM Internal Adjustment Time (ms)|Timer_confirmed-commit_em_offset|EM internal adjustment value (ms) for confirmed-commit<br>Both positive and negative vales are allowed.|Yes|0|Numeral|-|The sum of this value and that of Timer_confirmed-commit is set to the timer.|
 |8|Timer Value: Netconf Protocol Timer Configuration Time (ms)|Timer_netconf_protocol|NETCONF protocol timer value (ms)|Yes|60000|Numeral|The default value is set.|-|
-|9|Timer Value: Signal Reception Waiting Timer Configuration Time (ms)|Timer_signal_rcv_wait|signal reception waiting timer value (ms)|Yes|1000|Numeral|The default value is set.|-|
-|10|Timer Value: Thread Stop Monitoring Timer Configuration Time (ms)|Timer_thread_stop_watch|thread stop monitoring timer value (ms)|Yes|200|Numeral|The default value is set.|-|
-|11|Timer Value: Transaction End Monitoring Timer Configuration Time (ms)|Timer_transaction_stop_watch|transaction end monitoring timer value (ms)|Yes|200|Numeral|The default value is set.|-|
-|12|Timer Value: Transaction DB Monitoring Timer Configuration Time (ms)|Timer_transaction_db_watch|transaction DB monitoring timer value (ms)|Yes|100|Numeral|The default value is set.|-|
-|13|Timer Value: Connection Retry Time (ms)|Timer_connection_retry|connection retry timer value (ms)|Yes|5000|Numeral|The default value is set.|-|
-|14|The Number of Connection Retries|Connection_retry_num|the number of connection retries|Yes|5|Numeral|The default value is set.|-|
-|15|Log File|Em_log_file_path|Specify the log file path of EM.|Yes|-|Text|Log cannot be saved correctly.|-|
-|16|Log Level|Em_log_level|Specify the log level of EM|Yes|DEBUG|Text|-|-|
-|17|IP Address of EM's REST Server|Em_Rest_server_address|Specify the IP address of EM's REST server|Yes|0.0.0.0|Text|-|-|
-|18|Port Number of EM's REST Server|Em_port_number|Specify the port number of EM's REST server|Yes|8080|Text|-|-|
-|19|The Number of REST Requests Average Time|Rest_request_average|The unit time (sec) for calculating the number of REST requests|Yes|3600|Numeral|The default value is set.||
-|20|IP Address of EM's Management I/F|Controller_management_address|Specify the IP address of EM's management I/F|Yes|0.0.0.0|Text|-|-|
-|21|IP Address of EC's REST Server|Ec_rest_server_address|Specify the IP address of EC's REST server|Yes|0.0.0.0|Text|-|-|
-|22|Port Number of EC's REST Server|Ec_port_number|Specify the port number of EC's REST server|Yes|18080|Numeral|-|-|
-|23|The Number of REST Notification Retries|Ec_rest_retry_num|Specify the number of REST notification retries|Yes|1|Numeral|-|-|
-|24|Interval of REST Notification Retry|Ec_rest_retry_interval|Specify the time interval of REST notification retry|Yes|1|Numeral|-|-|
+|9|Timer Value: CLI Protocol Timer Configuration Time (ms)|Timer_cli_protocol|CLI protocol timer value (ms)|Yes|60000|Numeral|The default value is set.|-|
+|10|Timer Value: Signal Reception Waiting Timer Configuration Time (ms)|Timer_signal_rcv_wait|signal reception waiting timer value (ms)|Yes|1000|Numeral|The default value is set.|-|
+|11|Timer Value: Thread Stop Monitoring Timer Configuration Time (ms)|Timer_thread_stop_watch|thread stop monitoring timer value (ms)|Yes|200|Numeral|The default value is set.|-|
+|12|Timer Value: Transaction End Monitoring Timer Configuration Time (ms)|Timer_transaction_stop_watch|transaction end monitoring timer value (ms)|Yes|200|Numeral|The default value is set.|-|
+|13|Timer Value: Transaction DB Monitoring Timer Configuration Time (ms)|Timer_transaction_db_watch|transaction DB monitoring timer value (ms)|Yes|100|Numeral|The default value is set.|-|
+|14|Timer Value: Connection Retry Time (ms)|Timer_connection_retry|connection retry timer value (ms)|Yes|5000|Numeral|The default value is set.|-|
+|15|The Number of Connection Retries|Connection_retry_num|the number of connection retries|Yes|5|Numeral|The default value is set.|-|
+|16|Log File|Em_log_file_path|Specify the log file path of EM.|Yes|-|Text|Log cannot be saved correctly.|-|
+|17|Log Level|Em_log_level|Specify the log level of EM|Yes|DEBUG|Text|-|-|
+|18|IP Address of EM's REST Server|Em_Rest_server_address|Specify the IP address of EM's REST server|Yes|0.0.0.0|Text|-|-|
+|19|Port Number of EM's REST Server|Em_port_number|Specify the port number of EM's REST server|Yes|8080|Text|-|-|
+|20|The Number of REST Requests Average Time|Rest_request_average|The unit time (sec) for calculating the number of REST requests|Yes|3600|Numeral|The default value is set.||
+|21|IP Address of EM's Management I/F|Controller_management_address|Specify the IP address of EM's management I/F|Yes|0.0.0.0|Text|-|-|
+|22|IP Address of EC's REST Server|Ec_rest_server_address|Specify the IP address of EC's REST server|Yes|0.0.0.0|Text|-|-|
+|23|Port Number of EC's REST Server|Ec_port_number|Specify the port number of EC's REST server|Yes|18080|Numeral|-|-|
+|24|The Number of REST Notification Retries|Ec_rest_retry_num|Specify the number of REST notification retries|Yes|1|Numeral|-|-|
+|25|Interval of REST Notification Retry|Ec_rest_retry_interval|Specify the time interval of REST notification retry|Yes|1|Numeral|-|-|
 
 ### conf_separate_driver_cisco.conf
 
@@ -165,6 +170,16 @@ The table below shows the detail of items which are managed in this configuratio
 
 **Append lines each time when the patterns to be registered are increased in the future.
 **
+
+### conf_internal_link_vlan.conf
+
+The table below shows the detail of items which are managed in this configuration file.
+
+|No.|Item Name|Key|Description|Required?|default Value|Type|in case invalid value is set|Remarks|
+|:----|:-----|:----|:-----|:----|:----|:----|:----|:----|
+|1|Driver OS‚P|Driver_os1|OS name of the model to which VLAN ID is to be set.|No|-|Text|In some cases, creation of internal link might be failed.|Same format as OS name of conf_driver.conf|
+
+**Append lines each time when devices are added in the future.**
 
 ### [Additional Explanation] qos.conf
 

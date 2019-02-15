@@ -4,7 +4,7 @@
 # Filename: JuniperDriver5100.py
 '''
 Individual section on driver
-(JuniperDriver's driver (QFX5100-48S, QFX5100-24Q))
+(JuniperDriver's driver(QFX5100-48S、QFX5100-24Q))
 '''
 import re
 import ipaddress
@@ -19,13 +19,15 @@ from EmCommonLog import decorater_log
 class JuniperDriver5100(EmSeparateDriver):
     '''
     Individual section on driver (JuniperDriver's driver)
-                    (QFX5100-48S, QFX5100-24Q))
+                    (QFX5100-48S、QFX5100-24Q))
     '''
 
     _PORT_MODE_ACCESS = "access"
     _PORT_MODE_TRUNK = "trunk"
     _ATTR_OPE = "operation"
     _XML_LOG = "set xml node (parent = %s):\n%s"
+
+    _DEFAULT_INTERNAL_LINK_COST = 100
 
     @decorater_log
     def __init__(self):
@@ -407,12 +409,20 @@ class JuniperDriver5100(EmSeparateDriver):
                                              if_info.get("LAG-LINKS"),
                                              if_info.get("LAG-SPEED"),
                                              operation)
-        self._set_xml_tag(node_1, "mtu", None, None, "4110")
+        mtu = 4110
+        inner_vlan = 0
+        if if_info.get("INNER-IF-VLAN") is not None:
+            self._set_xml_tag(node_1, "vlan-tagging")
+            mtu = 4114
+            inner_vlan = if_info.get("INNER-IF-VLAN")
+        self._set_xml_tag(node_1, "mtu", None, None, mtu)
         self._set_interface_unit_inner(node_1,
                                        if_info.get("IF-ADDR"),
                                        if_info.get("IF-PREFIX"),
                                        vpn_type,
-                                       if_info.get("OPPOSITE-NODE-VPN"))
+                                       if_info.get("OPPOSITE-NODE-VPN"),
+                                       inner_vlan
+                                       )
         self.common_util_log.logging(
             None, self.log_level_debug,
             self._XML_LOG % (if_node.tag, etree.tostring(node_1),),
@@ -483,13 +493,14 @@ class JuniperDriver5100(EmSeparateDriver):
                                   if_addr,
                                   if_prefix,
                                   vpn_type=None,
-                                  opposite_vpn_type=None):
+                                  opposite_vpn_type=None,
+                                  inner_vlan=0):
         '''
         Create unit node of interface node
         for internal link/inter-cluster link.
         '''
         node_2 = self._set_xml_tag(if_node, "unit")
-        self._set_xml_tag(node_2, "name", None, None, "0")
+        self._set_xml_tag(node_2, "name", None, None, inner_vlan)
         node_3 = self._set_xml_tag(node_2, "family")
         node_4 = self._set_xml_tag(node_3, "inet")
         node_5 = self._set_xml_tag(node_4, "filter")
@@ -504,6 +515,8 @@ class JuniperDriver5100(EmSeparateDriver):
                           "%s/%s" % (if_addr, if_prefix))
         if vpn_type != 2 and opposite_vpn_type != 2:
             self._set_xml_tag(node_3, "mpls")
+        if inner_vlan != 0:
+            self._set_xml_tag(node_2, "vlan-id", text=inner_vlan)
         self.common_util_log.logging(
             None, self.log_level_debug,
             self._XML_LOG % (if_node.tag, etree.tostring(node_2),),
@@ -700,13 +713,10 @@ class JuniperDriver5100(EmSeparateDriver):
         is_loopback = options.get("is_loopback", False)
 
         for if_info in if_infos:
-            if service == self.name_cluster_link:
-                metric = if_info.get("OSPF-METRIC", 100)
-            else:
-                metric = 100
             self._set_ospf_area_interface(area_node,
                                           if_info.get("IF-NAME"),
-                                          metric,
+                                          if_info.get("INNER-IF-VLAN"),
+                                          if_info.get("OSPF-METRIC", 100),
                                           operation=operation)
         if is_loopback:
             self._set_ospf_area_lo_interface(area_node)
@@ -719,22 +729,33 @@ class JuniperDriver5100(EmSeparateDriver):
     def _set_ospf_area_interface(self,
                                  area_node,
                                  if_name,
+                                 inner_vlan=0,
                                  metric=100,
                                  operation=None):
         '''
-        Set IF for ospf/area node.
+        Set IF to ospf/area node
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
+
+        if inner_vlan is None:
+            inner_vlan = 0
 
         node_2 = self._set_xml_tag(area_node, "interface",  attr, attr_val)
         self._set_xml_tag(node_2,
                           "interface_name",
                           None,
                           None,
-                          "%s.%d" % (if_name, 0))
+                          "%s.%d" % (if_name, inner_vlan))
         if operation != self._DELETE:
-            self._set_xml_tag(node_2, "interface-type", None, None, "p2p")
-            self._set_xml_tag(node_2, "metric", None, None, metric)
+            if operation != self._REPLACE:
+                self._set_xml_tag(node_2, "interface-type", None, None, "p2p")
+                self._set_xml_tag(node_2, "metric", None, None, metric)
+            else:
+                self._set_xml_tag(node_2,
+                                  "metric",
+                                  "operation",
+                                  "replace",
+                                  metric)
         self.common_util_log.logging(
             None, self.log_level_debug,
             self._XML_LOG % (area_node.tag, etree.tostring(node_2)),
@@ -1076,6 +1097,7 @@ class JuniperDriver5100(EmSeparateDriver):
         '''
         Set unit for interface node.
             param : port_mode : Designate the port mode.
+                    qos : qos information
         '''
         port_mode = param.get("port_mode")
 
@@ -1522,6 +1544,7 @@ class JuniperDriver5100(EmSeparateDriver):
                     ; prefix = prefix value
                     ; is_vlan = IF-IS-VLAN value
                     ; mtu = IF-MTU value
+                    : qos_info = QOS value
         '''
         ip_addr = params.get("ip_addr")
         prefix = params.get("prefix")
@@ -1951,7 +1974,7 @@ class JuniperDriver5100(EmSeparateDriver):
 
         if (service == self.name_spine) or \
                 (service == self.name_internal_link and
-                 db_info.get("device_type") == self._device_type_spine):
+                 db_info.get("device", {}).get("device_type") == self._device_type_spine):
             need_oppo_info = True
         else:
             need_oppo_info = False
@@ -1965,8 +1988,8 @@ class JuniperDriver5100(EmSeparateDriver):
                 raise ValueError("internal-physical not enough information")
 
             phy_ifs.append(
-                self._get_internal_if_info(
-                    tmp, self._if_type_phy, need_oppo_info))
+                self._get_internal_if_info(tmp,
+                                           self._if_type_phy, need_oppo_info))
 
         lag_ifs = []
         lag_mem_ifs = []
@@ -1983,8 +2006,8 @@ class JuniperDriver5100(EmSeparateDriver):
                 raise ValueError("internal-lag not enough information")
 
             lag_ifs.append(
-                self._get_internal_if_info(
-                    tmp, self._if_type_lag, need_oppo_info))
+                self._get_internal_if_info(tmp,
+                                           self._if_type_lag, need_oppo_info))
 
             for lag_mem in tmp.get("internal-interface"):
                 if not lag_mem.get("name"):
@@ -2018,7 +2041,8 @@ class JuniperDriver5100(EmSeparateDriver):
 
             inner_ifs.append(tmp.get("name"))
             phy_ifs.append(
-                self._get_internal_if_del_info(tmp, self._if_type_lag))
+                self._get_internal_if_del_info(tmp,
+                                               self._if_type_lag, db_info))
 
         lag_ifs = []
         lag_mem_ifs = []
@@ -2034,13 +2058,59 @@ class JuniperDriver5100(EmSeparateDriver):
 
             inner_ifs.append(tmp.get("name"))
             lag_ifs.append(
-                self._get_internal_if_del_info(tmp, self._if_type_lag))
+                self._get_internal_if_del_info(tmp,
+                                               self._if_type_lag, db_info))
 
             for lag_mem in tmp.get("internal-interface"):
                 if not lag_mem.get("name"):
                     raise ValueError(
                         "internal-interface not enough information ")
                 lag_mem_ifs.append(self._get_lag_mem_if_info(tmp, lag_mem))
+
+        inner_ifs = copy.deepcopy(phy_ifs)
+        inner_ifs.extend(lag_ifs)
+
+        return phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs
+
+    @decorater_log
+    def _get_replace_internal_link_from_ec(self,
+                                           device_mes,
+                                           service=None,
+                                           operation=None,
+                                           db_info=None):
+        '''
+        Obtain the EC message/ DB information regarding the internal link for deletion(LAG).
+        '''
+        inner_ifs = []
+
+        phy_ifs = []
+
+        for tmp_if in device_mes.get("internal-physical", ()):
+            if (not tmp_if.get("name") or
+                    tmp_if.get("cost") is None):
+                raise ValueError("internal-physical not enough information")
+
+            tmp = copy.deepcopy(tmp_if)
+
+            inner_ifs.append(tmp.get("name"))
+            phy_ifs.append(
+                self._get_internal_if_replace_info(tmp,
+                                                   self._if_type_phy, db_info))
+
+        lag_ifs = []
+        lag_mem_ifs = []
+
+        for tmp_if in device_mes.get("internal-lag", ()):
+            if (not tmp_if.get("name") or
+                    tmp_if.get("cost") is None):
+                raise ValueError("internal-physical not enough information")
+
+            tmp = copy.deepcopy(tmp_if)
+
+            inner_ifs.append(tmp.get("name"))
+            lag_ifs.append(
+                self._get_internal_if_replace_info(tmp,
+                                                   self._if_type_lag, db_info))
 
         inner_ifs = copy.deepcopy(phy_ifs)
         inner_ifs.extend(lag_ifs)
@@ -2058,15 +2128,31 @@ class JuniperDriver5100(EmSeparateDriver):
         '''
         op_node_type = None
         op_node_vpn = None
-        if need_oppo_info:
-            if if_info.get("opposite-node-name"):
-                op_node_type, op_node_vpn = \
-                    self.common_util_db.read_device_type(
-                        if_info.get("opposite-node-name"))
-            if (not if_info.get("opposite-node-name") or not op_node_type):
-                raise ValueError(
-                    "fault opposite-node vpn:device = %s,n_type=%s" %
-                    (if_info.get("opposite-node-name"), op_node_type))
+        op_node_os = None
+        inner_vlan = None
+
+        if not if_info.get("opposite-node-name"):
+            raise ValueError("fault opposite-node device = %s" %
+                             (if_info.get("opposite-node-name")))
+        elif if_info.get("opposite-node-name") == "Recover":
+            inner_vlan = if_info.get("vlan-id")
+        else:
+            op_node_type, op_node_vpn = \
+                self.common_util_db.read_device_type(
+                    if_info.get("opposite-node-name"))
+            if need_oppo_info:
+                if (not op_node_type):
+                    raise ValueError("fault opposite-node-type device = %s" %
+                                     (if_info.get("opposite-node-name")))
+            op_node_os = \
+                self.common_util_db.read_device_os(
+                    if_info.get("opposite-node-name"))
+            if not op_node_os:
+                raise ValueError("fault opposite-node-os device = %s" %
+                                 (if_info.get("opposite-node-name")))
+
+            if op_node_os in self.internal_link_vlan_config:
+                inner_vlan = if_info.get("vlan-id")
 
         tmp = {
             "IF-TYPE": if_type,
@@ -2075,24 +2161,59 @@ class JuniperDriver5100(EmSeparateDriver):
             "OPPOSITE-NODE-VPN": self._vpn_types.get(op_node_vpn),
             "IF-ADDR": if_info.get("address"),
             "IF-PREFIX": if_info.get("prefix"),
+            "INNER-IF-VLAN": inner_vlan,
+            "OSPF-METRIC": if_info.get("cost",
+                                       self._DEFAULT_INTERNAL_LINK_COST)
         }
         if if_type == self._if_type_lag:
             tmp.update(self._get_lag_if_info(if_info))
         return tmp
 
     @decorater_log
-    def _get_internal_if_del_info(self, if_info, if_type=None):
+    def _get_internal_if_del_info(self, if_info, if_type=None, db_info=None):
         '''
         Obtain internal link information from EC message.
         (regardless of physical, LAG)
         '''
+        internal_link_db = self._get_internal_link_db(
+            db_info, if_info.get("name"))
 
         tmp = {
             "IF-TYPE": if_type,
             "IF-NAME": if_info.get("name"),
+            "INNER-IF-VLAN": internal_link_db.get("vlan_id")
         }
         if if_type == self._if_type_lag:
             tmp.update(self._get_lag_if_info(if_info))
+        return tmp
+
+    @decorater_log
+    def _get_internal_link_db(self, db_info, if_name):
+        '''
+        Obtain the relevant Internal Link Information（DB)
+        '''
+        for internal_link_db in db_info.get("internal-link", ()):
+            if internal_link_db.get("if_name") == if_name:
+                return internal_link_db
+        raise ValueError("fault get_internal_link_db")
+
+    @decorater_log
+    def _get_internal_if_replace_info(self,
+                                      if_info,
+                                      if_type=None,
+                                      db_info=None):
+        '''
+        Obtain the informaiton about Internal Link from EC message(Regardless of physical or LAG)
+        '''
+        internal_link_db = self._get_internal_link_db(
+            db_info, if_info.get("name"))
+
+        tmp = {
+            "IF-TYPE": if_type,
+            "IF-NAME": if_info.get("name"),
+            "INNER-IF-VLAN": internal_link_db.get("vlan_id"),
+            "OSPF-METRIC": if_info.get("cost")
+        }
         return tmp
 
     @decorater_log
@@ -2387,11 +2508,11 @@ class JuniperDriver5100(EmSeparateDriver):
                                                 slice_name,
                                                 ec_cp["vlan-id"],
                                                 "vrrp_detail")
-            if not vlan_if or vlan_if.get("gropu_id") is None:
+            if not vlan_if or vlan_if.get("group_id") is None:
                 raise ValueError("Vrrp is not enough Info")
             tmp = {
                 "OPERATION": self._DELETE,
-                "VRRP-GROUP-ID": vlan_if["gropu_id"],
+                "VRRP-GROUP-ID": vlan_if["group_id"],
                 "VRRP-VIRT-ADDR": vlan_if["virtual"].get("ipv4_address"),
                 "VRRP-VIRT-ADDR6": vlan_if["virtual"].get("ipv6_address")
             }
@@ -2543,7 +2664,6 @@ class JuniperDriver5100(EmSeparateDriver):
                          operation=None):
         '''
         Create list for class-or-service.
-        Create list for vlans.
         (Compare CP on DB and CP on operation instruction simultaneously.)
         (Make judgment on the necessity of IF deletion and
         possibility for slice to remain inside device.)
@@ -2602,7 +2722,7 @@ class JuniperDriver5100(EmSeparateDriver):
     @decorater_log
     def _get_bgp_from_ec(self, device_mes, db_info, slice_name=None):
         '''
-       Parameter from EC. (obtain cp data from cp)
+        Parameter from EC. (obtain bgp data from cp)
         '''
         bgp_list = []
         for tmp_cp in device_mes.get("cp", ()):
@@ -3361,10 +3481,13 @@ class JuniperDriver5100(EmSeparateDriver):
                 continue
             tmp, vlan_id = self._get_cp_interface_info_from_ec(
                 cp_dicts, tmp_cp, db_info)
-            port_mode = self._get_port_mode_l2slice_update(slice_name, tmp_cp, db_info)
+            port_mode = self._get_port_mode_l2slice_update(
+                slice_name, tmp_cp, db_info)
             if port_mode == self._PORT_MODE_ACCESS:
-                tmp["QOS"]["REMARK-MENU"]["IPV4"] = "input_vpnbulk_l2_be_ce_filter"
-                tmp["QOS"]["REMARK-MENU"]["IPV6"] = "input_vpnbulk_l2_be_ce_filter"
+                tmp["QOS"][
+                    "REMARK-MENU"]["IPV4"] = "input_vpnbulk_l2_be_ce_filter"
+                tmp["QOS"][
+                    "REMARK-MENU"]["IPV6"] = "input_vpnbulk_l2_be_ce_filter"
             else:
                 tmp["QOS"]["REMARK-MENU"]["IPV4"] = "input_l2_ce_filter"
                 tmp["QOS"]["REMARK-MENU"]["IPV6"] = "input_l2_ce_filter"
@@ -3388,13 +3511,13 @@ class JuniperDriver5100(EmSeparateDriver):
         port_mode = None
         for cp_db in db_info.get("cp", []):
             if cp_db.get("slice_name") == slice_name and \
-              cp_db.get("if_name") == if_name and \
-              cp_db.get("vlan", {}).get("vlan_id") == vlan_id:
+                    cp_db.get("if_name") == if_name and \
+                    cp_db.get("vlan", {}).get("vlan_id") == vlan_id:
                 port_mode = cp_db.get("vlan", {}).get("port_mode")
                 break
         if port_mode is None:
             raise ValueError(
-                    "getting port_mode from DB is None (or not fount)")
+                "getting port_mode from DB is None (or not fount)")
         return port_mode
 
     @decorater_log
@@ -3469,7 +3592,8 @@ class JuniperDriver5100(EmSeparateDriver):
 
         node_4 = self._set_xml_tag(node_3, "filter")
         self._set_xml_tag(
-            node_4, "input", attr, attr_val, qos.get("REMARK-MENU").get("IPV4"))
+            node_4, "input", attr,
+            attr_val, qos.get("REMARK-MENU").get("IPV4"))
 
         self.common_util_log.logging(
             None, self.log_level_debug,
@@ -3490,7 +3614,6 @@ class JuniperDriver5100(EmSeparateDriver):
         Parameter:
             xml_obj : xml object
             device_info : Device information
-            ec_message : EC Message
             operation : Designate "delete" when deleting.
         Return value:
             Creation result : Boolean (Write properly using override method)
@@ -3573,7 +3696,9 @@ class JuniperDriver5100(EmSeparateDriver):
 
         target_cp = None
         for tmp_cp in db_info.get("cp"):
-            if if_name == tmp_cp["if_name"] and ec_cp.get("vlan-id") == tmp_cp["vlan"].get("vlan_id"):
+            if if_name == tmp_cp["if_name"] and \
+                    ec_cp.get("vlan-id") == \
+                    tmp_cp["vlan"].get("vlan_id"):
                 target_cp = tmp_cp
                 break
 
@@ -3885,6 +4010,13 @@ class JuniperDriver5100(EmSeparateDriver):
                         service=self.name_internal_link,
                         operation=operation,
                         db_info=device_info)
+            elif operation == self._REPLACE:
+                phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs = \
+                    self._get_replace_internal_link_from_ec(
+                        device_mes,
+                        service=self.name_internal_link,
+                        operation=operation,
+                        db_info=device_info)
             else:
                 vpn_type = vpns.get(
                     ec_message.get("device", {}).get("vpn-type"))
@@ -3910,20 +4042,21 @@ class JuniperDriver5100(EmSeparateDriver):
 
         conf_node = self._set_configuration_node(xml_obj)
 
-        device_count = self._get_conf_device_count(
-            lag_ifs, device_info, operation=operation)
-        self._set_chassis_device_count(conf_node, device_count)
+        if operation != self._REPLACE:
+            device_count = self._get_conf_device_count(
+                lag_ifs, device_info, operation=operation)
+            self._set_chassis_device_count(conf_node, device_count)
 
-        if breakout_ifs and operation != self._DELETE:
-            self._set_chassis_breakout(conf_node, breakout_ifs)
+            if breakout_ifs and operation != self._DELETE:
+                self._set_chassis_breakout(conf_node, breakout_ifs)
 
-        if_node = self._set_interfaces_node(conf_node)
-        self._set_interface_inner_links(if_node,
-                                        lag_mem_ifs=lag_mem_ifs,
-                                        lag_ifs=lag_ifs,
-                                        phy_ifs=phy_ifs,
-                                        operation=operation,
-                                        vpn_type=vpn_type)
+            if_node = self._set_interfaces_node(conf_node)
+            self._set_interface_inner_links(if_node,
+                                            lag_mem_ifs=lag_mem_ifs,
+                                            lag_ifs=lag_ifs,
+                                            phy_ifs=phy_ifs,
+                                            operation=operation,
+                                            vpn_type=vpn_type)
 
         protocols_node = self._set_device_protocols(conf_node)
         area_node = self._set_device_protocols_ospf_area_N(protocols_node,
@@ -3931,10 +4064,11 @@ class JuniperDriver5100(EmSeparateDriver):
         self._set_ospf_area_interfaces(area_node,
                                        inner_ifs,
                                        operation=operation,)
-        self._set_qos_policy_interfaces(conf_node,
-                                        inner_ifs,
-                                        self.name_internal_link,
-                                        operation=operation,)
+        if operation != self._REPLACE:
+            self._set_qos_policy_interfaces(conf_node,
+                                            inner_ifs,
+                                            self.name_internal_link,
+                                            operation=operation,)
 
         return True
 
@@ -3945,13 +4079,14 @@ class JuniperDriver5100(EmSeparateDriver):
                                        ec_message,
                                        operation):
         '''
-        Fixed value to create message (breakout) for Netconf.
-            Called out when creating message for breakout.
-            (After fixed message has been created.)
+        Variable value to create message for Netconf( breakout )
+            Get called out when creating message for breakout(after fixed message has been created)
         Parameter:
             xml_obj : xml object
-            operation : Designate "delete" when deleting.
-        Return value.
+            device_info : Device information
+            ec_message : EC message
+            operation : Designate "delete" when deleting
+        Return value
             Creation result : Boolean (Write properly using override method)
         '''
         device_mes = ec_message.get("device", {})
@@ -3988,7 +4123,7 @@ class JuniperDriver5100(EmSeparateDriver):
                                            ec_message,
                                            operation):
         '''
-        Fixed value to create message (cluster-link) for Netconf.
+        Variable value to create message (cluster-link) for Netconf.
             Called out when creating message for cluster-link.
             (After fixed message has been created.)
         Parameter:
@@ -4420,7 +4555,7 @@ class JuniperDriver5100(EmSeparateDriver):
                              if db_info.get("vrrp_detail") else []):
                     if (cp_dict["if_name"] == vrrp.get("if_name") and
                             cp_dict["vlan"] == vrrp.get("vlan_id")):
-                        cp_dict["vrrp_group_id"] = vrrp.get("gropu_id")
+                        cp_dict["vrrp_group_id"] = vrrp.get("group_id")
                         cp_dict["vrrp_v_ipv4_addr"] = (
                             vrrp["virtual"].get("ipv4_address")
                             if vrrp.get("virtual") is not None else None)

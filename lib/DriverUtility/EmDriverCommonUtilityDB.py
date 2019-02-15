@@ -8,6 +8,7 @@ Common utility (DB) module for the driver.
 import json
 import GlobalModule
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 
 
 class EmDriverCommonUtilityDB(object):
@@ -29,6 +30,10 @@ class EmDriverCommonUtilityDB(object):
     _table_static = "StaticRouteDetailInfo"
     _table_vrrp = "VrrpDetailInfo"
     _table_vrrp_track = "VrrpTrackIfInfo"
+    _table_acl = "ACLInfo"
+    _table_acl_detail = "ACLDetailInfo"
+    _table_dummy_vlan_if = "DummyVlanIfInfo"
+    _table_multi_homing = "MultiHomingInfo"
 
     _if_type_physical = 1
     _if_type_lag = 2
@@ -50,6 +55,7 @@ class EmDriverCommonUtilityDB(object):
         self._name_cluster_link = GlobalModule.SERVICE_CLUSTER_LINK
         self._name_recover_node = GlobalModule.SERVICE_RECOVER_NODE
         self._name_recover_service = GlobalModule.SERVICE_RECOVER_SERVICE
+        self._name_acl_filter = GlobalModule.SERVICE_ACL_FILTER
 
         self._get_functions = {
             self._name_spine: (self._get_spine_info,
@@ -74,6 +80,8 @@ class EmDriverCommonUtilityDB(object):
                                       self._json_leaf),
             self._name_recover_service: (self._get_recover_service_info,
                                          self._json_recover_service),
+            self._name_acl_filter: (self._get_acl_filter_info,
+                                    self._json_acl_filter),
         }
 
         self._get_db = {
@@ -105,6 +113,14 @@ class EmDriverCommonUtilityDB(object):
             GlobalModule.DB_CONTROL.read_vrrp_detail_info,
             self._table_vrrp_track:
             GlobalModule.DB_CONTROL.read_vrrp_trackif_info,
+            self._table_acl:
+            GlobalModule.DB_CONTROL.read_acl_info,
+            self._table_acl_detail:
+            GlobalModule.DB_CONTROL.read_acl_detail_info,
+            self._table_dummy_vlan_if:
+            GlobalModule.DB_CONTROL.read_dummy_vlan_if_info,
+            self._table_multi_homing:
+            GlobalModule.DB_CONTROL.read_multi_homing_info,
         }
 
         self._device_types = {1: self._name_spine, 2: self._name_leaf}
@@ -118,7 +134,7 @@ class EmDriverCommonUtilityDB(object):
 
         self._port_mode_text = {1: "access", 2: "trunk"}
 
-    @decorater_log
+    @decorater_log_in_out
     def read_device_type(self, device_name):
         '''
         Obtain the Device type and VPN type from the device name of the individual section on driver.
@@ -136,7 +152,22 @@ class EmDriverCommonUtilityDB(object):
         vpn_type = self._vpn_types.get(vpn_type_num, None)
         return dev_type, vpn_type
 
-    @decorater_log
+    @decorater_log_in_out
+    def read_device_os(self, device_name):
+        '''
+        Obtains OS name based on Device Name from Driver Individual Part
+        Explanation about parameter:
+            device_name: Device name
+        Explanation about return value:
+            Device type : str
+            VPN type : str
+        '''
+        db_info = self._get_db_infos(device_name, [self._table_device])
+        device = db_info[1][self._table_device][0]
+        os_name = device["os"]
+        return os_name
+
+    @decorater_log_in_out
     def read_configureddata_info(self, device_name, service_name):
         '''
         Called out from individual section on driver when message to the device is created.
@@ -253,6 +284,10 @@ class EmDriverCommonUtilityDB(object):
         get_tables = [self._table_device,
                       self._table_vlan_if,
                       self._table_lag_if,
+                      self._table_dummy_vlan_if,
+                      self._table_vrf,
+                      self._table_multi_homing,
+                      self._table_acl,
                       ]
 
         return self._get_db_infos(device_name, get_tables)
@@ -394,6 +429,25 @@ class EmDriverCommonUtilityDB(object):
                       self._table_static,
                       self._table_vrrp,
                       self._table_vrrp_track,
+                      self._table_acl,
+                      self._table_acl_detail,
+                      self._table_dummy_vlan_if,
+                      self._table_multi_homing,
+                      ]
+
+        return self._get_db_infos(device_name, get_tables)
+
+    @decorater_log
+    def _get_acl_filter_info(self, device_name):
+        '''
+        Acquires information required for ACL configuration
+        Explanation about Return Value:
+            Acquisition result : Boolean
+            Edit information : {DB name:({Item name: Value})}
+        '''
+        get_tables = [self._table_acl,
+                      self._table_acl_detail,
+                      self._table_vlan_if,
                       ]
 
         return self._get_db_infos(device_name, get_tables)
@@ -500,6 +554,9 @@ class EmDriverCommonUtilityDB(object):
         json_item["platform_name"] = t_table.get("platform_name")
         json_item["os_name"] = t_table.get("os")
         json_item["firm_version"] = t_table.get("firm_version")
+        json_item["as_number"] = t_table.get("as_number")
+        json_item["loopback_if_address"] = t_table.get("loopback_if_address")
+        json_item["cluster_ospf_area"] = t_table.get("cluster_ospf_area")
         json_return["device"] = json_item
 
         t_table = db_info.get(self._table_vlan_if, ())
@@ -519,6 +576,15 @@ class EmDriverCommonUtilityDB(object):
             json_item["vni"] = row.get("vni")
             json_item["esi"] = row.get("esi")
             json_item["system-id"] = row.get("system_id")
+            json_item["clag-id"] = row.get("clag_id")
+            json_item["speed"] = row.get("speed")
+            json_item["irb_ipv4_address"] = row.get("irb_ipv4_address")
+            json_item["irb_ipv4_prefix"] = row.get("irb_ipv4_prefix")
+            json_item["virtual_mac_address"] = row.get("virtual_mac_address")
+            json_item["virtual_gateway_address"] = row.get(
+                "virtual_gateway_address")
+            json_item["virtual_gateway_prefix"] = row.get(
+                "virtual_gateway_prefix")
             json_item["qos"] = self._get_json_common_qos(row)
             json_list_item.append(json_item)
         json_return["cp"] = json_list_item
@@ -529,8 +595,88 @@ class EmDriverCommonUtilityDB(object):
             json_item = {}
             json_item["if_name"] = row["lag_if_name"]
             json_item["links"] = row["minimum_links"]
+            json_item["link_speed"] = row["link_speed"]
             json_list_item.append(json_item)
         json_return["lag"] = json_list_item
+
+        t_table = db_info.get(self._table_dummy_vlan_if, ())
+
+        json_list_item = []
+
+        json_return["dummy_cp_value"] = len(t_table)
+        for row in t_table:
+            json_item = {}
+            json_item["device_name"] = row["device_name"]
+            json_item["slice_name"] = row["slice_name"]
+            json_item["vlan"] = {
+                "vlan_id": row["vlan_id"]}
+            json_item["vni"] = row.get("vni")
+            json_item["vrf"] = {
+                "vrf_name": row["vrf_name"],
+                "vrf_id": row["vrf_id"]}
+            json_item["irb_ipv4_address"] = row.get("irb_ipv4_address")
+            json_item["irb_ipv4_prefix"] = row.get("irb_ipv4_prefix")
+            json_item["vrf_name"] = row["vrf_name"]
+            json_item["vrf_id"] = row["vrf_id"]
+            json_item["rt"] = row["rt"]
+            json_item["rd"] = row["rd"]
+            json_item["router_id"] = row["router_id"]
+            json_item["loopback"] = {
+                "address": row["vrf_loopback_interface_address"],
+                "prefix": row["vrf_loopback_interface_prefix"]}
+
+            json_list_item.append(json_item)
+        json_return["dummy_cp"] = json_list_item
+
+        t_table = db_info.get(self._table_vrf, ())
+
+        json_list_item = []
+
+        json_return["vrf_detail_value"] = len(t_table)
+        for row in t_table:
+            json_item = {}
+            json_item["if_name"] = row["if_name"]
+            json_item["vlan_id"] = row["vlan_id"]
+            json_item["slice_name"] = row["slice_name"]
+            json_item["vrf_name"] = row["vrf_name"]
+            json_item["vrf_id"] = row["vrf_id"]
+            json_item["rt"] = row["rt"]
+            json_item["rd"] = row["rd"]
+            json_item["router_id"] = row["router_id"]
+            json_item["l3_vni"] = {
+                "vni": row["l3_vni"],
+                "vlan_id": row["l3_vlan_id"]}
+            json_item["loopback"] = {
+                "address": row["vrf_loopback_interface_address"],
+                "prefix": row["vrf_loopback_interface_prefix"]}
+            json_list_item.append(json_item)
+        json_return["vrf_detail"] = json_list_item
+
+        t_table = db_info.get(self._table_multi_homing)
+        json_item = {}
+        if t_table:
+            t_table = t_table[0]
+            json_item["anycast_id"] = t_table["anycast_id"]
+            json_item["anycast_address"] = t_table["anycast_address"]
+            json_item["clag_if"] = {
+                "address": t_table["clag_if_address"],
+                "prefix": t_table["clag_if_prefix"]}
+            json_item["backup_address"] = t_table["backup_address"]
+            json_item["peer_address"] = t_table["peer_address"]
+        json_return["multi_homing"] = json_item
+
+        t_table = db_info.get(self._table_acl, ())
+
+        json_list_item = []
+
+        json_return["acl_value"] = len(t_table)
+        for row in t_table:
+            json_item = {}
+            json_item["acl_id"] = row["acl_id"]
+            json_item["if_name"] = row["if_name"]
+            json_item["vlan_id"] = row["vlan_id"]
+            json_list_item.append(json_item)
+        json_return["acl_info"] = json_list_item
 
         return json.dumps(json_return)
 
@@ -606,7 +752,7 @@ class EmDriverCommonUtilityDB(object):
             json_item["if_name"] = row["if_name"]
             json_item["vlan_id"] = row["vlan_id"]
             json_item["slice_name"] = row["slice_name"]
-            json_item["gropu_id"] = row["vrrp_group_id"]
+            json_item["group_id"] = row["vrrp_group_id"]
             json_item["virtual"] = \
                 {"ipv4_address": row["virtual_ipv4_address"],
                  "ipv6_address": row["virtual_ipv6_address"]}
@@ -847,7 +993,63 @@ class EmDriverCommonUtilityDB(object):
             self._json_l2_slice(db_info))
         json_return[self._name_l3_slice] = json.loads(
             self._json_l3_slice(db_info))
+        json_return[self._name_acl_filter] = json.loads(
+            self._json_acl_filter(db_info))
         return json.dumps(json_return)
+
+    @decorater_log
+    def _json_acl_filter(self, db_info):
+        '''
+        ACL Configuration  API Data Shaping
+            Gets called after data obtained from DB
+        Parameter explanation:
+            db_info : Acquired DB information({DB name:({Item name: Value})})
+        Return value explanation:
+            API data string(json format) ; str
+            (API data list(JSON format).xlsm  Refer to LAG information acquisition sheet for CE)
+        '''
+        t_table = db_info.get(self._table_acl, ())
+        t_acl_detail_table = db_info.get(self._table_acl_detail, ())
+
+        json_obj = {}
+        json_list_item = []
+
+        for row in t_table:
+            json_item = {}
+            json_item["device-name"] = row["device_name"]
+            json_item["filter-id"] = row["acl_id"]
+            json_item["if-name"] = row["if_name"]
+            json_item["vlan-id"] = row["vlan_id"]
+
+            term_mems = []
+            term_mems = self._select_row(t_acl_detail_table,
+                                         acl_id=row["acl_id"])
+            tmp_mem_list = []
+            for term_mem in term_mems:
+                tmp_mem = {}
+                tmp_mem["term-name"] = term_mem["term_name"]
+                tmp_mem["action"] = term_mem["action"]
+                tmp_mem["direction"] = term_mem["direction"]
+                tmp_mem["source-mac-address"] = term_mem["source_mac_address"]
+                tmp_mem["destination-mac-address"] = term_mem[
+                    "destination_mac_address"]
+                tmp_mem["source-ip-address"] = term_mem["source_ip_address"]
+                tmp_mem["destination-ip-address"] = term_mem[
+                    "destination_ip_address"]
+                tmp_mem["source-port"] = term_mem["source_port"]
+                tmp_mem["destination-port"] = term_mem["destination_port"]
+                tmp_mem["protocol"] = term_mem["protocol"]
+                tmp_mem["priority"] = term_mem["acl_priority"]
+                tmp_mem_list.append(tmp_mem)
+                json_item["term"] = tmp_mem_list
+            json_list_item.append(json_item)
+        json_obj["acl-info"] = json_list_item
+        t_table = db_info.get(self._table_vlan_if, ())
+        cp_if_list = []
+        for row in t_table:
+            cp_if_list.append(row["if_name"])
+        json_obj["cp_if_name_list"] = cp_if_list
+        return json.dumps(json_obj)
 
     @decorater_log
     def _get_json_common_device_data(self, db_info):
@@ -916,6 +1118,8 @@ class EmDriverCommonUtilityDB(object):
             json_item["speed"] = row["link_speed"]
             json_item["ip_address"] = row["internal_link_ip_address"]
             json_item["ip_prefix"] = row["internal_link_ip_prefix"]
+            json_item["cost"] = row["cost"]
+            json_item["vlan_id"] = row["vlan_id"]
 
             if json_item["if_type"] == self._if_type_lag:
                 t_lag_table = db_info.get(self._table_lag_if, ())
@@ -964,7 +1168,7 @@ class EmDriverCommonUtilityDB(object):
     def _get_json_common_qos(self, db_info):
         '''
         Obtain VlanQoS information by processing the VlanInfo.
-        Called out when obtaining L2／L3 slice information.
+        Called out when obtaining L2�臭3 slice information.
         Explanation about parameter:
             db_info : DB information obtained
         Explanation about return value:
@@ -991,6 +1195,7 @@ class EmDriverCommonUtilityDB(object):
                 if row.get(filter_key) != filters[filter_key]:
                     is_target = False
                     break
+            GlobalModule.EM_LOGGER.debug("is_target = %s", is_target)
             if is_target:
                 tmp_row.append(row)
         return tmp_row

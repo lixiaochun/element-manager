@@ -16,11 +16,13 @@ class EmL3SliceGet(EmSeparateScenario.EmScenario):
     Class for information matching (L3 slice).
     '''
 
+
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
+
         super(EmL3SliceGet, self).__init__()
 
     @decorater_log
@@ -252,7 +254,7 @@ class EmL3SliceGet(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True
+            return True  
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False
+        return False  

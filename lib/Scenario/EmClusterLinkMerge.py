@@ -17,15 +17,22 @@ class EmClusterLinkMerge(EmMergeScenario):
     Class for creation of inter-cluster link.
     '''
 
+
+
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
+
         super(EmClusterLinkMerge, self).__init__()
+
         self.service = GlobalModule.SERVICE_CLUSTER_LINK
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self._scenario_name = "ClusterLinkMerge"
+
         self.device_type = "leaf-device"
 
     @decorater_log
@@ -85,8 +92,6 @@ class EmClusterLinkMerge(EmMergeScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         cl_link_tag = xml_ns + "cluster-link"
@@ -142,8 +147,6 @@ class EmClusterLinkMerge(EmMergeScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         cl_link_tag = xml_ns + "cluster-link"

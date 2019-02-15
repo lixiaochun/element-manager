@@ -19,6 +19,7 @@ from lxml import etree
 
 import GlobalModule
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 from EmSeparateScenario import EmScenario
 
 
@@ -43,7 +44,6 @@ class EmOrderflowControl(threading.Thread):
         Explanation about return value:
             None
         '''
-
         order_reg_time_int =\
             datetime.datetime(2001, 01, 01, 01, 01, 01, 000001)
         order_reg_time_flg = 0
@@ -130,7 +130,7 @@ class EmOrderflowControl(threading.Thread):
         if init_order_mgmtinfo_result is False:
             raise IOError('Failed deleteing order control information.')
 
-    @decorater_log
+    @decorater_log_in_out
     def run(self):
         '''
         Launched as default after Thread is launched by Thread object.
@@ -162,7 +162,6 @@ class EmOrderflowControl(threading.Thread):
         Explanation about return value:
             None
         '''
-
         try:
             self.que_event.put((ec_message, session_id), block=False)
         except Queue.Full:
@@ -172,7 +171,7 @@ class EmOrderflowControl(threading.Thread):
                 order_result, ec_message, session_id)
 
     @staticmethod
-    @decorater_log
+    @decorater_log_in_out
     def get_transaction_presence():
         '''
         Obtain presence of transaction in progress
@@ -181,7 +180,6 @@ class EmOrderflowControl(threading.Thread):
         Explanation about return value:
             Availability of transaction information:boolean
         '''
-
         read_tras_list_result, transaction_id_list = \
             GlobalModule.EMSYSCOMUTILDB.read_transactionid_list()
 
@@ -195,7 +193,7 @@ class EmOrderflowControl(threading.Thread):
             else:
                 return True
 
-    @decorater_log
+    @decorater_log_in_out
     def stop(self):
         '''
         Stop thread.
@@ -204,7 +202,6 @@ class EmOrderflowControl(threading.Thread):
         Explanation about return value:
             None
         '''
-
         self.stop_event.set()
         self.join()
 
@@ -893,6 +890,10 @@ class EmOrderflowControl(threading.Thread):
             Scenario name:str
             Order timer value:int
         '''
+
+        result, _ = GlobalModule.EM_CONFIG.read_service_conf(service_kind)
+        if result is False:
+            return False, None, None
 
         scenario_result, scenario_name, order_timer =\
             GlobalModule.EM_CONFIG.read_scenario_conf(service_kind, order_kind)

@@ -16,6 +16,7 @@ from copy import deepcopy
 from flask import Flask, request
 import GlobalModule
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 
 application = Flask(__name__)
 
@@ -24,8 +25,8 @@ _request_date_list = []
 _request_lock = threading.Lock()
 
 
+@decorater_log_in_out
 def get_counter_recv():
-
     _request_lock.acquire()
 
     is_ok, unit_time = (
@@ -190,7 +191,7 @@ class EmRestServer(object):
         self._rest_port = port
         self.rest_thread = None
 
-    @decorater_log
+    @decorater_log_in_out
     def start(self):
         '''
         REST server launching method

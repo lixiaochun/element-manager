@@ -15,6 +15,7 @@ class EmBLeafScenario(EmScenario):
     B-Leaf flavor
     '''
 
+
     @decorater_log
     def __init__(self):
         '''
@@ -31,8 +32,6 @@ class EmBLeafScenario(EmScenario):
                 json:dictionary object for EC message storage
                 xml:xml message to be analyzed
                 xml_ns:Name space
-                service:Service name
-                order:Order name
         '''
 
         ospf_elm = self._find_xml_node(xml, xml_ns + "ospf")

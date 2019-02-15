@@ -24,10 +24,15 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
         '''
         Constructor
         '''
+
         super(EmL3SliceMerge, self).__init__()
+
         self.service = GlobalModule.SERVICE_L3_SLICE
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.timeout_flag = False
+
         self.device_type = "device-leaf"
 
     @decorater_log
@@ -153,7 +158,8 @@ class EmL3SliceMerge(EmSeparateScenario.EmScenario):
                 device_name, "l3-slice", order_type, json_message)
 
         if is_comdriver_result == GlobalModule.COM_UPDATE_VALICHECK_NG:
-            GlobalModule.EM_LOGGER.debug("update_device_setting validation check NG")
+            GlobalModule.EM_LOGGER.debug(
+                "update_device_setting validation check NG")
             GlobalModule.EM_LOGGER.warning(
                 "204004 Scenario:L3SliceMerge Device:%s NG:9(Processing failure(validation check NG))",
                 device_name)

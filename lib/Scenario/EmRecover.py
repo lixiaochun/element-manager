@@ -21,6 +21,7 @@ class EmRecover(EmSeparateScenario.EmScenario):
     Base scenario class for recover
     '''
 
+
     @decorater_log
     def __init__(self):
         '''
@@ -86,7 +87,7 @@ class EmRecover(EmSeparateScenario.EmScenario):
         result_info, table_info =\
             GlobalModule.EMSYSCOMUTILDB.read_device_registered_info(
                 device_name)
-        if result_info is False:
+        if result_info is False:  
             GlobalModule.EM_LOGGER.debug(
                 "read_device_registered_info NG")
             GlobalModule.EM_LOGGER.warning(
@@ -133,11 +134,12 @@ class EmRecover(EmSeparateScenario.EmScenario):
 
         GlobalModule.EM_LOGGER.debug("start OK")
 
+
         is_comdriver_result = self.com_driver_list[device_name].connect_device(
             "", self.service, order_type, json_message)
 
         if is_comdriver_result == GlobalModule.COM_CONNECT_NG:
-            GlobalModule.EM_LOGGER.debug("connect_device NG")
+            GlobalModule.EM_LOGGER.debug("connect_device Device Connection NG")
             GlobalModule.EM_LOGGER.warning(
                 "%s Scenario:%s Device:%s NG:14(Processing failure (Other))",
                 self.error_code_02, self.scenario_name, device_name)
@@ -459,6 +461,7 @@ class EmRecover(EmSeparateScenario.EmScenario):
             Necessity for updating transaction status : boolean (True:Update necessary,False:Update unnecessary)
         '''
 
+
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
 
@@ -471,10 +474,10 @@ class EmRecover(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True
+            return True  
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False
+        return False  
 
     @decorater_log
     def _creating_json(self, device_message, table_info_dict):
@@ -487,6 +490,7 @@ class EmRecover(EmSeparateScenario.EmScenario):
         Explanation about return value:
             device_json_message: JSON message
         '''
+
         device_json_message = \
             {
                 "device":
@@ -641,8 +645,10 @@ class EmRecover(EmSeparateScenario.EmScenario):
     @decorater_log
     def _write_em_info(self, device_name, service, order_type, device_message):
         '''
-        EM information update.
-            Do nothing at base class".
+        EM Information Update
+            Gets launched from each scenario individual processing,
+            and launches EM designation information reading of common utility (DB) across the system
+            To implement it from the derivative side.
         Argument:
             device_name: str equipment name
             service_type: str type of service

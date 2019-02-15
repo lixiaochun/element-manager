@@ -10,6 +10,7 @@ import re
 import traceback
 from EmSeparateDriver import EmSeparateDriver
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 from EmCLIProtocol import EmCLIProtocol
 import GlobalModule
 
@@ -46,7 +47,7 @@ class OcNOSDriver(EmSeparateDriver):
                                      self.name_celag,
                                      self.name_internal_link, ]
 
-    @decorater_log
+    @decorater_log_in_out
     def connect_device(self,
                        device_name,
                        device_info,
@@ -79,7 +80,7 @@ class OcNOSDriver(EmSeparateDriver):
                                                 service_type,
                                                 order_type)
 
-    @decorater_log
+    @decorater_log_in_out
     def update_device_setting(self,
                               device_name,
                               service_type,
@@ -95,7 +96,7 @@ class OcNOSDriver(EmSeparateDriver):
             order_type : Order type
         Return value :
             Processing finish status : int (1:Successfully updated
-                                2:Validation check NG
+
                                 3:Updating unsuccessful)
         '''
         self.common_util_log.logging(
@@ -126,7 +127,7 @@ class OcNOSDriver(EmSeparateDriver):
         return_val = self._update_ok if is_result else self._update_error
         return return_val
 
-    @decorater_log
+    @decorater_log_in_out
     def delete_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
         '''
@@ -139,7 +140,7 @@ class OcNOSDriver(EmSeparateDriver):
             order_type : Order type
         Return value :
             Processing finish status : int (1:Successfully deleted
-                                2:バValidation check NG
+                                2:Validation check NG
                                 3:Deletion unsuccessful)
         '''
         self.common_util_log.logging(
@@ -151,7 +152,7 @@ class OcNOSDriver(EmSeparateDriver):
         else:
             return self._update_ok
 
-    @decorater_log
+    @decorater_log_in_out
     def disconnect_device(self, device_name, service_type, order_type):
         '''
         Driver individual section disconnection control.
@@ -395,6 +396,7 @@ class OcNOSDriver(EmSeparateDriver):
             __name__)
         return tmp_comm_list
 
+    @decorater_log
     def _set_commmand_vni_vlan_mapping_params(self,
                                               if_name,
                                               vni,

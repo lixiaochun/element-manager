@@ -17,15 +17,21 @@ class EmL3SliceUpdate(EmMergeScenario):
     Class for adding L3 slice.
     '''
 
+
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
+
         super(EmL3SliceUpdate, self).__init__()
+
         self._scenario_name = "L3SliceUpdate"
+
         self.service = GlobalModule.SERVICE_L3_SLICE
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.device_type = "device-leaf"
 
     @decorater_log

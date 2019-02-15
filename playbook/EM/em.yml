@@ -10,6 +10,7 @@
     - ntp
     - sar
     - flask
+    - bc
     - em
     - { role: ra-em, when: "ha_flag"}
     - em-postgre
@@ -24,6 +25,5 @@
     - { role: pacemaker, when: "ha_flag"}
     - db-em
     - firewall
-
 
 

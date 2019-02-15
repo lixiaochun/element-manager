@@ -10,6 +10,7 @@ from uuid import UUID
 
 import GlobalModule
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 from EmSysCommonUtilityDB import EmSysCommonUtilityDB
 
 
@@ -17,7 +18,6 @@ class EmDBControl(object):
     '''
     DB Control class.
     '''
-
     table_TransactionMgmtInfo = "TransactionMgmtInfo"
     table_DeviceStatusMgmtInfo = "DeviceStatusMgmtInfo"
     table_DeviceRegistrationInfo = "DeviceRegistrationInfo"
@@ -35,6 +35,10 @@ class EmDBControl(object):
     table_BreakoutIfInfo = "BreakoutIfInfo"
     table_InnerLinkIfInfo = "InnerLinkIfInfo"
     table_EmSystemStatusInfo = "EmSystemStatusInfo"
+    table_ACLInfo = "ACLInfo"
+    table_ACLDetailInfo = "ACLDetailInfo"
+    table_DummyVlanIfInfo = "DummyVlanIfInfo"
+    table_MultiHomingInfo = "MultiHomingInfo"
 
     __delete_flg = "DELETE"
 
@@ -85,6 +89,7 @@ class EmDBControl(object):
             GlobalModule.EM_LOGGER.debug(
                 'db_error_message = %s' % (ex_message,))
             raise
+        GlobalModule.EM_LOGGER.debug('end')
 
     @decorater_log
     def __connect_db(self):
@@ -380,7 +385,7 @@ class EmDBControl(object):
                 self.__close_db(conn)
         return return_val
 
-    @decorater_log
+    @decorater_log_in_out
     def read_transactionid_list(self):
         '''
         The method which returns only transaction ID from the transaction management information table.
@@ -388,7 +393,7 @@ class EmDBControl(object):
             None
         Return value:
             Execution result : boolean(True or False)
-            Transaction IDb list : tuple
+            Transaction ID list : tuple
         '''
         table_name = self.table_TransactionMgmtInfo
 
@@ -401,13 +406,13 @@ class EmDBControl(object):
                 ret_list.append(item["transaction_id"])
         return is_ok, ret_list
 
-    @decorater_log
+    @decorater_log_in_out
     def initialize_order_mgmt_info(self):
         '''
-        The method which deletes the contents of order management information table.
-        Explanation about parameter:
+        The method which deletes contents of order management information table
+        Parameter explanation:
             None
-        Explanation about return value:
+        Explanation about Return Value:
             Execution result : boolean(True or False)
         '''
         delete_trans_mgmt = self.__gen_delete_sql("transactionmgmtinfo", [])
@@ -434,7 +439,7 @@ class EmDBControl(object):
             self.__close_db(conn)
         return is_ok
 
-    @decorater_log
+    @decorater_log_in_out
     def delete_device_status_mgmt_info_linked_tr_id(self,
                                                     transaction_id,
                                                     conn=None):
@@ -470,7 +475,7 @@ class EmDBControl(object):
                                      self.__delete_flg,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_transaction_mgmt_info(self,
                                     db_control,
                                     transaction_id,
@@ -544,7 +549,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_transaction_mgmt_info(self, transaction_id):
         '''
         The method which returns the information on the transaction management information table.
@@ -565,7 +570,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((transaction_id,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_device_status_mgmt_info(self,
                                       db_control,
                                       device_name,
@@ -630,7 +635,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_device_status_mgmt_info(self, transaction_id):
         '''
         The method which returns the information on the equipment status management information table.
@@ -651,7 +656,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((transaction_id,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_device_regist_info(self,
                                  db_control,
                                  device_name,
@@ -679,6 +684,7 @@ class EmDBControl(object):
                                  cluster_ospf_area=None,
                                  rr_loopback_address=None,
                                  rr_loopback_prefix=None,
+                                 irb_type=None,
                                  conn=None):
         '''
         Registers/updates/deletes the information of the equipment registration information table
@@ -757,6 +763,7 @@ class EmDBControl(object):
             is_ok = is_ok and self.__check_parameter(cluster_ospf_area, str)
             is_ok = is_ok and self.__check_parameter(rr_loopback_address, str)
             is_ok = is_ok and self.__check_parameter(rr_loopback_prefix, int)
+            is_ok = is_ok and self.__check_parameter(irb_type, str)
 
         if not is_ok:
             GlobalModule.EM_LOGGER.error('305003 Database Control Error')
@@ -790,6 +797,7 @@ class EmDBControl(object):
         tmp_list.append(cluster_ospf_area)
         tmp_list.append(rr_loopback_address)
         tmp_list.append(rr_loopback_prefix)
+        tmp_list.append(irb_type)
         upsert_param = tuple(tmp_list)
 
         where_query_str = ["WHERE device_name = %s"]
@@ -824,7 +832,8 @@ class EmDBControl(object):
                                   "ospf_range_area_prefix",
                                   "cluster_ospf_area",
                                   "rr_loopback_address",
-                                  "rr_loopback_prefix"))
+                                  "rr_loopback_prefix",
+                                  "irb_type"))
 
         return self.__exec_write_sql(select_query,
                                      insert_query,
@@ -835,7 +844,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_device_regist_info(self, device_name):
         '''
         The method which returns the information of the equipment registration information table.
@@ -856,7 +865,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_vlanif_info(self,
                           db_control,
                           device_name,
@@ -884,6 +893,13 @@ class EmDBControl(object):
                           outflow_shaping_rate=None,
                           remark_menu=None,
                           egress_queue_menu=None,
+                          clag_id=None,
+                          speed=None,
+                          irb_ipv4_address=None,
+                          irb_ipv4_prefix=None,
+                          virtual_mac_address=None,
+                          virtual_gateway_address=None,
+                          virtual_gateway_prefix=None,
                           conn=None):
         '''
         The method which registers/updates/deletes the information of the VLAN interface information table
@@ -915,8 +931,15 @@ class EmDBControl(object):
             outflow_shaping_rate:QoS outflow traffic limit value
             remark_menu:QoS remark menu
             egress_queue_menu:QoS eggress queue menu
-        Return value:
-            Execution result : boolean(True or False)
+            CLAG ID:clag_id
+            IF Speed (Physical case only):speed
+            IPv4 Address for IRB configuration:irb_ipv4_address
+            IPv4 Address Prefix for IRB configuration:irb_ipv4_prefix
+            Virtual mac address:virtual_mac_address
+            Virtual Gateway Address:virtual_gateway_address
+            Virtual Gateway Prefix:virtual_gateway_prefix
+        Return Value:
+            Execution Results : boolean(True or False)
         '''
         table_name = self.table_VlanIfInfo
 
@@ -952,6 +975,16 @@ class EmDBControl(object):
                 outflow_shaping_rate, float)
             is_ok = is_ok and self.__check_parameter(remark_menu, str)
             is_ok = is_ok and self.__check_parameter(egress_queue_menu, str)
+            is_ok = is_ok and self.__check_parameter(clag_id, int)
+            is_ok = is_ok and self.__check_parameter(speed, str)
+            is_ok = is_ok and self.__check_parameter(irb_ipv4_address, str)
+            is_ok = is_ok and self.__check_parameter(irb_ipv4_prefix, int)
+            is_ok = is_ok and self.__check_parameter(
+                virtual_mac_address, str)
+            is_ok = is_ok and self.__check_parameter(
+                virtual_gateway_address, str)
+            is_ok = is_ok and self.__check_parameter(
+                virtual_gateway_prefix, int)
 
         if not is_ok:
             GlobalModule.EM_LOGGER.error('305003 Database Control Error')
@@ -985,6 +1018,13 @@ class EmDBControl(object):
         tmp_list.append(outflow_shaping_rate)
         tmp_list.append(remark_menu)
         tmp_list.append(egress_queue_menu)
+        tmp_list.append(clag_id)
+        tmp_list.append(speed)
+        tmp_list.append(irb_ipv4_address)
+        tmp_list.append(irb_ipv4_prefix)
+        tmp_list.append(virtual_mac_address)
+        tmp_list.append(virtual_gateway_address)
+        tmp_list.append(virtual_gateway_prefix)
         upsert_param = tuple(tmp_list)
 
         where_query_str = []
@@ -1024,7 +1064,14 @@ class EmDBControl(object):
                                   "inflow_shaping_rate",
                                   "outflow_shaping_rate",
                                   "remark_menu",
-                                  "egress_queue_menu"))
+                                  "egress_queue_menu",
+                                  "clag_id",
+                                  "speed",
+                                  "irb_ipv4_address",
+                                  "irb_ipv4_prefix",
+                                  'virtual_mac_address',
+                                  "virtual_gateway_address",
+                                  "virtual_gateway_prefix"))
 
         return self.__exec_write_sql(select_query,
                                      insert_query,
@@ -1035,7 +1082,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_vlanif_info(self, device_name):
         '''
         The method which returns the in formation of VLAN interface information table.
@@ -1056,7 +1103,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_lagif_info(self,
                          db_control,
                          device_name,
@@ -1092,6 +1139,8 @@ class EmDBControl(object):
         if db_control != self.__delete_flg:
             is_ok = is_ok and self.__check_parameter(
                 lag_type, int, not_null=True)
+            is_ok = is_ok and self.__check_parameter(
+                lag_if_id, int, not_null=True)
             is_ok = (is_ok and
                      self.__check_parameter(minimum_links, int, not_null=True))
             is_ok = is_ok and self.__check_parameter(link_speed, str)
@@ -1140,7 +1189,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_lagif_info(self, device_name):
         '''
         Returns the information of the LAG interface information table.
@@ -1161,7 +1210,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_lagmemberif_info(self,
                                db_control,
                                lag_if_name,
@@ -1234,7 +1283,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_lagmemberif_info(self, device_name):
         '''
         The method which returns the information of the LAG member interface information table.
@@ -1255,7 +1304,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_leaf_bgp_basic_info(self,
                                   db_control,
                                   device_name,
@@ -1330,7 +1379,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_leaf_bgp_basic_info(self, device_name):
         '''
         Returns the information of the BGP basic table for Leaf.
@@ -1351,7 +1400,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_vrf_detail_info(self,
                               db_control,
                               device_name,
@@ -1359,9 +1408,14 @@ class EmDBControl(object):
                               vlan_id,
                               slice_name,
                               vrf_name=None,
+                              vrf_id=None,
                               rt=None,
                               rd=None,
                               router_id=None,
+                              l3_vni=None,
+                              l3_vlan_id=None,
+                              vrf_loopback_interface_address=None,
+                              vrf_loopback_interface_prefix=None,
                               conn=None):
         '''
         The method which registers/updates/deletes the information of the VRF detailed information table
@@ -1373,13 +1427,17 @@ class EmDBControl(object):
             vlan_id:VLAN ID
             slice_name:Slice name
             vrf_name:VRF name
-            rt:RT(Route Target)Value
-            rd:RD(Route Distinguisher)Value
+            vrf_id:VRF ID
+            rt:RT（Route Target鬟ｴalue
+            rd:RD（Route Distinguisher鬟ｴalue
             router_id:Router ID
-        Return value:
-            Execution result : boolean(True or False)
+            l3_vni:VNI Value for L3VNI
+            l3_vlan_id:VLANID for L3VNI
+            vrf_loopback_interface_address:Loopback IF Address for VRF
+            vrf_loopback_interface_prefix:Loopback IF Address Prefix for VRF
+        Return Value:
+            Execution Result : boolean(True or False)
         '''
-
         table_name = self.table_VrfDetailInfo
 
         is_not_null = True
@@ -1397,10 +1455,17 @@ class EmDBControl(object):
         if db_control != self.__delete_flg:
             is_ok = is_ok and self.__check_parameter(
                 vrf_name, str, not_null=True)
+            is_ok = is_ok and self.__check_parameter(vrf_id, int)
             is_ok = is_ok and self.__check_parameter(rt, str, not_null=True)
             is_ok = is_ok and self.__check_parameter(rd, str, not_null=True)
             is_ok = is_ok and self.__check_parameter(
                 router_id, str, not_null=True)
+            is_ok = is_ok and self.__check_parameter(l3_vni, int)
+            is_ok = is_ok and self.__check_parameter(l3_vlan_id, int)
+            is_ok = is_ok and self.__check_parameter(
+                vrf_loopback_interface_address, str)
+            is_ok = is_ok and self.__check_parameter(
+                vrf_loopback_interface_prefix, int)
 
         if not is_ok:
             GlobalModule.EM_LOGGER.error('305003 Database Control Error')
@@ -1415,9 +1480,14 @@ class EmDBControl(object):
         where_param = tuple(tmp_list)
 
         tmp_list.append(vrf_name)
+        tmp_list.append(vrf_id)
         tmp_list.append(rt)
         tmp_list.append(rd)
         tmp_list.append(router_id)
+        tmp_list.append(l3_vni)
+        tmp_list.append(l3_vlan_id)
+        tmp_list.append(vrf_loopback_interface_address)
+        tmp_list.append(vrf_loopback_interface_prefix)
         upsert_param = tuple(tmp_list)
 
         where_query_str = []
@@ -1439,9 +1509,14 @@ class EmDBControl(object):
                                   "vlan_id",
                                   "slice_name",
                                   "vrf_name",
+                                  "vrf_id",
                                   "rt",
                                   "rd",
-                                  "router_id"))
+                                  "router_id",
+                                  "l3_vni",
+                                  "l3_vlan_id",
+                                  "vrf_loopback_interface_address",
+                                  "vrf_loopback_interface_prefix"))
 
         return self.__exec_write_sql(select_query,
                                      insert_query,
@@ -1452,7 +1527,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_vrf_detail_info(self, device_name):
         '''
         The method which returns the information of the VRF detailed information table.
@@ -1473,7 +1548,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_vrrp_detail_info(self,
                                db_control,
                                device_name,
@@ -1568,7 +1643,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_vrrp_detail_info(self, device_name):
         '''
         The method which returns the information of the VRRP detailed information table.
@@ -1589,7 +1664,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_vrrp_trackif_info(self,
                                 db_control,
                                 vrrp_group_id,
@@ -1651,7 +1726,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_vrrp_trackif_info(self, device_name):
         '''
         The method which returns the information of the VRRP track interface information table.
@@ -1679,7 +1754,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_bgp_detail_info(self,
                               db_control,
                               device_name,
@@ -1694,12 +1769,12 @@ class EmDBControl(object):
                               remote_ipv6_address=None,
                               conn=None):
         '''
-        The method which registers/updates/deletes the information of the BGP detailed information table
-        based on the DB control information.
-        Parameter:
-            db_control:DB control
-            device_name:Device name
-            if_name:IF name
+        Method which registers/updates/deletes the information of the BGP Detailed Information Table
+        based on the DB control information
+        Parameter：
+            db_control:DB Control
+            device_name: Device Name
+            if_name:IFName
             vlan_id:VLAN ID
             slice_name:Slice name
             master:Priority
@@ -1790,10 +1865,10 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_bgp_detail_info(self, device_name):
         '''
-        The method hich returns the information of the BGP detailed information table.
+        The method which returns the information of the BGP detailed information table.
         Parameter:
             device_name:Device name
         Return value:
@@ -1811,7 +1886,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_static_route_detail_info(self,
                                        db_control,
                                        device_name,
@@ -1824,12 +1899,11 @@ class EmDBControl(object):
                                        nexthop,
                                        conn=None):
         '''
-        The method which registers/updates/deletes the information of the static route detailed information table
-        based on the DB control information.
+        Method which registers/updates/deletes the information of Static Route Detailed Information Table based on DB Control Information
         Parameter:
-            db_control:DB control
-            device_name:Device name
-            if_name:IF name
+            db_control:DB Control
+            device_name: Device Name
+            if_name:IFName
             vlan_id:VLAN ID
             slice_name:Slice name
             address_type:IPaddress type
@@ -1916,7 +1990,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_static_route_detail_info(self, device_name):
         '''
         The method which returns the information of the static route detailed information table.
@@ -1937,7 +2011,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_simultaneous_table(self, functions, params):
         '''
         Establish the DB connection which carries transaction and execute one by one using the parameter
@@ -1948,7 +2022,6 @@ class EmDBControl(object):
         Return value:
             Execution result : boolean
         '''
-
         func_dict = {
             self.write_lagmemberif_info.__name__: self.write_lagmemberif_info,
             self.write_leaf_bgp_basic_info.__name__:
@@ -1978,7 +2051,15 @@ class EmDBControl(object):
                 self.write_inner_link_if_info,
             self.write_system_status_info.__name__:
                 self.write_system_status_info,
-            self.recover_if_info.__name__: self.recover_if_info
+            self.recover_if_info.__name__: self.recover_if_info,
+            self.write_acl_detail_info.__name__:
+                self.write_acl_detail_info,
+            self.write_acl_info.__name__:
+                self.write_acl_info,
+            self.write_dummy_vlan_if_info.__name__:
+                self.write_dummy_vlan_if_info,
+            self.write_multi_homing_info.__name__:
+                self.write_multi_homing_info
         }
 
         con = None
@@ -2008,7 +2089,7 @@ class EmDBControl(object):
             self.__close_db(con)
         return is_insert
 
-    @decorater_log
+    @decorater_log_in_out
     def write_physical_if_info(self,
                                db_control,
                                device_name,
@@ -2077,7 +2158,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_physical_if_info(self, device_name):
         '''
         The method which returns the information of the physical interface information table.
@@ -2098,7 +2179,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_cluster_link_if_info(self,
                                    db_control,
                                    device_name,
@@ -2184,7 +2265,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_cluster_link_if_info(self, device_name):
         '''
        The method which returns the information of Link interface information table among the clusters.
@@ -2205,7 +2286,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_breakout_if_info(self,
                                db_control,
                                device_name,
@@ -2279,7 +2360,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_breakout_if_info(self, device_name):
         '''
         The method which returns the information of the Breakout IF information table.
@@ -2300,15 +2381,17 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_inner_link_if_info(self,
                                  db_control,
                                  device_name,
                                  if_name,
                                  if_type=None,
+                                 vlan_id=None,
                                  link_speed=None,
                                  internal_link_ip_address=None,
                                  internal_link_ip_prefix=None,
+                                 cost=None,
                                  conn=None):
         '''
         The method which registers/updates/deletes the information of the internal Link interface information table
@@ -2336,11 +2419,13 @@ class EmDBControl(object):
         if db_control != self.__delete_flg:
             is_ok = is_ok and self.__check_parameter(if_type,
                                                      int, not_null=True)
+            is_ok = is_ok and self.__check_parameter(vlan_id, int)
             is_ok = is_ok and self.__check_parameter(link_speed, str)
             is_ok = is_ok and self.__check_parameter(internal_link_ip_address,
                                                      str)
             is_ok = is_ok and self.__check_parameter(internal_link_ip_prefix,
                                                      int)
+            is_ok = is_ok and self.__check_parameter(cost, int)
 
         if not is_ok:
             GlobalModule.EM_LOGGER.error('305003 Database Control Error')
@@ -2353,9 +2438,11 @@ class EmDBControl(object):
         where_param = tuple(tmp_list)
 
         tmp_list.append(if_type)
+        tmp_list.append(vlan_id)
         tmp_list.append(link_speed)
         tmp_list.append(internal_link_ip_address)
         tmp_list.append(internal_link_ip_prefix)
+        tmp_list.append(cost)
         upsert_param = tuple(tmp_list)
 
         where_query_str = []
@@ -2373,9 +2460,11 @@ class EmDBControl(object):
                                   "device_name",
                                   "if_name",
                                   "if_type",
+                                  "vlan_id",
                                   "link_speed",
                                   "internal_link_ip_address",
-                                  "internal_link_ip_prefix"))
+                                  "internal_link_ip_prefix",
+                                  "cost"))
 
         return self.__exec_write_sql(select_query,
                                      insert_query,
@@ -2386,7 +2475,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_inner_link_if_info(self, device_name):
         '''
         The method which returns the information of the internal Link IF information table.
@@ -2407,7 +2496,7 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((device_name,), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
     def write_system_status_info(self,
                                  db_control,
                                  service_status,
@@ -2466,7 +2555,7 @@ class EmDBControl(object):
                                      db_control,
                                      conn)
 
-    @decorater_log
+    @decorater_log_in_out
     def read_system_status_info(self):
         '''
         The method which returns the information of the system status information table.
@@ -2482,7 +2571,563 @@ class EmDBControl(object):
 
         return self.__execute_read_sql((), q_str)
 
-    @decorater_log
+    @decorater_log_in_out
+    def write_acl_info(self,
+                       db_control,
+                       device_name,
+                       acl_id,
+                       if_name=None,
+                       vlan_id=None,
+                       conn=None):
+        '''
+        The method which registers/udpates/deletes the information of ACL Configuration Information Table based on DB
+        Parameter：
+            db_control:DB Control
+            device_name:Device Name
+            acl_id:ACL Configuration ID
+            if_name:IF Name
+            vlan_id:VLANID
+        Return Value:
+            Execution Result : boolean(True or False)
+        '''
+        table_name = self.table_ACLInfo
+
+        is_not_null = True
+        if db_control == self.__delete_flg and (acl_id is None):
+            is_not_null = False
+
+        is_ok = self.__check_parameter(device_name, str, not_null=True)
+        is_ok = is_ok and self.__check_parameter(
+            acl_id, int, not_null=is_not_null)
+
+        if db_control != self.__delete_flg:
+            is_ok = (is_ok and
+                     self.__check_parameter(if_name, str))
+            is_ok = (is_ok and
+                     self.__check_parameter(vlan_id, int))
+
+        if not is_ok:
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False
+
+        tmp_list = []
+        tmp_list.append(device_name)
+        if is_not_null:
+            tmp_list.append(acl_id)
+        where_param = tuple(tmp_list)
+
+        tmp_list.append(if_name)
+        tmp_list.append(vlan_id)
+        upsert_param = tuple(tmp_list)
+
+        where_query_str = []
+        where_query_str.append("    WHERE")
+        where_query_str.append("          device_name = %s")
+        if is_not_null:
+            where_query_str.append("    AND   acl_id     = %s")
+
+        delete_query = self.__gen_delete_sql(table_name, where_query_str)
+
+        select_query = self.__gen_select_sql(table_name, where_query_str)
+
+        insert_query, update_query = (
+            self.__gen_upsert_sql(table_name, where_query_str,
+                                  "device_name",
+                                  "acl_id",
+                                  "if_name",
+                                  "vlan_id"))
+
+        return self.__exec_write_sql(select_query,
+                                     insert_query,
+                                     update_query,
+                                     delete_query,
+                                     upsert_param,
+                                     where_param,
+                                     db_control,
+                                     conn)
+
+    @decorater_log_in_out
+    def read_acl_info(self, device_name):
+        '''
+        The method which returns information of ACL Configuration Information Table
+        Parameter:
+            device_name:Device Name
+        Return Value:
+            Execution Result : boolean(True or False)
+            Refer to BGP Detailed Information Table : tuple
+        '''
+        table_name = self.table_ACLInfo
+
+        if not self.__check_parameter(device_name, str, not_null=True):
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False, None
+
+        where_query_str = ["WHERE device_name = %s"]
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((device_name,), q_str)
+
+    @decorater_log_in_out
+    def read_acl_all_info(self,):
+        '''
+        The Method which returns information of ACL Configuration Inforamtion Table
+        Return Value:
+            Execution Result : boolean(True or False)
+            Refer to BGP Detailed Information Table : tuple
+        '''
+        table_name = self.table_ACLInfo
+
+        where_query_str = []
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((), q_str)
+
+    @decorater_log_in_out
+    def write_acl_detail_info(self,
+                              db_control,
+                              device_name,
+                              acl_id,
+                              term_name,
+                              action=None,
+                              direction=None,
+                              source_mac_address=None,
+                              destination_mac_address=None,
+                              source_ip_address=None,
+                              destination_ip_address=None,
+                              source_port=None,
+                              destination_port=None,
+                              protocol=None,
+                              acl_priority=None,
+                              conn=None):
+        '''
+        Method which registers/updates/deletes the information of ACL configuration information table based on DB Control Information
+        Parameter：
+            db_control:DB Control
+            device_name:Device Name
+            acl_id:ACL Configuration ID
+            term_name:IF Name
+            action:Action
+            direction:Direction
+            source_mac_address: Transmission Source MAC Address
+            destination_mac_address:Transmission Destination MAC Address
+            source_ip_address:Transmission Source IP Address
+            destination_ip_address:Transmission Destination IP Address
+            source_port:Transmission Source Port
+            destination_port:Transmission Destination Port
+            protocol:Protocol
+            acl_priority:ACLpriority Value
+            conn=None):
+
+        Return value:
+            Execution result : boolean(True or False)
+        '''
+        table_name = self.table_ACLDetailInfo
+
+        is_not_null = True
+        if db_control == self.__delete_flg and (acl_id is None and
+                                                term_name is None):
+            is_not_null = False
+
+        is_ok = self.__check_parameter(device_name, str, not_null=True)
+        is_ok = is_ok and self.__check_parameter(
+            acl_id, int, not_null=is_not_null)
+        is_ok = is_ok and self.__check_parameter(
+            term_name, str, not_null=is_not_null)
+
+        if db_control != self.__delete_flg:
+            is_ok = (
+                is_ok and
+                self.__check_parameter(action, str, not_null=True))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(direction, str, not_null=True))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(source_mac_address, str))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(destination_mac_address, str))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(source_ip_address, str))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(destination_ip_address, str))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(source_port, int))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(destination_port, int))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(protocol, str))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(acl_priority, int))
+
+        if not is_ok:
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False
+        tmp_list = []
+        tmp_list.append(device_name)
+        if is_not_null:
+            tmp_list.append(acl_id)
+            tmp_list.append(term_name)
+
+        where_param = tuple(tmp_list)
+
+        tmp_list.append(action)
+        tmp_list.append(direction)
+        tmp_list.append(source_mac_address)
+        tmp_list.append(destination_mac_address)
+        tmp_list.append(source_ip_address)
+        tmp_list.append(destination_ip_address)
+        tmp_list.append(source_port)
+        tmp_list.append(destination_port)
+        tmp_list.append(protocol)
+        tmp_list.append(acl_priority)
+
+        upsert_param = tuple(tmp_list)
+
+        where_query_str = []
+        where_query_str.append("    WHERE")
+        where_query_str.append("          device_name = %s")
+        if is_not_null:
+            where_query_str.append("    AND   acl_id     = %s")
+            where_query_str.append("    AND   term_name     = %s")
+
+        delete_query = self.__gen_delete_sql(table_name, where_query_str)
+
+        select_query = self.__gen_select_sql(table_name, where_query_str)
+
+        insert_query, update_query = (
+            self.__gen_upsert_sql(table_name, where_query_str,
+                                  "device_name",
+                                  "acl_id",
+                                  "term_name",
+                                  "action",
+                                  "direction",
+                                  "source_mac_address",
+                                  "destination_mac_address",
+                                  "source_ip_address",
+                                  "destination_ip_address",
+                                  "source_port",
+                                  "destination_port",
+                                  "protocol",
+                                  "acl_priority"))
+
+        return self.__exec_write_sql(select_query,
+                                     insert_query,
+                                     update_query,
+                                     delete_query,
+                                     upsert_param,
+                                     where_param,
+                                     db_control,
+                                     conn)
+
+    @decorater_log_in_out
+    def read_acl_detail_info(self, device_name):
+        '''
+        Method which returns the informatin of ACL configuration details informatioin table
+        Parameter:
+            device_name: Device Name
+        Return Value:
+            Execution Result : boolean(True or False)
+            Refer to BGP Detailed Information Table : tuple
+        '''
+        table_name = self.table_ACLDetailInfo
+
+        if not self.__check_parameter(device_name, str, not_null=True):
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False, None
+
+        where_query_str = ["WHERE device_name = %s"]
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((device_name,), q_str)
+
+    @decorater_log_in_out
+    def read_acl_detail_all_info(self):
+        '''
+        Method which returns the entire information of ACL configuration details information table
+        Return Value:
+            Execution Result : boolean(True or False)
+            Refer to BGP Detailed Information Table : tuple
+        '''
+        table_name = self.table_ACLDetailInfo
+
+        where_query_str = []
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((), q_str)
+
+    @decorater_log_in_out
+    def write_dummy_vlan_if_info(self,
+                                 db_control,
+                                 device_name,
+                                 vlan_id,
+                                 slice_name,
+                                 vni=None,
+                                 irb_ipv4_address=None,
+                                 irb_ipv4_prefix=None,
+                                 vrf_name=None,
+                                 vrf_id=None,
+                                 rt=None,
+                                 rd=None,
+                                 router_id=None,
+                                 vrf_loopback_interface_address=None,
+                                 vrf_loopback_interface_prefix=None,
+                                 conn=None):
+        '''
+        The method which registers/updates/deletes the information of Vlan interface information based on DB Control information
+
+        Parameter Explanation :
+            db_control:DB Control
+            device_name: Device Name
+            vlan_id:VLAN ID
+            slice_name:Slice Name
+            vni:VNI Value
+            irb_ipv4_address:IPv4 Address for IRB setting
+            irb_ipv4_prefix:IPv4 Address Prefix for IRB setting
+            vrf_name:VRFName
+            vrf_id:VRF-ID
+            rt:RT
+            rd:RD
+            router_id: RouterID
+            vrf_loopback_interface_address:Loopback IF Address for VRF
+            vrf_loopback_interface_prefix:Loopback IF Address Prefix for VRF
+        Return Value:
+            Execution Result : boolean(True or False)
+        '''
+        table_name = self.table_DummyVlanIfInfo
+
+        is_not_null = True
+        if db_control == self.__delete_flg and (vlan_id is None and
+                                                slice_name is None):
+            is_not_null = False
+
+        is_ok = self.__check_parameter(device_name, str, not_null=True)
+        is_ok = is_ok and self.__check_parameter(
+            vlan_id, int, not_null=is_not_null)
+        is_ok = is_ok and self.__check_parameter(
+            slice_name, str, not_null=is_not_null)
+
+        if db_control != self.__delete_flg:
+            is_ok = is_ok and self.__check_parameter(vni, int)
+            is_ok = is_ok and self.__check_parameter(irb_ipv4_address, str)
+            is_ok = is_ok and self.__check_parameter(irb_ipv4_prefix, int)
+            is_ok = is_ok and self.__check_parameter(vrf_name, str)
+            is_ok = is_ok and self.__check_parameter(vrf_id, int)
+            is_ok = is_ok and self.__check_parameter(rt, str)
+            is_ok = is_ok and self.__check_parameter(rd, str)
+            is_ok = is_ok and self.__check_parameter(router_id, str)
+            is_ok = is_ok and self.__check_parameter(
+                vrf_loopback_interface_address, str)
+            is_ok = is_ok and self.__check_parameter(
+                vrf_loopback_interface_prefix, int)
+        if not is_ok:
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False
+        tmp_list = []
+        tmp_list.append(device_name)
+        if is_not_null:
+            tmp_list.append(vlan_id)
+            tmp_list.append(slice_name)
+        where_param = tuple(tmp_list)
+
+        tmp_list.append(vni)
+        tmp_list.append(irb_ipv4_address)
+        tmp_list.append(irb_ipv4_prefix)
+        tmp_list.append(vrf_name)
+        tmp_list.append(vrf_id)
+        tmp_list.append(rt)
+        tmp_list.append(rd)
+        tmp_list.append(router_id)
+        tmp_list.append(vrf_loopback_interface_address)
+        tmp_list.append(vrf_loopback_interface_prefix)
+        upsert_param = tuple(tmp_list)
+
+        where_query_str = []
+        where_query_str.append("    WHERE")
+        where_query_str.append("          device_name = %s")
+        where_query_str.append("    AND   vlan_id = %s")
+        where_query_str.append("    AND   slice_name = %s")
+
+        delete_query = self.__gen_delete_sql(table_name, where_query_str)
+
+        select_query = self.__gen_select_sql(table_name, where_query_str)
+
+        insert_query, update_query = (
+            self.__gen_upsert_sql(table_name, where_query_str,
+                                  "device_name",
+                                  "vlan_id",
+                                  "slice_name",
+                                  "vni",
+                                  "irb_ipv4_address",
+                                  "irb_ipv4_prefix",
+                                  "vrf_name",
+                                  "vrf_id",
+                                  "rt",
+                                  "rd",
+                                  "router_id",
+                                  "vrf_loopback_interface_address",
+                                  "vrf_loopback_interface_prefix"))
+
+        return self.__exec_write_sql(select_query,
+                                     insert_query,
+                                     update_query,
+                                     delete_query,
+                                     upsert_param,
+                                     where_param,
+                                     db_control,
+                                     conn)
+
+    @decorater_log_in_out
+    def read_dummy_vlan_if_info(self, device_name):
+        '''
+        Method which returns information of Dummy VLAN Interface Information Table
+        Parameter:
+            device_name: Device Name
+        Return Value:
+            Execution Result : boolean(True or False)
+            Refer to Dummy VLAN Interface Information Table : tuple
+        '''
+        table_name = self.table_DummyVlanIfInfo
+
+        if not self.__check_parameter(device_name, str, not_null=True):
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False, None
+
+        where_query_str = ["WHERE device_name = %s"]
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((device_name,), q_str)
+
+    @decorater_log_in_out
+    def write_multi_homing_info(self,
+                                db_control,
+                                device_name,
+                                anycast_id=None,
+                                anycast_address=None,
+                                clag_if_address=None,
+                                clag_if_prefix=None,
+                                backup_address=None,
+                                peer_address=None,
+                                conn=None):
+        '''
+            Method which registers/updates/deletes the information of Multihoming Configuration Information Table based on DB control information
+
+        Parameter Explanation :
+            db_control:DB Control
+            device_name: Device Name
+            anycast_id:AnycastID
+            anycast_address:AnycastIP Address
+            clag_if_address:Clag Bridge IF IP Address
+            clag_if_prefix:Clag Bridge IF Prefix
+            backup_address:Backup IP Address
+            peer_address:Peer IP Address
+
+        Return Value:
+            Execution Result : boolean(True or False)
+        '''
+        table_name = self.table_MultiHomingInfo
+
+        is_ok = self.__check_parameter(device_name, str, not_null=True)
+        if db_control != self.__delete_flg:
+            is_ok = is_ok and self.__check_parameter(
+                anycast_id, int, not_null=True)
+            is_ok = is_ok and self.__check_parameter(
+                anycast_address, str, not_null=True)
+            is_ok = is_ok and self.__check_parameter(
+                clag_if_address, str, not_null=True)
+            is_ok = is_ok and self.__check_parameter(
+                clag_if_prefix, int, not_null=True)
+            is_ok = is_ok and self.__check_parameter(
+                backup_address, str, not_null=True)
+            is_ok = is_ok and self.__check_parameter(
+                peer_address, str, not_null=True)
+
+        if not is_ok:
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False
+
+        tmp_list = []
+        tmp_list.append(device_name)
+        where_param = tuple(tmp_list)
+
+        tmp_list.append(anycast_id)
+        tmp_list.append(anycast_address)
+        tmp_list.append(clag_if_address)
+        tmp_list.append(clag_if_prefix)
+        tmp_list.append(backup_address)
+        tmp_list.append(peer_address)
+        upsert_param = tuple(tmp_list)
+
+        where_query_str = []
+        where_query_str.append("    WHERE")
+        where_query_str.append("          device_name = %s")
+
+        delete_query = self.__gen_delete_sql(table_name, where_query_str)
+
+        select_query = self.__gen_select_sql(table_name, where_query_str)
+
+        insert_query, update_query = (
+            self.__gen_upsert_sql(table_name, where_query_str,
+                                  "device_name",
+                                  "anycast_id",
+                                  "anycast_address",
+                                  "clag_if_address",
+                                  "clag_if_prefix",
+                                  "backup_address",
+                                  "peer_address"))
+
+        return self.__exec_write_sql(select_query,
+                                     insert_query,
+                                     update_query,
+                                     delete_query,
+                                     upsert_param,
+                                     where_param,
+                                     db_control,
+                                     conn)
+
+    @decorater_log_in_out
+    def read_multi_homing_info(self, device_name):
+        '''
+        Method which returns the information of Multihoming Configuration Information Table
+        Parameter:
+            device_name:Device Name
+        Return Value:
+            Execution Result : boolean(True or False)
+            Refer to Multihoming Configuration Information Table : tuple
+        '''
+        table_name = self.table_MultiHomingInfo
+
+        if not self.__check_parameter(device_name, str, not_null=True):
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False, None
+
+        where_query_str = ["WHERE device_name = %s"]
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((device_name,), q_str)
+
+    @decorater_log_in_out
+    def read_multi_homing_all_info(self):
+        '''
+        Method which returns the information of Multihoming Configuration Information Table
+        Return Value:
+            Execution Result : boolean(True or False)
+            Refer to Multihoming Configuration Information Table : tuple
+        '''
+        table_name = self.table_MultiHomingInfo
+
+        where_query_str = []
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((), q_str)
+
+    @decorater_log_in_out
     def recover_if_info(self,
                         conn,
                         db_control,
@@ -2491,16 +3136,16 @@ class EmDBControl(object):
                         if_name_new,
                         **key_dict):
         '''
-        Update the IF name of each table.
-        Explanation about parameter:
-            db_control:DB control
-            table_type:table name
-            if_name_column:IFname column
-            if_name_new:IF name after update
+        Method which updates IFName of each table
+        Parameter:
+            db_control:DB Control
+            table_name:Table Name
+            if_name_column:IFName Column Name
+            if_name_new:IFName after update
             conn:DB connection
-            key_dict:key=column name、value=column value
-        Return value:
-            Execution result : boolean(True or False)
+            key_dict:key= Column Name, value= Value of Column
+        Return Value:
+            Execution Result : boolean(True or False)
         '''
         is_ok = self.__check_parameter(if_name_new,
                                        str, not_null=True)

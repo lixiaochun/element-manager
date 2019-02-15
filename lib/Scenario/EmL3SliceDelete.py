@@ -19,15 +19,21 @@ class EmL3SliceDelete(EmSeparateScenario.EmScenario):
     Class for L3 slice deletion.
     '''
 
+
     @decorater_log
     def __init__(self):
         '''
         Constructor
         '''
+
         super(EmL3SliceDelete, self).__init__()
+
         self.service = GlobalModule.SERVICE_L3_SLICE
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.timeout_flag = False
+
         self.device_type = "device-leaf"
 
     @decorater_log
@@ -481,6 +487,7 @@ class EmL3SliceDelete(EmSeparateScenario.EmScenario):
                 boolean (True:Update necessary,False:Update unnecessary)
         '''
 
+
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
 
@@ -493,10 +500,10 @@ class EmL3SliceDelete(EmSeparateScenario.EmScenario):
 
             GlobalModule.EM_LOGGER.debug("transaction_status Match")
 
-            return True
+            return True  
 
         GlobalModule.EM_LOGGER.debug("transaction_status UNMatch")
-        return False
+        return False  
 
     @decorater_log
     def __creating_json(self, device_message):
@@ -646,6 +653,8 @@ class EmL3SliceDelete(EmSeparateScenario.EmScenario):
                     del cp_list["static"]["route6"]
             else:
                 del cp_list["static"]
+
+
 
             device_json_message["device-leaf"]["cp"].append(cp_list)
 

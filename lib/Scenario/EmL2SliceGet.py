@@ -21,6 +21,7 @@ class EmL2SliceGet(EmSeparateScenario.EmScenario):
         '''
         Constructor
         '''
+
         super(EmL2SliceGet, self).__init__()
 
     @decorater_log
@@ -224,7 +225,7 @@ class EmL2SliceGet(EmSeparateScenario.EmScenario):
             return
 
         GlobalModule.EM_LOGGER.debug(
-            "write_transaction_device_status_list(5:Successful completion) OK")
+            "write_transaction_device_status_list(5:Normal end) OK")
 
         GlobalModule.EM_LOGGER.info(
             "104002 Scenario:L2SliceGet Device:%s end", device_name)

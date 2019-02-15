@@ -22,12 +22,17 @@ class EmLeafDelete(EmSeparateScenario.EmScenario):
         Constructor
         '''
         super(EmLeafDelete, self).__init__()
+
         self.scenario_name = "LeafDelete"
+
         self.service = GlobalModule.SERVICE_LEAF
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.error_code_01 = "104001"
         self.error_code_02 = "104002"
         self.error_code_03 = "204004"
+
         self.device_type = "device"
 
     @decorater_log
@@ -147,6 +152,7 @@ class EmLeafDelete(EmSeparateScenario.EmScenario):
             Necessity for updating transaction status :
                 boolean (True:Update necessary,False:Update unnecessary)
         '''
+
         GlobalModule.EM_LOGGER.debug(
             "transaction_status:%s", transaction_status)
 

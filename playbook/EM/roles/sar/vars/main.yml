@@ -1,5 +1,8 @@
 folder_name: 'sysstat-11.6.0-1'
 
 file_list:
+  - file_name: 'lm_sensors-libs-3.3.4-11.el7.x86_64.rpm'
+    url: 'https://buildlogs.centos.org/c7.01.00/lm_sensors/20150306030219/3.3.4-11.el7.x86_64/lm_sensors-3.3.4-11.el7.x86_64.rpm'
   - file_name: 'sysstat-11.6.0-1.x86_64.rpm'
     url: 'http://pagesperso-orange.fr/sebastien.godard/sysstat-11.6.0-1.x86_64.rpm'
+

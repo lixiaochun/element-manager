@@ -11,11 +11,12 @@ import paramiko
 import re
 import GlobalModule
 from EmCommonLog import decorater_log
+from EmCommonLog import decorater_log_in_out
 
 
 class EmCLIProtocol(object):
     '''
-    Protocol processing section (CLI) class
+    Protocol processing section(CLI)class
     '''
 
     __CONNECT_OK = 1
@@ -35,7 +36,7 @@ class EmCLIProtocol(object):
         self._ssh_timeout_val = None
         self._ssh_recv_time = None
 
-    @decorater_log
+    @decorater_log_in_out
     def connect_device(self, device_info):
         '''
         Device connection control
@@ -144,7 +145,7 @@ class EmCLIProtocol(object):
 
         return GlobalModule.COM_CONNECT_OK
 
-    @decorater_log
+    @decorater_log_in_out
     def send_control_signal(self, message_type, send_message):
         '''
         Transmit device control signal
@@ -152,12 +153,11 @@ class EmCLIProtocol(object):
         Explanation about parameter:
             message_type: Message type(response message)
             send_message: CLI command list
-                        （Send the command one line by one line using str
-                          in case of sending message.
+                        （Sends each transmission message by sending str of command one by one）
         Explanation about return value:
-            Send result : boolean (True:Normal,False:Abnormal)
+            Transmission result : boolean (True:Normal,False:Abnormal)
             Response signal : str (CLI response signal
-                           (Returns OK or NG.))
+                           (Returns OK or NG))
         '''
         is_judg_result, judg_message_type = self._judg_control_signal(
             message_type)
@@ -183,7 +183,7 @@ class EmCLIProtocol(object):
 
         return is_result, output
 
-    @decorater_log
+    @decorater_log_in_out
     def disconnect_device(self):
         '''
         Device disconnection control
@@ -206,7 +206,7 @@ class EmCLIProtocol(object):
     def _judg_control_signal(self, message_type):
         '''
         Control signal judgment
-            Make judgment on the message to be sent based on the message type.
+            Make judgment on the message to be sent based on the message type
         Explanation about parameter:
             message_type: Message type (response message)
                            discard-changes
@@ -242,7 +242,7 @@ class EmCLIProtocol(object):
     @decorater_log
     def _send_signal_to_device(self, send_message, mes_type):
         '''
-        Send message to device.
+        Sends messages to device
         '''
         if mes_type != "edit-config":
             GlobalModule.EM_LOGGER.debug("non edit-config request is OK")
@@ -262,7 +262,7 @@ class EmCLIProtocol(object):
     @decorater_log
     def _send_edit_config(self, send_message):
         '''
-        edit-config for CLI (send message to devices connected by SSH.)
+        edit-config for CLI(Sends messages for the connected object by using SSH)
         '''
         GlobalModule.EM_LOGGER.debug(
             "start exec command :\n%s" % (send_message,))

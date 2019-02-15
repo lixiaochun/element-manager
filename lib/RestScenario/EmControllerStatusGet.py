@@ -146,7 +146,7 @@ class EmControllerStatusGet(EmSeparateRestScenario.EmRestScenario):
     @decorater_log
     def _analysis_get_info(self, get_info):
         '''
-        Analyze the get_info's URL parameter, decide the items to obtain.
+        Analyze the get_info's URL parameter, decie the items to obtain.
         '''
         get_info_list = []
         tmp = get_info if get_info else ""

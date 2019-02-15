@@ -28,7 +28,6 @@ Element Manager(EM) is one of the software components of Multi-Service Fabric(MS
 
 ## How to use
 - installation
-  - [installation manual](doc/element_manager_installation_manual.md)
   - [Simplified installation procedure with Ansible](doc/element_manager_automate_installation_manual.md)
   - [configuration specifications](doc/element_manager_configuration_specifications.md)
 - build

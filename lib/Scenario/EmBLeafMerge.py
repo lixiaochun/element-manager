@@ -18,6 +18,7 @@ class EmBLeafMerge(EmBLeafScenario, EmLeafMerge):
     B-Leaf expansion class (take-over from Leaf expansion scenario)
     '''
 
+
     @decorater_log
     def __init__(self):
         '''

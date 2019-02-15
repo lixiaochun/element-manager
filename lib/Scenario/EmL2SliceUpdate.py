@@ -82,14 +82,22 @@ class EmL2SliceUpdate(EmMergeScenario):
                 inflow_shaping_rate = qos_info.find(
                     self._xml_ns + "inflow-shaping-rate")
                 if inflow_shaping_rate is not None:
-                    cp_list["qos"]["inflow-shaping-rate"] = float(
-                        inflow_shaping_rate.text)
+                    if inflow_shaping_rate.get("operation") == "replace" and \
+                            inflow_shaping_rate.text is None:
+                        cp_list["qos"]["inflow-shaping-rate"] = None
+                    else:
+                        cp_list["qos"]["inflow-shaping-rate"] = float(
+                            inflow_shaping_rate.text)
 
                 outflow_shaping_rate = qos_info.find(
                     self._xml_ns + "outflow-shaping-rate")
                 if outflow_shaping_rate is not None:
-                    cp_list["qos"]["outflow-shaping-rate"] = float(
-                        outflow_shaping_rate.text)
+                    if outflow_shaping_rate.get("operation") == "replace" and \
+                            outflow_shaping_rate.text is None:
+                        cp_list["qos"]["outflow-shaping-rate"] = None
+                    else:
+                        cp_list["qos"]["outflow-shaping-rate"] = float(
+                            outflow_shaping_rate.text)
 
                 remark_menu = qos_info.find(self._xml_ns + "remark-menu")
                 if remark_menu is not None:

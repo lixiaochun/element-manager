@@ -1,5 +1,8 @@
 # Getting em conf
+folder_name_lib: 'lib'
+folder_name_conf: 'conf'
 folder_name_bin: 'bin'
+
 files_conf:
  -  file_name: 'conf_driver.conf'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_driver.conf'
@@ -15,6 +18,22 @@ files_conf:
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_separate_driver_cisco.conf'
  -  file_name: 'conf_sys_common.conf'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_sys_common.conf'
+ -  file_name: 'conf_service.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_service.conf'
+ -  file_name: 'conf_internal_link_vlan.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_internal_link_vlan.conf'
+ -  file_name: 'Cisco.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/Cisco.conf'
+ -  file_name: 'Juniper.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/Juniper.conf'
+ -  file_name: 'OcNOS.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/OcNOS.conf'
+ -  file_name: 'Beluganos.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/Beluganos.conf'
+ -  file_name: 'Cumulus.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/Cumulus.conf'
+
+
 files_bin:
   - file_name: 'em_ctl.sh'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/em_ctl.sh'
@@ -22,8 +41,9 @@ files_bin:
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/EmMonitor.py'
   - file_name: 'controller_status.sh '
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/controller_status.sh'
+
 files_em:
-  file_name: 'lib'
+  file_name: 'master.tar.gz'
   url: 'https://github.com/multi-service-fabric/element-manager/archive/master.tar.gz'
 
     

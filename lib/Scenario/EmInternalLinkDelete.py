@@ -24,10 +24,15 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
         '''
         Constructor
         '''
+
         super(EmInternalLinkDelete, self).__init__()
+
         self.service = GlobalModule.SERVICE_INTERNAL_LINK
+
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
+
         self.timeout_flag = False
+
         self.device_type = "device"
 
     @decorater_log
@@ -161,7 +166,8 @@ class EmInternalLinkDelete(EmSeparateScenario.EmScenario):
                 device_name, "internal-link", order_type, json_message)
 
         if is_comdriver_result == GlobalModule.COM_DELETE_VALICHECK_NG:
-            GlobalModule.EM_LOGGER.debug("delete_device_setting validation checkNG")
+            GlobalModule.EM_LOGGER.debug(
+                "delete_device_setting validation checkNG")
             GlobalModule.EM_LOGGER.warning(
                 "204004 Scenario:InternalLinkDelete Device:%s \
                 NG:9(Processing failure(validation checkNG))", device_name)
