@@ -1,0 +1,12 @@
+# Getting em script
+
+  - name: wget files delete deviceconf script
+    shell: wget --no-check-certificate --no-cookies {{ item.url }} -O {{ folder_name_em_config_delete }}/{{ item.file_name }}
+    with_items:
+      - "{{ files_delete_deviceconf_script }}"
+
+  - name: wget files delete deviceconf sql
+    shell: wget --no-check-certificate --no-cookies {{ item.url }} -O {{ folder_name_em_config_delete }}/sql_files/{{ item.file_name }}
+    with_items:
+      - "{{ files_delete_deviceconf_sql }}"
+

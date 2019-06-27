@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmSeparateScenario.py
 '''
 Individual processing base for each scenario.
@@ -34,6 +34,8 @@ class EmScenario(threading.Thread):
 
         self.com_driver_list = {}
 
+        self.service = ""
+
         self.force = False
 
         self.service_type_list = {}
@@ -56,7 +58,7 @@ class EmScenario(threading.Thread):
             try:
                 xml_message, transaction_id, order_type = self.que_events.get()
 
-                self.__scenario_main(xml_message, transaction_id, order_type)
+                self._scenario_main(xml_message, transaction_id, order_type)
 
                 self.que_events.task_done()
 
@@ -118,7 +120,7 @@ class EmScenario(threading.Thread):
 
 
     @decorater_log
-    def __scenario_main(self, ec_message, transaction_id, order_type):
+    def _scenario_main(self, ec_message, transaction_id, order_type):
         '''
         Conducts administration for each device n(child thread)
         at individual control of each scenario.
@@ -279,9 +281,13 @@ class EmScenario(threading.Thread):
         return False
 
     @decorater_log
-    def _find_subnormal(
-            self, transaction_id, order_type, device_name, transaction_status,
-            connect_device_flg, db_ng_flg):
+    def _find_subnormal(self,
+                        transaction_id=None,
+                        order_type=None,
+                        device_name=None,
+                        transaction_status=None,
+                        connect_device_flg=True,
+                        db_ng_flg=False):
         '''
         Conduct subnormal operation.
         Explanation about parameter:
@@ -298,15 +304,24 @@ class EmScenario(threading.Thread):
         Explanation about return value:
             None
         '''
-
         GlobalModule.EM_LOGGER.debug("connect_device_flg:%s",
                                      connect_device_flg)
         GlobalModule.EM_LOGGER.debug("db_ng_flg:%s", db_ng_flg)
 
+        if connect_device_flg:
+            GlobalModule.EM_LOGGER.debug("With device connection")
+
+            self._disconnect_device(
+                device_name=device_name,
+                order_type=order_type,
+                transaction_id=transaction_id,
+                service_type=self.service,
+                is_only_disconnect=True)
+
         is_db_result, return_table_info = \
             GlobalModule.EMSYSCOMUTILDB.read_transaction_info(transaction_id)
 
-        if is_db_result is False:
+        if not is_db_result or not return_table_info:
             GlobalModule.EM_LOGGER.debug("read_transaction_info NG")
             return
 
@@ -319,27 +334,15 @@ class EmScenario(threading.Thread):
             "service_type: %s",
             self.service_type_list[service_type_num])
 
-        if connect_device_flg is True:
-            GlobalModule.EM_LOGGER.debug("Device is connected")
-
-            is_comdriver_result = self.com_driver_list[
-                device_name].disconnect_device(
-                    device_name,
-                    self.service_type_list[service_type_num],
-                    order_type)
-
-            if is_comdriver_result is False:
-                GlobalModule.EM_LOGGER.debug("disconnect_device NG")
-
-        if db_ng_flg is False:
-            GlobalModule.EM_LOGGER.debug("Other than the case of DB connection NG")
+        if not db_ng_flg:
+            GlobalModule.EM_LOGGER.debug("DB connection other than NG")
 
             is_db_result = \
                 GlobalModule.EMSYSCOMUTILDB. \
                 write_transaction_device_status_list(
                     "UPDATE", device_name, transaction_id, transaction_status)
 
-            if is_db_result is False:
+            if not is_db_result:
                 GlobalModule.EM_LOGGER.debug(
                     "write_transaction_device_status_list(NG:%d) NG",
                     transaction_status)
@@ -352,8 +355,9 @@ class EmScenario(threading.Thread):
             need_update = self._judg_transaction_status(
                 return_table_info[0]["transaction_status"])
 
-            if need_update is True:
-                GlobalModule.EM_LOGGER.debug("Transaction status needs to be updated")
+            if need_update:
+                GlobalModule.EM_LOGGER.debug(
+                    "Transaction state update required")
 
                 is_db_result = \
                     GlobalModule.EMSYSCOMUTILDB. \
@@ -366,7 +370,7 @@ class EmScenario(threading.Thread):
                         return_table_info[0]["order_text"]
                     )
 
-                if is_db_result is False:
+                if not is_db_result:
                     GlobalModule.EM_LOGGER.debug(
                         "write_transaction_status(NG:%d) NG",
                         transaction_status)
@@ -376,6 +380,31 @@ class EmScenario(threading.Thread):
                     "write_transaction_status(NG:%d) OK", transaction_status)
 
         return
+
+    @decorater_log
+    def _disconnect_device(self,
+                           device_name=None,
+                           order_type=None,
+                           transaction_id=None,
+                           service_type=None,
+                           is_only_disconnect=False):
+        '''
+        Disconect with device.
+        Explanation about parameter:
+            device_name: Device name (str)
+            order_type: Order type (str)
+            transaction_id: Transaction ID (uuid)
+            is_only_disconnect: If only disconnection is executed, True (boolean)
+        Explanation about return value:
+            None
+        '''
+        service_type = service_type if service_type else self.service
+        com_driver = self.com_driver_list[device_name]
+        is_ok = com_driver.disconnect_device(device_name,
+                                             service_type,
+                                             order_type)
+        if not is_ok:
+            GlobalModule.EM_LOGGER.debug("disconnect_device NG")
 
     @staticmethod
     @decorater_log
@@ -397,3 +426,7 @@ class EmScenario(threading.Thread):
             else:
                 return None
         return tmp
+
+    @decorater_log
+    def _creating_json(self, device_message):
+        pass

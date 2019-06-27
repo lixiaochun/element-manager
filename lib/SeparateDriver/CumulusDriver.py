@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: CumulusDriver.py
 from __builtin__ import True
 
@@ -11,6 +11,7 @@ import json
 import traceback
 import ipaddress
 import copy
+import re
 
 from CLIDriver import CLIDriverBase
 from CumulusCLIProtocol import CumulusCLIProtocol
@@ -28,6 +29,9 @@ class CumulusDriver(CLIDriverBase):
 
     _DELETE_CLAG_ID_FLAG = -1
 
+    _Q_IN_Q_DEVICE_UNIT = "selectable_by_node"
+    _Q_IN_Q_VLANIF_UNIT = "selectable_by_vlan_if"
+
     @decorater_log
     def __init__(self):
         '''
@@ -38,7 +42,7 @@ class CumulusDriver(CLIDriverBase):
         self.as_super.__init__()
         self.net_protocol = CumulusCLIProtocol(
             error_recv_message=error_mes_list,
-            connected_recv_message="$")
+            connected_recv_message=CumulusCLIProtocol._CUMULU_USER_RECV_MES)
 
         self.list_enable_service = [self.name_spine,
                                     self.name_leaf,
@@ -48,9 +52,15 @@ class CumulusDriver(CLIDriverBase):
                                     self.name_recover_node,
                                     self.name_recover_service,
                                     self.name_acl_filter,
+                                    self.name_if_condition,
                                     ]
-        self._recv_message = "$"
+
+        self._recv_message = CumulusCLIProtocol._CUMULU_USER_RECV_MES
         self._password = None
+        self.driver_public_method["compare_to_latest_device_configuration"] = (
+            self.compare_to_latest_device_configuration)
+        self.get_config_default = [("net show configuration commands",
+                                    self._recv_message)]
 
     @decorater_log_in_out
     def connect_device(self,
@@ -69,17 +79,9 @@ class CumulusDriver(CLIDriverBase):
             order_type : Order type
         Return value :
             Response of protocol processing section : int (1:Normal, 3:No response)
-
-
-
-
-
-
         '''
-
         if service_type == self.name_l2_slice:
             self.net_protocol.is_operation_policy_d = True
-
         ret_val = self.as_super.connect_device(device_name,
                                                device_info,
                                                service_type,
@@ -87,6 +89,84 @@ class CumulusDriver(CLIDriverBase):
         parse_json = json.loads(device_info)
         self._password = parse_json["device_info"]["password"]
         return ret_val
+
+    @decorater_log_in_out
+    def disconnect_device(self,
+                          device_name,
+                          service_type=None,
+                          order_type=None,
+                          get_config_flag=True):
+        '''
+        Driver individual disconnection control
+            Initiate from driver common part and request protcol processing  part
+            to disconnect with device.
+        Argument:
+            device_name : device name
+            service_type : service type
+            order_type : order type
+            get_config_flag: Flag to obtain device config(except for in config Audit）
+        Return value:
+            process termination status: Return always True. 
+        '''
+
+        is_get_ok = self._write_device_setting(device_name, get_config_flag)
+
+        is_disconnect_device_ok = self.as_super.disconnect_device(device_name,
+                                                                  service_type,
+                                                                  order_type,
+                                                                  get_config_flag)
+
+        ret_val = is_get_ok and is_disconnect_device_ok
+
+        return ret_val
+
+    @decorater_log_in_out
+    def get_device_setting(self,
+                           device_name,
+                           service_type=None,
+                           order_type=None,
+                           ec_message=None):
+        '''
+        Driver individual obtaining control
+            Initiate from driver common part and request protcol processing  part
+            to obtain device.
+        Argument:
+            device_name : device name
+            service_type : service type
+            order_type : order type
+            ec_message : EC message
+        Return value:
+            process termination status : Boolean (True:normal, False:fail)
+            signal for device response : Str
+        '''
+        is_result, conf_str = (
+            self.as_super.get_device_setting(device_name,
+                                             service_type,
+                                             order_type,
+                                             ec_message))
+        if is_result:
+            conf_str = self._shaping_get_config(conf_str)
+        return is_result, conf_str
+
+
+    @decorater_log
+    def _shaping_get_config(self, conf_str):
+        '''
+        Form get-config result.
+        (only add/del between  net del all and net commit are extracted)
+        Argument:
+            conf_str : obtained device setting  str
+        Return value:
+            formed device setting ; str
+        '''
+        re_conf = re.compile("^net (commit|add|del).*")
+        no_br = conf_str.splitlines()
+        str_br = conf_str.splitlines(True)
+        start = no_br.index("net del all") if "net del all" in no_br else 0
+        end = (
+            no_br.index("net commit") if "net commit" in no_br else len(no_br))
+        tmp = [line for line in str_br[start:end + 1] if re_conf.search(line)]
+        return "".join(tmp)
 
     @decorater_log
     def _set_sudo_command(self, send_command, recv_command):
@@ -211,6 +291,58 @@ class CumulusDriver(CLIDriverBase):
 
         command_list = []
         command_list.extend(comm_internal_link)
+
+        self.common_util_log.logging(
+            None,
+            self.log_level_debug,
+            self._logging_send_command_str(command_list),
+            __name__)
+
+        return command_list
+
+    @decorater_log
+    def _gen_if_condition_variable_message(self,
+                                           device_info,
+                                           ec_message,
+                                           operation):
+        '''
+        Variable value to create message for CLI(IfCondtion)
+            Called out when creating message for IfCondtion.
+        Parameter:
+            device_info : Device information
+            ec_message : EC message
+            operation : Designate "delete" when deleting
+        Return value
+            Creation command list : list [ command (str) , recv_message(str) ]
+            Execute raise when error occurs
+        '''
+
+        try:
+            device_mes = ec_message.get("device", {})
+
+            device_name = device_mes.get("name")
+
+            if_info = self._get_if_condition_list(
+                device_mes, device_info, operation)
+
+        except Exception as ex:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "ERROR : message = %s / Exception: %s" % (ec_message, ex),
+                __name__)
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "Traceback:%s" % (traceback.format_exc(),),
+                __name__)
+            return None
+
+        comm_if_condition = self._set_command_if_condition(
+            if_info, operation=operation)
+
+        command_list = []
+        command_list.extend(comm_if_condition)
 
         self.common_util_log.logging(
             None,
@@ -349,6 +481,7 @@ class CumulusDriver(CLIDriverBase):
             "ec_message:{0} , db_info:{1}".format(ec_message, device_info),
             __name__)
 
+
         command_list = []
 
         comm_qos = self._set_command_l2slice_merge_qos(
@@ -436,6 +569,7 @@ class CumulusDriver(CLIDriverBase):
             self.log_level_debug,
             "ec_message:{0} , db_info:{1}".format(ec_message, device_info),
             __name__)
+
 
         command_list = []
 
@@ -525,6 +659,7 @@ class CumulusDriver(CLIDriverBase):
             "ec_message:{0} , db_info:{1}".format(ec_message, device_info),
             __name__)
 
+
         command_list = []
 
         comm_qos = self._set_command_l2slice_replace_qos(
@@ -601,6 +736,7 @@ class CumulusDriver(CLIDriverBase):
             __name__)
 
         return command_list
+
 
     @decorater_log
     def _get_add_acl_from_ec(self, device_mes, db_info):
@@ -820,6 +956,7 @@ class CumulusDriver(CLIDriverBase):
                 return_obj["IS-ACL-IPV6"] = True
         return return_obj
 
+
     @decorater_log
     def _set_acl_filter(self, acl_list=[], operation=None):
         comm_list = []
@@ -987,11 +1124,13 @@ class CumulusDriver(CLIDriverBase):
         tmp_comm += self._get_command_text_acl_addr_port(acl_data,
                                                          "SOURCE-MAC-ADDR",
                                                          "source-mac")
-        tmp_comm += self._get_command_text_acl_addr_port(acl_data,
-                                                         "DESTINATION-MAC-ADDR",
-                                                         "dest-mac")
+        tmp_comm += self._get_command_text_acl_addr_port(
+            acl_data,
+            "DESTINATION-MAC-ADDR",
+            "dest-mac")
         tmp_comm += " protocol any"
         return tmp_comm
+
 
     @decorater_log
     def _gen_node_add_variable_message(self,
@@ -1116,11 +1255,17 @@ class CumulusDriver(CLIDriverBase):
                 tmp_if["name"] = internal_if_info.get("name")
                 for db_info_if in db_info.get("internal-link"):
                     if tmp_if["name"] == db_info_if.get("if_name"):
-                        tmp_if["vlan_id"] = db_info_if.get("vlan_id")
+                        if internal_if_info.get("cost"):
+                            tmp_if["vlan_id"] = db_info_if.get("vlan_id")
+                            tmp_if["cost"] = internal_if_info.get("cost")
+                        if internal_if_info.get("minimum-links"):
+                            tmp_if["minimum-links"] = internal_if_info.get(
+                                "minimum-links")
                         break
-                tmp_if["cost"] = internal_if_info.get("cost")
+                if internal_if_info.get("internal-interface", {}):
+                    tmp_if["internal-interface"] = internal_if_info.get(
+                        "internal-interface")
                 if_info.append(tmp_if)
-
         else:
             for internal_if_info in ec_info:
                 if (not internal_if_info.get("opposite-node-name")):
@@ -1160,6 +1305,53 @@ class CumulusDriver(CLIDriverBase):
                             "minimum-links")
 
                     if_info.append(tmp_if)
+
+        return if_info
+
+    @decorater_log
+    def _get_if_condition_list(self, ec_info, db_info, operation=None):
+        '''
+        Obtain information on IF  open/close.
+        Arrange  EC message and DB information ino order that command can be created easily.
+        Parameter:
+            ec_info : EC message
+            db_info : DB information
+            operation : operation type
+        Return value
+            IF information list (list)
+            Execute raise when error occurs
+        '''
+        if_info = {}
+        phy_ifs = ec_info.get("interface-physical")
+        lag_ifs = ec_info.get("internal-lag")
+
+        if phy_ifs:
+            if_info_phy = []
+            for phy_if in phy_ifs:
+                tmp_if = {}
+                tmp_if["name"] = phy_if.get("name")
+                for db_info_if in db_info.get("physical-interface"):
+                    if tmp_if["name"] == db_info_if.get("if_name"):
+                        tmp_if["condition"] = phy_if.get(
+                            "condition")
+                if_info_phy.append(tmp_if)
+            if_info["physical"] = if_info_phy
+        if lag_ifs:
+            if_info_lag = []
+            for lag_if in lag_ifs:
+                tmp_if = {}
+                tmp_if["name"] = lag_if.get("name")
+                for db_info_if in db_info.get("lag"):
+                    if tmp_if["name"] == db_info_if.get("if_name"):
+                        tmp_if["condition"] = lag_if.get(
+                            "condition")
+                if_info_lag.append(tmp_if)
+            if_info["lag"] = if_info_lag
+        self.common_util_log.logging(
+            None,
+            self.log_level_debug,
+            "if_info : \n%s" % (if_info,),
+            __name__)
 
         return if_info
 
@@ -1249,7 +1441,7 @@ class CumulusDriver(CLIDriverBase):
                                    internal_if,
                                    operation=None):
         tmp_comm_list = []
-        vlan_id = internal_if["vlan_id"]
+        vlan_id = internal_if.get("vlan_id")
         if (vlan_id is None and if_type == self._if_type_lag):
             if_name = internal_if["name"]
         elif (vlan_id is not None and if_type == self._if_type_phy):
@@ -1281,7 +1473,22 @@ class CumulusDriver(CLIDriverBase):
                 comm = "net del interface {0}".format(internal_if["name"])
                 tmp_comm_list.append((comm, self._recv_message))
         elif operation == self._REPLACE:
-            tmp_comm_list.append((cost_cmd, self._recv_message))
+            if internal_if.get("minimum-links"):
+                for physical_if in internal_if["internal-interface"]:
+                    if physical_if["operation"] == "delete":
+                        comm = "net del bond {0} bond slaves {1}".format(
+                            internal_if.get("name"), physical_if.get("name"))
+                        tmp_comm_list.append((comm, self._recv_message))
+                        comm = "net del interface {0}".format(
+                            physical_if.get("name"))
+                        tmp_comm_list.append((comm, self._recv_message))
+                    else:
+                        comm =\
+                            "{0} bond slaves {1}".format(comm_net_top,
+                                                         physical_if["name"])
+                        tmp_comm_list.append((comm, self._recv_message))
+            if internal_if.get("cost"):
+                tmp_comm_list.append((cost_cmd, self._recv_message))
         else:
             if if_type == self._if_type_lag:
                 for physical_if in internal_if["internal-interface"]:
@@ -1321,6 +1528,61 @@ class CumulusDriver(CLIDriverBase):
                                       nw_addr,
                                       ospf_area)
             tmp_comm_list.append((area_cmd, self._recv_message))
+        return tmp_comm_list
+
+    @decorater_log
+    def _set_command_if_condition(self,
+                                  if_info,
+                                  operation=None):
+        '''
+        Create command list for IF open/close  configuraiton
+        Parameter:
+            if_info : Internal link IF information
+            operation : Operation type (Mandatory in case other than MERGE)
+        Return value
+            command list (list)
+        '''
+        tmp_comm_list = []
+
+        for if_condition in if_info.get("physical", ()):
+            tmp_comm_list.extend(
+                self._set_command_unit_if_condition(self._if_type_phy,
+                                                    if_condition,
+                                                    operation)
+            )
+        for if_condition in if_info.get("lag", ()):
+            tmp_comm_list.extend(
+                self._set_command_unit_if_condition(self._if_type_lag,
+                                                    if_condition,
+                                                    operation)
+            )
+
+        self.common_util_log.logging(
+            None,
+            self.log_level_debug,
+            "internal link command : \n%s" % (tmp_comm_list,),
+            __name__)
+
+        return tmp_comm_list
+
+    @decorater_log
+    def _set_command_unit_if_condition(self,
+                                       if_type,
+                                       if_condition,
+                                       operation=None):
+        tmp_comm_list = []
+
+        if_name = if_condition.get("name")
+        condition = if_condition.get("condition")
+
+        comm_net_if = "bond" if if_type == self._if_type_lag else "interface"
+        comm_net_ope = "add" if condition == "disable" else "del"
+        comm = "net {0} {1} {2} link down".format(comm_net_ope,
+                                                  comm_net_if,
+                                                  if_name)
+
+        tmp_comm_list.append((comm, self._recv_message))
+
         return tmp_comm_list
 
     @decorater_log
@@ -1410,6 +1672,29 @@ class CumulusDriver(CLIDriverBase):
         return tmp_comm_list
 
     @decorater_log
+    def _set_command_q_in_q(self, device_mes, operation=None):
+        '''
+        Create command list of configuration for device addition(Q-in-Q).
+        Argument:
+            device_mes : devce message information (EC message)
+            operation : opeation type( it is mandatry except for in  case of MERGE)
+        Return value:
+            command list (list)
+        '''
+        q_in_q_comm_list = []
+        q_in_q = device_mes.get("device", {}).get(
+            "equipment", {}).get("q-in-q")
+        if q_in_q == self._Q_IN_Q_DEVICE_UNIT:
+            comm = "net add bridge bridge vlan-protocol 802.1ad"
+            q_in_q_comm_list.append((comm, self._recv_message))
+        self.common_util_log.logging(
+            None,
+            self.log_level_debug,
+            "Q-in-Q command : \n%s" % (q_in_q_comm_list,),
+            __name__)
+        return q_in_q_comm_list
+
+    @decorater_log
     def _set_command_ospf(self, device_mes, ospf_area, operation=None):
         '''
         Create command list for device expansion setting (OSPF)
@@ -1434,6 +1719,8 @@ class CumulusDriver(CLIDriverBase):
 
             comm = "net add ospf router-id " + lo_ip_address
             tmp_comm_list.append((comm, self._recv_message))
+            comm = "net add ospf timers throttle spf 200 200 200"
+            tmp_comm_list.append((comm, self._recv_message))
             comm = "net add ospf passive-interface lo"
             tmp_comm_list.append((comm, self._recv_message))
             comm = "net add ospf network " + \
@@ -1446,6 +1733,7 @@ class CumulusDriver(CLIDriverBase):
             "internal link command : \n%s" % (tmp_comm_list,),
             __name__)
         return tmp_comm_list
+
 
     @decorater_log
     def _get_lag_if_list(self, ec_info, db_info, operation=None):
@@ -1463,14 +1751,11 @@ class CumulusDriver(CLIDriverBase):
         '''
         lag_list = []
 
-        if operation == self._REPLACE:
-            pass
-        else:
-            for lag_if_info in ec_info:
-                tmp_lag = {}
-                tmp_lag["name"] = lag_if_info.get("name")
-                tmp_lag["lag_member"] = lag_if_info.get("leaf-interface", {})
-                lag_list.append(tmp_lag)
+        for lag_if_info in ec_info:
+            tmp_lag = {}
+            tmp_lag["name"] = lag_if_info.get("name")
+            tmp_lag["lag_member"] = lag_if_info.get("leaf-interface", {})
+            lag_list.append(tmp_lag)
 
         return lag_list
 
@@ -1494,7 +1779,20 @@ class CumulusDriver(CLIDriverBase):
                     comm = "net del interface " + member_info.get("name")
                     tmp_comm_list.append((comm, self._recv_message))
         elif operation == self._REPLACE:
-            pass
+            for lag_info in lag_list:
+                for member_info in lag_info.get("lag_member"):
+                    if member_info.get("operation") == "delete":
+                        comm = "net del bond " + \
+                            lag_info.get("name") + " bond slaves " + \
+                            member_info.get("name")
+                        tmp_comm_list.append((comm, self._recv_message))
+                        comm = "net del interface " + member_info.get("name")
+                        tmp_comm_list.append((comm, self._recv_message))
+                    else:
+                        comm = "net add bond " + \
+                            lag_info.get("name") + " bond slaves " + \
+                            member_info.get("name")
+                        tmp_comm_list.append((comm, self._recv_message))
         else:
             for lag_info in lag_list:
                 for member_info in lag_info.get("lag_member"):
@@ -1509,6 +1807,7 @@ class CumulusDriver(CLIDriverBase):
             "internal link command : \n%s" % (tmp_comm_list,),
             __name__)
         return tmp_comm_list
+
 
     @decorater_log
     def _gen_l2_slice_merge_message_for_cmd(self, ec_info, db_info):
@@ -2112,7 +2411,8 @@ class CumulusDriver(CLIDriverBase):
 
         tmp_comm_list = []
 
-        if merge_info["multi-homing"] == "ec" and merge_info["first-multi-homing"]:
+        if (merge_info["multi-homing"] == "ec" and
+                merge_info["first-multi-homing"]):
 
             comm = "net add loopback lo clag vxlan-anycast-ip " + \
                 ec_info.get("multi-homing", {}).get("anycast",
@@ -2204,6 +2504,7 @@ class CumulusDriver(CLIDriverBase):
             __name__)
 
         return tmp_comm_list
+
 
     @decorater_log
     def _gen_l2_slice_delete_message_for_cmd(self, ec_info, db_info):
@@ -2585,8 +2886,8 @@ class CumulusDriver(CLIDriverBase):
                 if_name not in last_if_list
             )
             is_last_vlan_vni = (
-                delete_info["last-cp-on-vni-vlan"].get(vni, {}).get(vlan_id) and
-                not last_vni_vlan_flag.get(vni, {}).get(vlan_id)
+                delete_info["last-cp-on-vni-vlan"].get(vni, {}).get(vlan_id)
+                and not last_vni_vlan_flag.get(vni, {}).get(vlan_id)
             )
 
             if is_last_vlan_cp:
@@ -2600,7 +2901,8 @@ class CumulusDriver(CLIDriverBase):
             if is_last_vni:
                 comm = "net del vxlan vni{0}".format(vni)
                 tmp_comm_list.append((comm, self._recv_message))
-            elif is_last_vlan_vni and not delete_info["last-cp-on-vni"].get(vni):
+            elif (is_last_vlan_vni and not
+                  delete_info["last-cp-on-vni"].get(vni)):
                 comm = ("net del vxlan " +
                         "vni{0} bridge access {1}".format(vni, vlan_id))
                 tmp_comm_list.append((comm, self._recv_message))
@@ -2777,6 +3079,7 @@ class CumulusDriver(CLIDriverBase):
             __name__)
 
         return tmp_comm_list
+
 
     @decorater_log
     def _gen_l2_slice_replace_message_for_cmd(self, ec_info, db_info):
@@ -2958,6 +3261,7 @@ class CumulusDriver(CLIDriverBase):
             __name__)
 
         return tmp_comm_list
+
 
     @decorater_log
     def _flag_count_up(self, judge_flag):

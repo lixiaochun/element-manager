@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmBLeafMerge.py
 '''
 Individual scenario for B-Leaf expansion.
@@ -15,7 +15,7 @@ from EmBLeafScenario import EmBLeafScenario
 
 class EmBLeafMerge(EmBLeafScenario, EmLeafMerge):
     '''
-    B-Leaf expansion class (take-over from Leaf expansion scenario)
+   B-Leaf expansion class (take-over from Leaf expansion scenario)
     '''
 
 
@@ -32,7 +32,7 @@ class EmBLeafMerge(EmBLeafScenario, EmLeafMerge):
 
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
 
-        self.scenario_name = "B-LeafMerge"
+        self._scenario_name = "B-LeafMerge"
 
         self.device_type = "device"
 

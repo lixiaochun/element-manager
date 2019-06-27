@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmRestServer.py
 '''
 Rest Server function.
@@ -14,11 +14,14 @@ import signal
 from datetime import datetime, timedelta
 from copy import deepcopy
 from flask import Flask, request
+from flask_cors import CORS
 import GlobalModule
 from EmCommonLog import decorater_log
 from EmCommonLog import decorater_log_in_out
 
 application = Flask(__name__)
+
+CORS(application)
 
 _request_date_list = []
 
@@ -103,6 +106,35 @@ def rest_if_logget():
     '''
     return _execute_rest_api("/v1/internal/em_ctrl/log",
                              request=request)
+
+
+@application.route("/v1/internal/em_ctrl/ctrl-switch", methods=["POST"])
+@_deco_count_request
+def rest_if_ctrlswitch():
+    '''
+    Switches-over controller.
+        Executes switching-over cotroller.
+    Parameter:
+        key : Key
+    Return value :
+    '''
+    return _execute_rest_api("/v1/internal/em_ctrl/ctrl-switch",
+                             request=request)
+
+
+@application.route("/v1/internal/node_ctrl/<hostname>/neconfigaudit")
+@_deco_count_request
+def rest_if_device_config_audit(hostname):
+    '''
+    Device Config-Audit.
+        Executes device Config-Audit.
+    Parameter:
+        key : Key
+    Return value :
+    '''
+    return _execute_rest_api("/v1/internal/node_ctrl/<hostname>/neconfigaudit",
+                             request=request,
+                             hostname=hostname)
 
 
 @decorater_log
@@ -207,5 +239,6 @@ class EmRestServer(object):
         '''
         REST server launching method (execute app.run)
         '''
+
         application.run(host=self._rest_address, port=self._rest_port,
                         threaded=True)

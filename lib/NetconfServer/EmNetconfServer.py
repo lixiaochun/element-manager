@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmNetconfServer.py
 '''
 Netconf Server function
@@ -18,10 +18,12 @@ from netconf import qmap
 from netconf import NSMAP
 import netconf.error as ncerror
 from lxml import etree
+import os
 import GlobalModule
 from EmCommonLog import decorater_log
 from EmCommonLog import decorater_log_in_out
 from EmSysCommonUtilityDB import EmSysCommonUtilityDB
+import PluginLoader
 
 
 class EmNetconfSessionDate(object):
@@ -78,8 +80,24 @@ class NetconfMethods(server.NetconfMethods):
         self.__rpc_error_message = """
 <rpc-error>
 <error-type>application</error-type>
+<error-tag>operation-failed</error-tag>
 <error-severity>error</error-severity>
 <error-message xml:lang="en">internal server error</error-message>
+<error-info>
+    <operator-mediation>true</operator-mediation>
+</error-info>
+</rpc-error>
+"""
+
+        self._rpc_error_message_temp = """
+<rpc-error>
+<error-type>application</error-type>
+<error-tag>operation-failed</error-tag>
+<error-severity>error</error-severity>
+<error-message xml:lang="en">service unavailable</error-message>
+<error-info>
+    <operator-mediation>false</operator-mediation>
+</error-info>
 </rpc-error>
 """
 
@@ -131,7 +149,8 @@ class NetconfMethods(server.NetconfMethods):
     def rpc_get_config(self, session, rpc, source_elm, filter_or_none):
         '''
         Launched from NetconfSSHServer class and send Netconf
-        message to order flow control.Explanation about parameter:
+        message to order flow control.
+        Explanation about parameter:       
             session:
             rpc:Netconf message parser result
             source_elm::source parameter of Netconf message
@@ -150,8 +169,7 @@ class NetconfMethods(server.NetconfMethods):
             GlobalModule.EM_ORDER_CONTROL.get_transaction_presence()
 
         if transaction_result is not True:
-
-            return False, etree.fromstring(self.__rpc_error_message)
+            return False, etree.fromstring(self._rpc_error_message_temp)
 
         str_rpc = etree.tostring(rpc)
 
@@ -169,7 +187,8 @@ class NetconfMethods(server.NetconfMethods):
     def rpc_edit_config(self, session, rpc, *unused_params):
         '''
         Launched from NetconfSSHServer class and send Netconf message
-        to order flow control.Explanation about parameter:
+        to order flow control.
+        Explanation about parameter:
             session:
             rpc:Netconf message parser result
             target_elm::Parameter for target tag and below of Netconf message
@@ -188,8 +207,7 @@ class NetconfMethods(server.NetconfMethods):
             GlobalModule.EM_ORDER_CONTROL.get_transaction_presence()
 
         if transaction_result is not True:
-
-            return False, etree.fromstring(self.__rpc_error_message)
+            return False, etree.fromstring(self._rpc_error_message_temp)
 
         str_rpc = etree.tostring(rpc)
 
@@ -274,7 +292,7 @@ class EmNetconfSSHServerSocket(server.NetconfSSHServerSocket):
                         GlobalModule.EM_LOGGER.debug(
                             "%s: Got channel as None: exiting", str(self))
                         return
-                    GlobalModule.EM_LOGGER.warn(
+                    GlobalModule.EM_LOGGER.debug(
                         "202011 %s: Got channel as None on active.", str(self))
                     continue
 
@@ -464,6 +482,7 @@ class EmNetconfServerSession(server.NetconfServerSession):
             except ncerror.RPCServerError as error:
                 self.send_message(error.get_reply_msg())
             except Exception as exception:
+                GlobalModule.EM_LOGGER.debug(traceback.format_exc())
                 error = ncerror.RPCSvrException(rpc, exception)
                 self.send_message(error.get_reply_msg())
 
@@ -533,7 +552,12 @@ class EmNetconfSSHServer(object):
     NetconfSSHServer launch & separated response class.
     '''
     @decorater_log
-    def __init__(self, username=None, password=None, port=830, system_status=None, host_key=None):
+    def __init__(self,
+                 username=None,
+                 password=None,
+                 port=830,
+                 system_status=None,
+                 host_key=None):
         '''
         Constructor
         '''
@@ -544,10 +568,16 @@ class EmNetconfSSHServer(object):
         self.__rpc_error_message = """
 <rpc-error>
 <error-type>application</error-type>
+<error-tag>operation-failed</error-tag>
 <error-severity>error</error-severity>
 <error-message xml:lang="en">dummy</error-message>
+<error-info>
+    <operator-mediation>false</operator-mediation>
+</error-info>
 </rpc-error>
 """
+        self._response_plugin = None
+
         if system_status is None:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
                 "UPDATE",
@@ -556,7 +586,7 @@ class EmNetconfSSHServer(object):
             GlobalModule.EM_LOGGER.info(
                 "102009 EM Status Transition[%s -> %s]",
                 "UNKNOWN", "STOP")
-            raise IOError("system_status is not specified")
+            raise IOError("system_status is not set")
 
         self.stop_state = GlobalModule.COM_STOP_NORMAL
 
@@ -564,25 +594,40 @@ class EmNetconfSSHServer(object):
             EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
 
         if lo_status != EmSysCommonUtilityDB.STATE_STOP:
-            raise RuntimeError("Starting request except for stop state has been detected.")
-
+            raise RuntimeError("Detect start request other than stop status")
 
         if system_status != EmSysCommonUtilityDB.STATE_CHANGE_OVER:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
                 "UPDATE",
                 EmSysCommonUtilityDB.STATE_READY_TO_START,
                 EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
-            GlobalModule.EM_LOGGER.info("102009 EM Status Transition[%s -> %s]",
-                                        "STOP", "READY_TO_START")
+            GlobalModule.EM_LOGGER.info(
+                "102009 EM Status Transition[%s -> %s]",
+                "STOP", "READY_TO_START")
         else:
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
                 "UPDATE",
                 EmSysCommonUtilityDB.STATE_CHANGE_OVER,
                 EmSysCommonUtilityDB.GET_DATA_TYPE_MEMORY)
-            GlobalModule.EM_LOGGER.info("102009 EM Status Transition[%s -> %s]",
-                                        "STOP", "CHG_OVER")
+            GlobalModule.EM_LOGGER.info(
+                "102009 EM Status Transition[%s -> %s]",
+                "STOP", "CHG_OVER")
 
-        if username is None:
+        try:
+            if username is None:
+                raise IOError("username is not set")
+            if password is None:
+                raise IOError("password is not set")
+            result, conf_log_level = (
+                GlobalModule.EM_CONFIG.read_sys_common_conf("Em_log_level"))
+            if not result:
+                raise IOError("failed to get config Em_log_level")
+            debug_flg = bool(conf_log_level == "DEBUG")
+            self._response_plugin = self._load_response_plugin()
+        except Exception as ex:
+            GlobalModule.EM_LOGGER.debug(ex.message)
+            GlobalModule.EM_LOGGER.debug(
+                "traceback:%s", traceback.format_exc())
             GlobalModule.EMSYSCOMUTILDB.write_system_status(
                 "UPDATE",
                 EmSysCommonUtilityDB.STATE_STOP,
@@ -590,30 +635,7 @@ class EmNetconfSSHServer(object):
             GlobalModule.EM_LOGGER.info(
                 "102009 EM Status Transition[%s -> %s]",
                 "READY_TO_START", "STOP")
-            raise IOError("username is not specified")
-        if password is None:
-            GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                "UPDATE",
-                EmSysCommonUtilityDB.STATE_STOP,
-                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
-            GlobalModule.EM_LOGGER.info(
-                "102009 EM Status Transition[%s -> %s]",
-                "READY_TO_START", "STOP")
-            raise IOError("password is not specified")
-
-        result, conf_log_level = GlobalModule.EM_CONFIG.\
-            read_sys_common_conf("Em_log_level")
-        if result is not True:
-            GlobalModule.EMSYSCOMUTILDB.write_system_status(
-                "UPDATE",
-                EmSysCommonUtilityDB.STATE_STOP,
-                EmSysCommonUtilityDB.GET_DATA_TYPE_BOTH)
-            GlobalModule.EM_LOGGER.info(
-                "102009 EM Status Transition[%s -> %s]",
-                "READY_TO_START", "STOP")
-            raise IOError
-
-        debug_flg = bool(conf_log_level == "DEBUG")
+            raise
 
         server_ctl = server.SSHUserPassController(
             username=username,
@@ -636,8 +658,7 @@ class EmNetconfSSHServer(object):
             GlobalModule.EM_LOGGER.info(
                 "102009 EM Status Transition[%s -> %s]",
                 "READY_TO_START", "STOP")
-
-            raise exception
+            raise
 
         self.stop_mon_thread = threading.Thread(target=self._stop_monitoring)
         self.stop_mon_thread.daemon = True
@@ -648,21 +669,26 @@ class EmNetconfSSHServer(object):
         self.wait_order_thread.start()
 
     @decorater_log_in_out
-    def send_response(self, order_result, ec_message, session_id):
+    def send_response(self,
+                      order_result,
+                      ec_message,
+                      session_id,
+                      response_info=None):
         '''
         Launched from order flow control sets necessary information
         in the Queue, hand over to Netconf server.
         Explanation about parameter:
             order_result:Order result
             ec_message: EC message
-            session_id: Session ID
+            session_id: Session ID           
+            response_info: response (EmNetconfResponse object)
         Explanation about return value:
             True:Normal
             False:Abnormal
         '''
         try:
-            self.que_events.put(
-                (order_result, ec_message, session_id), block=False)
+            put_param = (order_result, ec_message, session_id, response_info)
+            self.que_events.put(put_param, block=False)
         except Queue.Full:
             return False
         return True
@@ -689,11 +715,10 @@ class EmNetconfSSHServer(object):
         Launched from main, waits until transactions
         in order flow control have been finished.
         Then, conducts processing to stop.
-
         Explanation about parameter:
             stop_state: Stop state
         Explanation about return value:
-            None
+            None            
         '''
         self.stop_state = stop_state
 
@@ -800,7 +825,11 @@ class EmNetconfSSHServer(object):
                 "READY_TO_STOP", "STOP")
 
     @decorater_log
-    def _send_netconf_resp(self, order_resp, ec_message, session_id):
+    def _send_netconf_resp(self,
+                           order_resp,
+                           ec_message,
+                           session_id,
+                           response_info=None):
         '''
         Transmits Netconf(rpc-reply) to EC main module based
         on the response from order flow control.
@@ -808,66 +837,24 @@ class EmNetconfSSHServer(object):
             order_resp:Order control result
             ec_message:Receive request signal
             session_id:Session ID during connection to EC mail module
+            response_info:response(EmNetconfResponse object)
         Explanation about return value:
         '''
         session_date = EmNetconfSessionDate.get_session_date(session_id)
 
         if session_date is None:
             GlobalModule.EM_LOGGER.debug(
-                "Target session is not existed.Could not send response.")
+                "No relevant sessions. Reply not possible reply.")
             return
 
-        rpc_reply = self._create_resp_message(order_resp)
+        rpc_reply = self._response_plugin.create_resp_message(order_resp,
+                                                              response_info)
 
         rpc_str = ec_message.read()
 
         GlobalModule.EM_LOGGER.debug("rpc_reply: %s", rpc_str)
 
         session_date.send_rpc_reply(rpc_reply, etree.fromstring(rpc_str))
-
-    @decorater_log
-    def _create_resp_message(self, order_resp):
-        '''
-        Launched from self class, creates Netconf(rpc-reply)
-        according to the argument.Explanation about parameter：
-            order_resp:Response to EC main module
-        Explanation about return value:
-            error_rpc:Response message to EC main module
-        '''
-
-        if order_resp == GlobalModule.ORDER_RES_OK:
-            GlobalModule.EM_LOGGER.info("102005 Sending rpc-reply")
-            return etree.Element('ok')
-
-        error_rpc = etree.fromstring(self.__rpc_error_message)
-
-        if order_resp == GlobalModule.ORDER_RES_ROLL_BACK_END:
-            error_rpc.find(".//error-message").text = "not modified"
-
-        elif order_resp == GlobalModule.ORDER_RES_PROC_ERR_CHECK:
-            error_rpc.find(".//error-message").text = "unprocessable entity"
-
-        elif order_resp == GlobalModule.ORDER_RES_PROC_ERR_ORDER:
-            error_rpc.find(".//error-message").text = "bad request"
-
-        elif order_resp == GlobalModule.ORDER_RES_PROC_ERR_MATCH:
-            error_rpc.find(".//error-message").text = "conflict"
-
-        elif order_resp == GlobalModule.ORDER_RES_PROC_ERR_INF:
-            error_rpc.find(".//error-message").text = "not found"
-
-        elif order_resp == GlobalModule.ORDER_RES_PROC_ERR_TEMP:
-            error_rpc.find(".//error-message").text = "service unavailable"
-
-        else:
-            error_rpc.find(".//error-message").text = "internal server error"
-
-        error_rpc_str = etree.tostring(error_rpc)
-
-        GlobalModule.EM_LOGGER.info(
-            "102006 Sending rpc-error: %s", error_rpc_str)
-
-        return error_rpc
 
     @decorater_log
     def _wait_order_resp(self):
@@ -881,9 +868,9 @@ class EmNetconfSSHServer(object):
         """
         while self.started:
             try:
-                order_resp, ec_message, session_id = self.que_events.get()
+                queue_param = self.que_events.get()
 
-                self._send_netconf_resp(order_resp, ec_message, session_id)
+                self._send_netconf_resp(*queue_param)
 
                 self.que_events.task_done()
 
@@ -892,3 +879,40 @@ class EmNetconfSSHServer(object):
                     "Message Send Error:%s", str(type(exception)))
 
                 self.que_events.task_done()
+
+    @decorater_log
+    def _load_response_plugin(self):
+        """
+        Read RESPONSE plugin.
+        """
+        response_plugin = None
+        GlobalModule.EM_LOGGER.info('102012 Start Loading Plugin for Response')
+        plg_dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "NcsPluginCreateResponse")
+        try:
+            result, plugin_name = GlobalModule.EM_CONFIG.read_if_process_conf(
+                "Response_plugin")
+            if not result:
+                raise IOError("Load Error IfProcess Conf %s",
+                              "Response_plugin")
+            GlobalModule.EM_LOGGER.debug('target plugin = %s', plugin_name)
+            plugins = PluginLoader.load_plugins(plg_dir_path, "NcsPlugin")
+            if not plugins:
+                raise IOError("Response plugin files is not found.")
+            GlobalModule.EM_LOGGER.debug('load plugins = %s',
+                                         [tmp.plugin_name for tmp in plugins])
+            for plugin in plugins:
+                if plugin.plugin_name.startswith(plugin_name):
+                    response_plugin = plugin
+                    break
+            if not response_plugin:
+                raise IOError("Designated Response Plugin is not found.")
+        except Exception as ex:
+            GlobalModule.EM_LOGGER.error(
+                '302013 Error Loading Plugin for Response')
+            GlobalModule.EM_LOGGER.debug("Error : %s", ex)
+            raise
+        else:
+            GlobalModule.EM_LOGGER.debug('load plugin = %s', response_plugin)
+            GlobalModule.EM_LOGGER.debug('response plugin load')
+            return response_plugin

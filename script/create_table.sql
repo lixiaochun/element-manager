@@ -43,6 +43,7 @@ CREATE TABLE DeviceRegistrationInfo(
     rr_loopback_address     text,
     rr_loopback_prefix      Integer,
     irb_type                text,
+    q_in_q_type             text,
     PRIMARY KEY (device_name)
 );
 
@@ -88,6 +89,7 @@ CREATE TABLE VlanIfInfo(
     virtual_mac_address text,
     virtual_gateway_address text,
     virtual_gateway_prefix  Integer,
+    q_in_q            boolean DEFAULT FALSE,
     PRIMARY KEY (device_name, if_name, vlan_id, slice_name),
     FOREIGN KEY (device_name)
         REFERENCES DeviceRegistrationInfo (device_name)
@@ -100,6 +102,7 @@ CREATE TABLE LagIfInfo(
     lag_if_id      Integer NOT NULL,
     minimum_links  Integer NOT NULL,
     link_speed     text,
+    condition      Integer NOT NULL,
     PRIMARY KEY (device_name, lag_if_name),
     FOREIGN KEY (device_name)
         REFERENCES DeviceRegistrationInfo(device_name)
@@ -127,8 +130,8 @@ CREATE TABLE L3VpnLeafBgpBasicInfo(
 );
 
 CREATE TABLE ACLInfo(
-    device_name             text NOT NULL,
-    acl_id                  int  NOT NULL,
+    device_name             text     NOT NULL,
+    acl_id                  Integer  NOT NULL,
     if_name                 text,
     vlan_id                 Integer,
     PRIMARY KEY (device_name,acl_id),
@@ -260,11 +263,11 @@ CREATE TABLE MultiHomingInfo(
 );
 
 CREATE TABLE ACLDetailInfo(
-    device_name             text NOT NULL,
-    acl_id                  int  NOT NULL,
-    term_name               text NOT NULL,
-    action                  text NOT NULL,
-    direction               text NOT NULL,
+    device_name             text     NOT NULL,
+    acl_id                  Integer  NOT NULL,
+    term_name               text     NOT NULL,
+    action                  text     NOT NULL,
+    direction               text     NOT NULL,
     source_mac_address      text,
     destination_mac_address text,
     source_ip_address       text,
@@ -297,4 +300,24 @@ CREATE TABLE InnerLinkIfInfo(
         REFERENCES DeviceRegistrationInfo (device_name)
 );
 
+CREATE TABLE DeviceConfigrationinfo(
+    device_configration_id  serial  NOT NULL,
+    device_name             text    NOT NULL,
+    working_date            text    NOT NULL,
+    working_time            text    NOT NULL,
+    platform_name           text    NOT NULL,
+    vrf_name                text,
+    practice_system         text,
+    log_type                text,
+    get_timing              Integer,
+    config_file             text    NOT NULL,
+    PRIMARY KEY (device_configration_id, working_date)
+);
 
+CREATE TABLE NvrAdminPasswordMgmt(
+    device_name             text    NOT NULL,
+    administrator_password  text    NOT NULL,
+    PRIMARY KEY (device_name),
+    FOREIGN KEY (device_name)
+        REFERENCES DeviceRegistrationInfo (device_name)
+);

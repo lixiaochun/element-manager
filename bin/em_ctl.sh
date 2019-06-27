@@ -6,9 +6,11 @@
 # Shell script executed by RA or a maintenance operator
 # and does EM termination or forceful termination.
 #
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 #
 
+
+#
 ######################################################################
 # Environment Definition
 # Configures the information to access EM in monitoring module
@@ -22,27 +24,18 @@ IPV4="127.0.0.1"
 PORT=831
 # Time Interval until connection timeout
 SSH_TIMEOUT=5
-# EC Host Name
-EC_HOST="192.168.53.132"
-# EC Port
-EC_PORT="18080"
-# The Number of REST Retries
-RESTRETRYNUM=2
-# REST Timeout Time
-RESTTIMEOUT=5
 
 ######################################################################
 
 #######################################################################
-# Setting:
-# start_try_time: Number of trials for Start-up (times)
+# start_try_time:Number of trials for Start-up (times)
 # start_wait_time:Waiting time for start-up (seconds)
 
 start_try_time=3
 start_wait_time=5
 
-# stop_try_time: Number of trials for termination (times)
-# stop_wait_time: Waiting time for termination (seconds)
+# stop_try_time:Number of trials for termination (times)
+# stop_wait_time:Waiting time for termination (seconds)
 
 stop_try_time=3
 stop_wait_time=5
@@ -51,7 +44,7 @@ stop_wait_time=5
 
 
 ########################
-# Initialization
+#Initialization
 
 source /root/.bash_profile
 
@@ -90,7 +83,7 @@ em_start() {
         return $EM_SUCCESS
     fi
 
-    # No Probrem in Monitor then Start Main Module
+    #No Probrem in Monitor then Start Main Module
     echo "EM START: EM MAIN MODULE STARTING..."
 
     python "${EM_INSTALL_PATH}${main_module}" > /dev/null 2>&1 &
@@ -134,7 +127,7 @@ em_stop() {
         echo "EM STOP: PROCESS CONFIRMED. SHUTDOWN MAIN MODULE..."
     fi
 
-    # No Probrem in Monitor then Stop Main Module
+    #No Probrem in Monitor then Stop Main Module
     if [ "$1" == ${EM_CHANGEOVER} ]; then
         pkill -USR2 -F "${EM_INSTALL_PATH}${pid_module}"
     else

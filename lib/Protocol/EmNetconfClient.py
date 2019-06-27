@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmNetconfClient.py
 '''
 ncclient
@@ -35,7 +35,6 @@ import GlobalModule
 
 VENDOR_OPERATIONS = {}
 
-
 class EmNetconfClientSession(session.Session):
 
     def __init__(self, capabilities, device_info):
@@ -68,7 +67,6 @@ class EmNetconfClientSession(session.Session):
 
         self._q.put(message)
 
-
 class EmNetconfClientSSHSession(EmNetconfClientSession, transport.SSHSession):
 
     "Implements a :rfc:`4742` NETCONF session over SSH."
@@ -94,7 +92,6 @@ class EmNetconfClientSSHSession(EmNetconfClientSession, transport.SSHSession):
         self._size_num_list = []
         self._message_list = []
 
-
 def make_device_handler(device_params):
     """
     Create a device handler object that provides device specific parameters and
@@ -116,7 +113,6 @@ def make_device_handler(device_params):
     class_obj = getattr(handler_module_obj, class_name)
     handler_obj = class_obj(device_params)
     return handler_obj
-
 
 def connect_ssh(*args, **kwds):
     """
@@ -148,8 +144,8 @@ def connect_ssh(*args, **kwds):
         session.load_known_hosts()
 
     try:
-        del kwds["device_info"]
-        session.connect(*args, **kwds)
+       del kwds["device_info"]
+       session.connect(*args, **kwds)
     except Exception as ex:
         if session.transport:
             session.close()

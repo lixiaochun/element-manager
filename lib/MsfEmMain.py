@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: MsfEmMain.py
 '''
 main function module.
@@ -15,7 +15,6 @@ import re
 import argparse
 import threading
 import commands
-import sys
 import functools
 from datetime import datetime, timedelta
 from copy import deepcopy
@@ -31,15 +30,45 @@ from EmOrderflowControl import EmOrderflowControl
 from EmSysCommonUtilityDB import EmSysCommonUtilityDB
 from EmNetconfServer import EmNetconfSSHServer
 from EmRestServer import EmRestServer
+from EmControllerStatusGetManager import EmControllerStatusGetManager
 import EmCommonLog
 import EmLoggingTool
+import PluginLoader
+from ControllerLogNotify import ControllerLogNotify
 
 _request_lock = threading.Lock()
 
 args = None
 
 
+@decorater_log
+def run_start_plugins():
+    GlobalModule.EM_LOGGER.info('101016 Start Loading Plugin for Start')
+    plugin_dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "EmStartPlugin")
+    try:
+        plugins = PluginLoader.load_plugins(plugin_dir_path, "EmPlugin")
+    except Exception:
+        GlobalModule.EM_LOGGER.error('301017 Error Loading Plugin for Start')
+        raise
+    GlobalModule.EM_LOGGER.debug('load plugins = %s', plugins)
+    try:
+        for plugin in plugins:
+            plugin.run()
+    except Exception as ex:
+        GlobalModule.EM_LOGGER.error('301018 Error Execute Plugin for Start')
+        GlobalModule.EM_LOGGER.debug('Plugin Run Error = %s', ex)
+        raise
+    GlobalModule.EM_LOGGER.debug('plugins all load and run')
+    return True
+
+
 def get_counter_send():
+    '''
+    Gets number of requests to send
+    Explanation about the return value:
+        counter : number of requests to send
+    '''
 
     _request_lock.acquire()
 
@@ -59,7 +88,7 @@ def get_counter_send():
 
 def _deco_count_request(func):
     '''
-    Request counter decorator.
+    Request counter decoder
     '''
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -71,7 +100,9 @@ def _deco_count_request(func):
 @decorater_log
 def _request_counter(request_date=datetime.now()):
     '''
-    Update the request history list.
+    Update history-list of sent requests.
+    Explanation about parameter:
+        request_date: Time of request
     '''
     _request_lock.acquire()
     is_ok, unit_time = (
@@ -106,6 +137,8 @@ def receive_signal(signum, frame):
     else:
         param = GlobalModule.COM_STOP_CHGOVER
 
+
+    GlobalModule.EM_STATUS_MANAGER.stop()
     GlobalModule.NETCONFSSH.stop(param)
 
     if signum == signal.SIGUSR2:
@@ -114,8 +147,7 @@ def receive_signal(signum, frame):
 
 def notify_em_changeover(kind):
     '''
-    Send a starting system switching notification or
-    a ending system switching notification to EC.
+    Start switching-over process to EC and  notifies the completion.
     '''
     err_mes_conf = "Failed to get Config : %s"
     is_ok, retry_num = (
@@ -154,14 +186,20 @@ def notify_em_changeover(kind):
         GlobalModule.EM_LOGGER.info(
             '101010 Complete to system switch notification: \"%s\"' % kind)
     else:
-        GlobalModule.EM_LOGGER.error(
-            '301011 Failed to system switch notification: \"%s\"' % kind)
+        GlobalModule.EM_LOGGER.warn(
+            '201011 Failed to system switch notification: \"%s\"' % kind)
 
 
 @_deco_count_request
 def send_request_by_curl(send_url, json_message=None, method="PUT"):
     '''
-    Send request by Curl.
+    Send requests by using Curl.
+    Explanation about parameter:
+        send_url : destination URL
+        json_message : Json body for sending
+        method : WebAPI method for sending
+    Explanation about the return value:
+        status_code : response code
     '''
 
     curl_comm_base = ('curl -sS --connect-timeout 5 -m 60 ' +
@@ -183,7 +221,11 @@ def send_request_by_curl(send_url, json_message=None, method="PUT"):
 
 def notice_system_switch_to_ec(message=None):
     '''
-    Send a system switching notification to EC.
+    Notify  EC that switch-over process has started.
+    Explanation about parameter:
+        message : message for sending
+    Explanation about the return value:
+        notification success or fail
     '''
     GlobalModule.EM_LOGGER.debug("Start notice EC")
     ec_uri = gen_ec_rest_api_uri('/v1/internal/ec_ctrl/statusnotify')
@@ -201,7 +243,11 @@ def notice_system_switch_to_ec(message=None):
 
 def gen_ec_rest_api_uri(target_api="/"):
     '''
-    Compose the URI for the REST API of EC.
+    Generate URI for EC REST API.
+    Explanation about parameter:
+        target_api : API to be generated 
+    Explanation about the return value:
+        ec_url : URI
     '''
     err_mes_conf = "Failed to get Config : %s"
     is_ok, ec_address = (
@@ -342,15 +388,32 @@ def msf_em_start():
 
     GlobalModule.EM_CONFIG = EmConfigManagement(args.config_dir_path)
 
-    isout, log_file_name = (
-        GlobalModule.EM_CONFIG.read_sys_common_conf("Em_log_file_path"))
+    log_file_name = _read_sys_common_conf(err_mes_conf,
+                                          "Em_log_file_path")
     log_file_name = os.path.join(GlobalModule.EM_LIB_PATH, log_file_name)
-    if isout is False:
-        raise IOError(err_mes_conf % ("Em_log_file_path",))
-    isout, conf_log_level = (
-        GlobalModule.EM_CONFIG.read_sys_common_conf("Em_log_level"))
-    if isout is False:
-        raise IOError(err_mes_conf % ("Em_log_level",))
+    info_log_file_name = _read_sys_common_conf(err_mes_conf,
+                                               "Em_info_log_file_path")
+    info_log_file_name = os.path.join(
+        GlobalModule.EM_LIB_PATH, info_log_file_name)
+
+    conf_log_level = _read_sys_common_conf(err_mes_conf,
+                                           "Em_log_level")
+    conf_log_file_generation_num = _read_sys_common_conf(
+        err_mes_conf, "Em_log_file_generation_num")
+
+    conf_notify_info_log = _read_sys_common_conf(err_mes_conf,
+                                                 "Em_notify_info_log")
+    conf_notify_warn_log = _read_sys_common_conf(err_mes_conf,
+                                                 "Em_notify_warn_log")
+    conf_notify_error_log = _read_sys_common_conf(err_mes_conf,
+                                                  "Em_notify_error_log")
+
+    conf_notify_log_levels = []
+    _set_list(conf_notify_log_levels, conf_notify_info_log, logging.INFO)
+    _set_list(conf_notify_log_levels, conf_notify_warn_log, logging.WARN)
+    _set_list(conf_notify_log_levels, conf_notify_error_log, logging.ERROR)
+
+    GlobalModule.EM_LOG_NOTIFY = ControllerLogNotify.ControllerLogNotify()
 
     log_lev = logging.DEBUG
     if conf_log_level == "TRACE":
@@ -370,26 +433,34 @@ def msf_em_start():
                      "(%(module)s::%(funcName)s:%(lineno)d):%(message)s")
 
     root_logger = logging.getLogger()
-    root_logger.setLevel(log_lev)
+    root_logger.setLevel(GlobalModule.TRACE_LOG_LEVEL)
 
     GlobalModule.EM_LOGGER = logging.getLogger(__name__)
     GlobalModule.EM_LOGGER.propagate = False
-    GlobalModule.EM_LOGGER.setLevel = log_lev
-    handler = EmLoggingTool.TimedRotatingFileHandler(filename=log_file_name,
-                                                     when='D',
-                                                     interval=1)
+    GlobalModule.EM_LOGGER.setLevel(GlobalModule.TRACE_LOG_LEVEL)
+    handler = EmLoggingTool.TimedRotatingFileHandler(
+        filename=log_file_name,
+        when='midnight',
+        gzbackupCount=int(conf_log_file_generation_num),
+        notify_log_levels=conf_notify_log_levels,
+        gzip=True)
+    info_handler = EmLoggingTool.TimedRotatingFileHandler(
+        filename=info_log_file_name,
+        when='midnight',
+        backupCount=int(conf_log_file_generation_num))
+
     formatter = EmLoggingTool.Formatter(em_log_format)
-    handler.setFormatter(formatter)
-    GlobalModule.EM_LOGGER.addHandler(handler)
+
+    _handlerset(handler, formatter, log_lev)
+    _handlerset(info_handler, formatter, logging.INFO)
+
+    _roothandlerset(root_logger, handler, formatter)
+    _roothandlerset(root_logger, info_handler, formatter)
+
+    EmCommonLog.init_decorator_log()
 
     GlobalModule.EM_LOGGER.info('101001 EM process start')
     GlobalModule.EM_LOGGER.info('101003 EM initialize start')
-
-    root_logger_handler = handler.getFileHandler()
-    root_logger_handler.setFormatter(formatter)
-    root_logger.addHandler(root_logger_handler)
-
-    EmCommonLog.init_decorator_log()
 
     GlobalModule.EM_SERVICE_LIST, GlobalModule.EM_ORDER_LIST =\
         get_service_order_list()
@@ -443,6 +514,11 @@ def msf_em_start():
 
     GlobalModule.EM_ORDER_CONTROL = EmOrderflowControl()
 
+    GlobalModule.EM_STATUS_MANAGER = EmControllerStatusGetManager()
+    GlobalModule.EM_STATUS_MANAGER.boot()
+
+    run_start_plugins()
+
     GlobalModule.NETCONFSSH.start()
     GlobalModule.EM_LOGGER.info('101004 EM initialize end')
 
@@ -450,7 +526,134 @@ def msf_em_start():
     signal.signal(signal.SIGUSR2, receive_signal)
 
     if system_status == EmSysCommonUtilityDB.STATE_CHANGE_OVER:
+        check_resource_status(err_mes_conf)
         notify_em_changeover("end")
+
+
+def check_resource_status(err_mes_conf):
+    '''
+    Confirm status of resource after swtiched-over has been completed.
+    If resource is locked, unlock the resource.    
+    Explanation about parameter:
+        err_mes_conf: error message string
+    Explanation about the return value:
+        None
+    '''
+    _Retry_num = _read_sys_common_conf(err_mes_conf,
+                                       "Em_resource_status_check_retry_num")
+    _Retry_wait_time = _read_sys_common_conf(
+        err_mes_conf, "Em_resource_status_check_retry_timer")
+
+    resource_grp_name = _read_sys_common_conf(err_mes_conf,
+                                              "Em_resource_group_name")
+    result_check = None
+    for i in range(_Retry_num):
+        result_check = _execute_shell(err_mes_conf,
+                                      conf_key="Em_check_resource_lock",
+                                      shell_arg=resource_grp_name,
+                                      log_mes="check_resource_lock")
+        if result_check[1]:
+            _execute_shell(err_mes_conf,
+                           conf_key="Em_resource_lock_release",
+                           shell_arg=resource_grp_name,
+                           log_mes="resource_lock_release")
+            time.sleep(_Retry_wait_time)
+        else:
+            return
+
+    GlobalModule.EM_LOGGER.error(
+        "301022 Post processing of EM system change over is failed.")
+
+
+def _execute_shell(err_mes_conf,
+                   conf_key,
+                   shell_arg,
+                   log_mes):
+    '''
+    Execute the specified script.
+    Explanation about parameter:
+        err_mes_conf:error message string
+        conf_key: key for config of which  path is acquired.
+        shell_arg: argument(to be executed) in script
+        log_mes: log message
+    Explanation about the return value:
+        result of executed script 
+    '''
+    _sh_path = _read_sys_common_conf(err_mes_conf, conf_key)
+    _sh_path = os.path.join(GlobalModule.EM_LIB_PATH, _sh_path)
+
+    shell_result = None
+    command_txt = "%s %s" % (_sh_path, shell_arg)
+    GlobalModule.EM_LOGGER.debug("exec command:%s" % (command_txt,))
+    try:
+        shell_result = commands.getstatusoutput(command_txt)
+        if shell_result[0] != 0:
+            GlobalModule.EM_LOGGER.warn(
+                "201020 Failed to execute shell:{0}".format(shell_result[1]))
+        GlobalModule.EM_LOGGER.debug("shell result = %s", shell_result)
+        GlobalModule.EM_LOGGER.info(
+            "101019 Execute script:%s", log_mes)
+
+    except Exception as ex:
+        GlobalModule.EM_LOGGER.warn("201021 command error:%s" % (ex.message,))
+
+    return shell_result
+
+
+def _handlerset(handler, formatter, log_lev):
+    '''
+    Set handler.
+    Explanation about parameter:
+        handler: handler
+        formatter: log format
+        log_lev: log level
+    '''
+    handler.setFormatter(formatter)
+    handler.setLevel(log_lev)
+    GlobalModule.EM_LOGGER.addHandler(handler)
+
+
+def _roothandlerset(root_logger, handler, formatter):
+    '''
+    Set handler for route logger.
+    Explanation about parameter:
+        formatter: log format
+        log_lev: log level
+    '''
+    root_logger_handler = handler.getFileHandler()
+    root_logger_handler.setFormatter(formatter)
+    root_logger.addHandler(root_logger_handler)
+
+
+def _read_sys_common_conf(err_mes_conf, conf_key):
+    '''
+    Get the value from conf_sys_common.conf.
+    If it cannot be obtained, raise error,
+    Explanation about parameter:
+        err_mes_conf: error messge string
+        conf_key: Key of config
+    Explanation about the return value:
+        conf_value：value of config
+    '''
+    isout, conf_value = (
+        GlobalModule.EM_CONFIG.read_sys_common_conf(conf_key))
+    if not isout:
+        raise IOError(err_mes_conf % (conf_key,))
+    return conf_value
+
+
+def _set_list(set_list, is_set, set_value):
+    '''
+    Add value to list.
+    Explanation about parameter:
+        set_list: list to be added
+        is_set: whether it is to be added or not.(boolean)
+        set_value: values to be added in  list.
+    Explanation about the return value:
+        set_list：added list
+    '''
+    if is_set:
+        set_list.append(set_value)
 
 
 if __name__ == "__main__":

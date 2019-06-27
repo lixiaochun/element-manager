@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmControllerLogGet.py
 '''
 Controller log acquisition scenario.
@@ -162,11 +162,18 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
                       limit_number):
         '''
         Obtain log data.
+        Explanation about parameter:
+            start_date:Reading target period (start date)
+            end_date:Reading target period (end date)
+            limit_number:Maximum number of read lines
+        Explanation about return value:
+            get_log_data:Acquisition log data
+            is_over_limit:Exceeding limit flag
         '''
         GlobalModule.EM_LOGGER.debug(
             "Target Date : Start = %s, End = %s" % (start_date, end_date))
         isout, log_file_name = (
-            GlobalModule.EM_CONFIG.read_sys_common_conf("Em_log_file_path"))
+            GlobalModule.EM_CONFIG.read_sys_common_conf("Em_info_log_file_path"))
         if not isout:
             raise IOError(
                 (self._error_text % ("020305", "Cannot read Config")))
@@ -187,6 +194,14 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
         '''
         Read log files (all files which have been rotated)
         based on file name and obtain log.
+        Explanation about parameter:
+            log_file_name:Log File Name
+            start_date:Reading target period (start date)
+            end_date:Reading target period (end date)
+            limit_number:Maximum number of read lines
+        Explanation about return value:
+            get_log_data:Acquisition log data
+            is_over_limit:Exceeding limit flag
         '''
 
         is_over_limit = False
@@ -284,6 +299,13 @@ class EmControllerLogGet(EmSeparateRestScenario.EmRestScenario):
                                         end_date=None):
         '''
         Open the files under applicable file names, obtain log.
+        Explanation about parameter:
+            file_name:Log File Name
+            limit_number:Maximum number of read lines
+            start_date:Reading target period (start date)
+            end_date:Reading target period (end date)
+        Explanation about return value:
+            Acquisition log data
         '''
         GlobalModule.EM_LOGGER.debug("Get Log Date in %s" % (file_name, ))
         with open(file_name, "r") as log_file:

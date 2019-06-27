@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmCLIProtocol.py
 '''
 Protocol processing section (CLI)
@@ -87,7 +87,7 @@ class EmCLIProtocol(object):
             GlobalModule.EM_LOGGER.debug(
                 "CLI Timer default Setting: %s", timeout_val)
         else:
-            timeout_val = timer_protocol / 1000
+            timeout_val = int(timer_protocol) / 1000
             GlobalModule.EM_LOGGER.debug(
                 "CLI Timer: %s", timeout_val)
         self._ssh_timeout_val = timeout_val
@@ -242,7 +242,7 @@ class EmCLIProtocol(object):
     @decorater_log
     def _send_signal_to_device(self, send_message, mes_type):
         '''
-        Sends messages to device
+         Sends messages to device
         '''
         if mes_type != "edit-config":
             GlobalModule.EM_LOGGER.debug("non edit-config request is OK")

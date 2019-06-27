@@ -1,0 +1,31 @@
+## conf/conf_if_process.conf
+conf_if_process.conf:Netconf_server_address
+conf_if_process.conf:Port_number
+conf_if_process.conf:Account
+conf_if_process.conf:Password
+
+
+## conf/conf_if_process_rest.conf
+conf_if_process_rest.conf:Rest_server_address
+conf_if_process_rest.conf:Port_number
+
+
+## conf/conf_sys_common.conf
+conf_sys_common.conf:DB_server_address
+conf_sys_common.conf:DB_access_port
+conf_sys_common.conf:DB_user
+conf_sys_common.conf:DB_access_pass
+conf_sys_common.conf:Controller_management_address
+conf_sys_common.conf:Ec_rest_server_address
+conf_sys_common.conf:Ec_port_number
+
+
+## bin/em_ctl.sh
+em_ctl.sh:USERNAME
+em_ctl.sh:PASSWORD
+em_ctl.sh:IPV4
+em_ctl.sh:PORT
+
+
+## bin/em
+em:EM_CONTROL_SHELL_PATH

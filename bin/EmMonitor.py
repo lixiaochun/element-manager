@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: em_monitor.py
 '''
 EM Monitoring Module for RA
@@ -86,9 +86,6 @@ def connect_ssh(*args, **kwds):
         'junos' and 'nexus' are supported for Juniper and Cisco Nexus
         respectively.
     """
-    # Extract device parameter dict, if it was passed into this function.
-    # Need to remove it from kwds, since the session.connect() doesn't like
-    # extra stuff in there.
     if "device_params" in kwds:
         device_params = kwds["device_params"]
         del kwds["device_params"]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmConfigManagement.py
 '''
 Configuration Management Module
@@ -23,6 +23,8 @@ class EmConfigManagement(object):
     __conf_rest_scenario = 'ConfRestScenario'
     __conf_service = 'ConfService'
     __conf_internal_link_vlan = 'ConfInternalLinkVlan'
+    __conf_act_threshold = 'ConfActThreshold'
+    __conf_standby_threshold = 'ConfStandbyThreshold'
 
     __FileName = {
         'ConfIFProcess': "conf_if_process.conf",
@@ -33,6 +35,8 @@ class EmConfigManagement(object):
         'ConfRestScenario': "conf_scenario_rest.conf",
         'ConfService': "conf_service.conf",
         'ConfInternalLinkVlan': "conf_internal_link_vlan.conf",
+        'ConfActThreshold': "conf_act_threshold.conf",
+        'ConfStandbyThreshold': "conf_standby_threshold.conf",
     }
 
     __SPLITSTR = '='
@@ -44,29 +48,42 @@ class EmConfigManagement(object):
         'DB_access_port',
         'Timer_confirmed-commit',
         'Timer_confirmed-commit_em_offset',
+        'Timer_connect_get_before_config',
+        'Timer_disconnect_get_after_config',
         'Timer_netconf_protocol',
+        'Timer_cli_protocol',
         'Timer_signal_rcv_wait',
         'Timer_thread_stop_watch',
+        'Timer_periodic_execution_thread_stop_watch',
         'Timer_transaction_stop_watch',
         'Timer_transaction_db_watch',
         'Timer_connection_retry',
+        'Em_statusget_notify_interval',
         'Connection_retry_num',
+        'Em_log_file_generation_num',
         'Rest_request_average',
+        'Em_resource_status_check_retry_num',
+        'Em_resource_status_check_retry_timer',
     ]
     __ParseListConfRestProcess = ['Rest_port_number']
     __ParseListConfScnario = [3, 4, 5]
-
     __ParseListConfService = [2]
+
+    __BoolListConfSysCommon = [
+        'Em_notify_info_log',
+        'Em_notify_warn_log',
+        'Em_notify_error_log',
+    ]
 
     def read_if_process_conf(self, target_key):
         '''
-         Acquisition of IF Processing Part Definition
+        Acquisition of IF Processing Part Definition
             Gets called from MAIN method at the start-up time
         Argument
             target_key : Type Key
         Return value
             Method Results : True or False
-            Type Value : str
+            Type Value : str  
         '''
         return self.__read_conf_dict(self.__conf_dict_if_process,
                                      target_key,
@@ -226,20 +243,46 @@ class EmConfigManagement(object):
         '''
         return self.__conf_tuple_internl_link_vlan_os
 
+    def read_act_threshold_conf(self):
+        '''
+        CTL status monitoring(ACT) threshold Acquisition
+        Gets called from Controller status monitoring module
+        Argument
+            target_key : scenario key(URL is set)
+        Return Value
+            method result  : True or False
+            Startup : str
+        '''
+        return self.__conf_dict_act_threshold
+
+    def read_standby_threshold_conf(self):
+        '''
+        CTL status monitoring(SBY) threshold Acquisition
+        Gets called from CTL status monitoring module
+        Argument
+            target_key : scenario key(URL is set)
+        Return Value
+             Method Results : True or False
+            Startup : str
+        '''
+        return self.__conf_dict_standby_threshold
+
     def __init__(self, conf_dir_path=None):
         '''
         Constructor
         '''
         self._conf_dir_path = conf_dir_path
 
-        self.__conf_dict_if_process = {}
-        self.__conf_dict_scenario = {}
-        self.__conf_dict_driver = {}
-        self.__conf_dict_sys_common = {}
-        self.__conf_dict_rest_if_process = {}
-        self.__conf_dict_rest_scenario = {}
-        self.__conf_dict_service = {}
-        self.__conf_tuple_internl_link_vlan_os = ()
+        self.__conf_dict_if_process = {}   
+        self.__conf_dict_scenario = {}    
+        self.__conf_dict_driver = {}      
+        self.__conf_dict_sys_common = {}   
+        self.__conf_dict_rest_if_process = {}   
+        self.__conf_dict_rest_scenario = {}    
+        self.__conf_dict_service = {}     
+        self.__conf_tuple_internl_link_vlan_os = ()  
+        self.__conf_dict_act_threshold = {}  
+        self.__conf_dict_standby_threshold = {} 
 
         self.__conf_dict_if_process = self.__load_conf(
             self.__conf_dict_if_process, self.__conf_if_process)
@@ -258,6 +301,10 @@ class EmConfigManagement(object):
         tmp_dict = {}
         tmp_dict = self.__load_conf(tmp_dict, self.__conf_internal_link_vlan)
         self.__conf_tuple_internl_link_vlan_os = tuple(tmp_dict.values())
+        self.__conf_dict_act_threshold = self.__load_conf(
+            self.__conf_dict_act_threshold, self.__conf_act_threshold)
+        self.__conf_dict_standby_threshold = self.__load_conf(
+            self.__conf_dict_standby_threshold, self.__conf_standby_threshold)
 
     def __read_conf_dict(self, conf_dict, target_key,
                          target_conf, recursive_flg=True):
@@ -300,7 +347,7 @@ class EmConfigManagement(object):
 
     def __load_conf(self, set_dict, target_conf):
         '''
-       Reads Conf File to acquire the Target Dictionary
+        Reads Conf File to acquire the Target Dictionary
         Returns the Dictionary to be updated if acqusition of Dictionary has failed, and will not be updated.
         Argument:
             set_dict : Dictionary to be updated
@@ -329,6 +376,8 @@ class EmConfigManagement(object):
                 return_dict = self.__make_conf_dict(tmp_list)
                 return_dict = self.__parse_int_conf_dict(
                     return_dict, self.__ParseListConfSysCommon)
+                return_dict = self.__parse_boolean_conf_dict(
+                    return_dict, self.__BoolListConfSysCommon)
                 self.__conf_dict_sys_common = return_dict
             elif target_conf == self.__conf_rest_if_process:
                 return_dict = self.__make_conf_dict(tmp_list)
@@ -349,6 +398,15 @@ class EmConfigManagement(object):
                 self.__conf_dict_service = return_dict
             elif target_conf == self.__conf_internal_link_vlan:
                 return_dict = self.__make_conf_dict(tmp_list)
+            elif target_conf == self.__conf_act_threshold:
+                return_dict = self.__make_conf_dict(tmp_list)
+                return_dict = self.__parse_int_conf_dict_all(return_dict)
+                self.__conf_dict_act_threshold = return_dict
+            elif target_conf == self.__conf_standby_threshold:
+                return_dict = self.__make_conf_dict(tmp_list)
+                return_dict = self.__parse_int_conf_dict_all(return_dict)
+                self.__conf_dict_standby_threshold = return_dict
+
         return return_dict
 
     @staticmethod
@@ -371,6 +429,45 @@ class EmConfigManagement(object):
                     pass
         return return_dict
 
+    @staticmethod
+    def __parse_boolean_conf_dict(conf_dict, target_list):
+        '''
+        Takes conf_dict key from target_list.
+        Converts all of these values to type=boolean
+        boolean type conversion is as follows:
+            "True", "TRUE", "true" => True
+            other than above => False
+        Argument:
+            conf_dict : Dictionary
+            target_list : List of keys to be converted
+        Return value:
+            Updated Definition Dictionary : dict
+        '''
+        true_str_list = ["True", "TRUE", "true"]
+        return_dict = conf_dict.copy()
+        for key in target_list:
+            if key in conf_dict:
+                return_dict[key] = (
+                    True if conf_dict[key] in true_str_list else False)
+        return return_dict
+
+    @staticmethod
+    def __parse_int_conf_dict_all(conf_dict):
+        '''
+        Converts value to type=int
+        Argument:
+            conf_dict : Definition Dictionary
+        Return value:
+            Updated Definition Dictionary : dict
+        '''
+        return_dict = conf_dict.copy()
+        for key in conf_dict:
+            try:
+                return_dict[key] = int(conf_dict[key])
+            except ValueError:
+                pass
+        return return_dict
+
     def __make_conf_dict_tuple_key(self, conf_list, slice_count,
                                    slice_key, parse_list=None):
         '''
@@ -386,9 +483,9 @@ class EmConfigManagement(object):
         '''
         conf_dict = {}
         tmp_value_list = []
-        tuple_value_flg = True
+        tuple_value_flg = True 
         if slice_count - slice_key == 1:
-            tuple_value_flg = False
+            tuple_value_flg = False  
         index = 0
         count = 0
         for item in conf_list:
@@ -419,7 +516,7 @@ class EmConfigManagement(object):
         Return value:
             Definition Dictionary : Dict
         '''
-        conf_dict = {}
+        conf_dict = {} 
         for value in conf_list:
             tmp_key_value = value.split(self.__SPLITSTR)
             if len(tmp_key_value) == 2:
@@ -435,8 +532,8 @@ class EmConfigManagement(object):
         Return value:
             Definition Dictionary : Dict
         '''
-        conf_dict = {}
-        capability_list = []
+        conf_dict = {}  
+        capability_list = []  
         index = 0
         while index < len(conf_list):
             tmp_key_value = conf_list[index].split(self.__SPLITSTR)
@@ -460,9 +557,9 @@ class EmConfigManagement(object):
             Reading Results (Each line to be listed as string) : List
         '''
         try:
-            open_file = open(file_path, 'r')
-            conf_list = open_file.readlines()
-            open_file.close()
+            open_file = open(file_path, 'r')   
+            conf_list = open_file.readlines()  
+            open_file.close()                  
         except IOError:
             return False, None
         return_list = []
@@ -489,6 +586,7 @@ class EmConfigManagement(object):
             firmware_ver : Firmware Version
         Return value :
             QoS Config  : dict
+
         '''
         driver_conf = self.read_driver_conf(platform_name,
                                             driver_os,
@@ -511,7 +609,7 @@ class EmConfigManagement(object):
         splitter_conf = '='
         try:
             with open(config_path, 'r') as open_file:
-                conf_list = open_file.readlines()
+                conf_list = open_file.readlines()   
         except IOError:
             raise
 
@@ -522,8 +620,8 @@ class EmConfigManagement(object):
                 tmp_line = tmp_line.replace(BOM_UTF8, '')
                 tmp_list.append(tmp_line)
 
-        conf_qos_remark = {}
-        conf_qos_egress = {}
+        conf_qos_remark = {}  
+        conf_qos_egress = {}  
         index = 0
         tmp_value_list = []
         for item in tmp_list:

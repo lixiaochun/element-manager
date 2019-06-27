@@ -1,17 +1,15 @@
-rpm_path: /root/setup/em
 em_path: /opt/em
 download_flag: false
 log_path: logs/em/log
 installing_em_path: /root/setup/em
 db_address: 192.168.0.183
-db_name: msf_em_1
+db_name: msf_em
 em_physical_address: 192.168.0.184
 ec_rest_address: 192.168.0.188
 ec_rest_port: 18080
-em_netconf_address: 192.168.0.189
+em_listening_address: 192.168.0.189
 em_rest_port: 8080
-em_rest_address: 192.168.0.189
-em_netconf_port: 831
+em_netconf_port: 830
 controller_cidr: 192.168.0.0/24
 ntp_server_address: 192.168.0.64
 ha_flag: true
@@ -20,3 +18,6 @@ act_node_name: em-0
 sby_address: 172.16.0.185
 sby_node_name: em-1
 cluster_name: em_cluster
+oppo_login_address: 192.168.0.185
+oppo_usrname: root
+oppo_password: admin123

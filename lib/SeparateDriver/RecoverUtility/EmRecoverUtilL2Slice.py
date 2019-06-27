@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmRecoverUtilL2Slice.py
 '''
 Utility for restoration(L2 slice EVPN control)
@@ -30,7 +30,7 @@ class EmRecoverUtilL2Slice(EmRecoverUtilBase.EmRecoverUtilBase):
     def create_recover_message(self, ec_message_str,
                                db_info_str, service_type):
         '''
-        Create EC message, or DB information for operation to be used for restoration expansion（L2 slice EVPN control)
+        Create EC message or DB information for operation to be used for restoration expansion（L2 slice EVPN control)
         Parameter :
             ec_message : EC message for "recover service"
             EC message for restoration(JSON)
@@ -253,6 +253,8 @@ class EmRecoverUtilL2Slice(EmRecoverUtilBase.EmRecoverUtilBase):
             irb_dict = self._create_irb_info(cp_info, ec_message)
             if irb_dict["physical-ip-address"]["address"]:
                 cp_message["irb"] = irb_dict
+            if cp_info.get("q_in_q"):
+                cp_message["q-in-q"] = cp_info.get("q_in_q")
             json["device-leaf"]["cp"].append(cp_message)
 
         json["device-leaf"]["merge_cp_value"] = len(json["device-leaf"]["cp"])

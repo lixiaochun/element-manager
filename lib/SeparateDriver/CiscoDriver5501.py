@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: CiscoDriver5501.py
 '''
 Individual section on deriver (Cisco5501's driver)
@@ -21,7 +21,7 @@ import traceback
 
 class CiscoDriver5501(EmSeparateDriver):
     '''
-    Cisco driver class(take over from driver individual section class).
+    Cisco driver class(take over from driver individual section class).　
     '''
 
     __cisco_proper_config = {}
@@ -31,6 +31,8 @@ class CiscoDriver5501(EmSeparateDriver):
     _XC_ATRI_OPE = "xc:operation"
     _XC_NS = "xc"
     _XC_NS_MAP = "urn:ietf:params:xml:ns:netconf:base:1.0"
+    _REP_ATRI_XMLNS = "xmlns_idx"
+    _IDX_ATRI_XMLNS = "xmlns:idx"
 
     @decorater_log_in_out
     def connect_device(self,
@@ -101,7 +103,7 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def __init__(self):
         '''
-        Constructor.
+         Constructor.
         '''
         self.as_super = super(CiscoDriver5501, self)
         self.as_super.__init__()
@@ -129,6 +131,7 @@ class CiscoDriver5501(EmSeparateDriver):
                                     self.name_cluster_link,
                                     self.name_recover_node,
                                     self.name_recover_service,
+                                    self.name_if_condition,
                                     ]
         self.get_config_message = {
             self.name_l3_slice: (
@@ -166,7 +169,8 @@ class CiscoDriver5501(EmSeparateDriver):
             is_one_node = bool(len(send_xml) == 1)
             lag_mem = self._gen_top_node_edit_config()
             lag_mem.append(send_xml[-1])
-            send_mes_1 = self._replace_xc_delete(etree.tostring(lag_mem))
+            send_mes_1_be = self._replace_xc_delete(etree.tostring(lag_mem))
+            send_mes_1 = self._replace_xmlns_idx(send_mes_1_be)
             is_result, message = \
                 self.as_super._send_control_signal(device_name,
                                                    message_type,
@@ -176,13 +180,17 @@ class CiscoDriver5501(EmSeparateDriver):
             elif is_one_node:
                 return is_result, message
             else:
-                send_mes_2 = self._replace_xc_delete(etree.tostring(send_xml))
+                send_mes_2_be = self._replace_xc_delete(
+                    etree.tostring(send_xml))
+                send_mes_2 = self._replace_xmlns_idx(
+                    send_mes_2_be)
                 return (self.as_super.
                         _send_control_signal(device_name,
                                              message_type,
                                              send_mes_2))
         else:
-            tmp_send = self._replace_xc_delete(send_message)
+            tmp_send_be = self._replace_xc_delete(send_message)
+            tmp_send = self._replace_xmlns_idx(tmp_send_be)
             is_result, message = (self.as_super.
                                   _send_control_signal(device_name,
                                                        message_type,
@@ -235,6 +243,11 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _replace_xc_delete(self, xml_str):
         return (xml_str.replace(self._ATRI_OPE, self._XC_ATRI_OPE)
+                if isinstance(xml_str, str) else xml_str)
+
+    @decorater_log
+    def _replace_xmlns_idx(self, xml_str):
+        return (xml_str.replace(self._REP_ATRI_XMLNS, self._IDX_ATRI_XMLNS)
                 if isinstance(xml_str, str) else xml_str)
 
     @decorater_log
@@ -399,6 +412,21 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _gen_internal_link_fix_message(self, xml_obj, operation):
         '''
+        Fixed value to create message (CeLag) for Netconf.
+            Called out when creating message for CeLag.
+        Parameter:
+            xml_obj : xml object
+            operation : Designate "delete" when deleting.
+        Return value.
+            Creation result : Boolean
+        '''
+
+
+        return True
+
+    @decorater_log
+    def _gen_if_condition_fix_message(self, xml_obj, operation):
+        '''
         Fixed value to create message (InternalLink) for Netconf.
             Called out when creating message for InternalLink.
         Parameter:
@@ -407,16 +435,11 @@ class CiscoDriver5501(EmSeparateDriver):
         Return value.
             Creation result : Boolean
         '''
-
-        self._set_ospf_infra_plane(xml_obj, self.name_internal_link)
-
-        self._set_infra_ldp(xml_obj, self.name_internal_link)
-
         return True
 
     @decorater_log
     def _gen_breakout_fix_message(self, xml_obj, operation):
-        '''
+        '''      
         Fixed value to create message (breakout) for Netconf.
             Called out when creating message for breakout.
         Parameter:
@@ -424,7 +447,7 @@ class CiscoDriver5501(EmSeparateDriver):
             operation : Designate "delete" when deleting.
         Return value.
             Creation result : Boolean (Write properly using override method.)
-        '''
+        ''' 
         return True
 
     @decorater_log
@@ -2163,6 +2186,9 @@ class CiscoDriver5501(EmSeparateDriver):
         if operation == self._DELETE:
             return_val = self._gen_del_ce_lag_variable_message(
                 xml_obj, ec_message, device_info)
+        elif operation == self._REPLACE:
+            return_val = self._gen_replace_ce_lag_variable_message(
+                xml_obj, ec_message)
         else:
             return_val = self._gen_add_ce_lag_variable_message(
                 xml_obj, ec_message)
@@ -2202,6 +2228,58 @@ class CiscoDriver5501(EmSeparateDriver):
             self._set_lag_if(if_node, lag_if)
         for lag_mem_if in lag_mem_ifs:
             self._set_lag_mem_if(if_node, lag_mem_if)
+
+        return True
+
+    @decorater_log
+    def _gen_replace_ce_lag_variable_message(self,
+                                             xml_obj,
+                                             ec_message):
+        '''
+        Variable value to create message (create CeLag) for Netconf.
+            Called out when changing CeLag.
+        Parameter:
+            xml_obj : xml object
+            device_info : Device information
+        Return value.
+            Creation result : Boolean
+        '''
+
+        device_mes = ec_message.get("device", {})
+        device_name = device_mes.get("name")
+
+        try:
+            if not device_mes.get("ce-lag-interface"):
+                raise ValueError("Config CE-LAG is not found.")
+            lag_ifs, lag_mem_ifs = self._get_ce_lag_from_ec(
+                device_mes, service=self.name_celag, operation=self._REPLACE)
+        except Exception as ex:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "ERROR : message = %s / Exception: %s" % (ec_message, ex),
+                __name__)
+            return False
+
+        if_node = self._set_if_confs(xml_obj)
+        for lag_if in lag_ifs:
+            self._set_update_lag_if(if_node, lag_if, lag_type=self.name_celag)
+
+        for lag_mem_if in lag_mem_ifs:
+            if lag_mem_if.get("OPERATION") == "delete":
+                self._set_del_lag_mem_if_lag_speed(if_node, lag_mem_if)
+            else:
+                self._set_lag_mem_if_lag_speed(if_node, lag_mem_if)
+
+        if_node = self._set_xml_tag(xml_obj,
+                                    "interfaces",
+                                    "xmlns",
+                                    "http://openconfig.net/yang/" +
+                                    "interfaces",
+                                    None)
+
+        for lag_mem_if in lag_mem_ifs:
+            self._set_lag_mem_if_state(if_node, lag_mem_if)
 
         return True
 
@@ -2265,11 +2343,23 @@ class CiscoDriver5501(EmSeparateDriver):
         Return value.
             Creation result : Boolean
         '''
+        device_mes = ec_message.get("device", {})
+
         return_val = False
         try:
             if operation == self._DELETE:
                 return_val = self._gen_del_internal_lag_variable_message(
                     xml_obj, ec_message, device_info)
+            elif operation == self._REPLACE:
+                is_cost_replace = self._check_replace_kind(device_mes)
+                if is_cost_replace:
+                    return_val =\
+                        self._gen_replace_internal_lag_variable_message(
+                            xml_obj, ec_message, device_info)
+                else:
+                    return_val =\
+                        self._gen_update_internal_lag_variable_message(
+                            xml_obj, ec_message, device_info)
             else:
                 return_val = self._gen_add_internal_lag_variable_message(
                     xml_obj, ec_message, device_info)
@@ -2286,6 +2376,31 @@ class CiscoDriver5501(EmSeparateDriver):
                 "Traceback:%s" % (traceback.format_exc(),),
                 __name__)
         return return_val
+
+    @decorater_log
+    def _check_replace_kind(self, device_mes):
+        '''
+        Judged whether interl link change depend on cost or Lag speed.
+        Parameter:
+            device_mes : EC mesage(device and below)（json）
+        Return value.
+            Creation result : Boolean(cost value change:True, Lag speed change:False)
+        '''
+        result = True
+
+        for tmp in device_mes.get("internal-physical", ()):
+            if tmp.get("cost"):
+                result = True
+                break
+        for tmp in device_mes.get("internal-lag", ()):
+            if tmp.get("cost"):
+                result = True
+                break
+            if tmp.get("minimum-links"):
+                result = False
+                break
+
+        return result
 
     @decorater_log
     def _gen_add_internal_lag_variable_message(self,
@@ -2322,6 +2437,10 @@ class CiscoDriver5501(EmSeparateDriver):
                 __name__)
             return False
 
+        self._set_ospf_infra_plane(xml_obj, self.name_internal_link)
+
+        self._set_infra_ldp(xml_obj, self.name_internal_link)
+
         if_node = self._set_if_confs(xml_obj)
 
         self._set_breakout_interfaces(if_node, breakout_ifs)
@@ -2344,6 +2463,120 @@ class CiscoDriver5501(EmSeparateDriver):
         inner_ifs.extend(lag_ifs)
 
         self._set_trackingobject(xml_obj, inner_ifs)
+
+        return True
+
+    @decorater_log
+    def _gen_update_internal_lag_variable_message(self,
+                                                  xml_obj,
+                                                  ec_message,
+                                                  device_info):
+        '''
+        Valuable value to create message for Netconf(LAG speed change)
+         
+            Called out when internal link for is changed.)
+        Parameter:
+            xml_obj : xml object
+            ec_message : EC message
+        Return value:
+            Creation result : Boolean
+        '''
+        device_mes = ec_message.get("device", {})
+        device_name = device_mes.get("name")
+
+        try:
+            phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs = \
+                self._get_replace_internal_link_from_ec(
+                    device_mes,
+                    service=self.name_internal_link)
+        except Exception as ex:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "ERROR : message = %s / Exception: %s" % (ec_message, ex),
+                __name__)
+            return False
+
+        if_node = self._set_xml_tag(xml_obj,
+                                    "interface-configurations",
+                                    "xmlns",
+                                    "http://cisco.com/ns/yang/" +
+                                    "Cisco-IOS-XR-ifmgr-cfg",
+                                    None)
+
+        for inner_if in inner_ifs:
+            self._set_update_lag_if(if_node, inner_if)
+
+        for lag_mem_if in lag_mem_ifs:
+            if lag_mem_if["OPERATION"] == "delete":
+                self._set_del_lag_mem_if_lag_speed(if_node, lag_mem_if)
+            else:
+                self._set_lag_mem_if_lag_speed(if_node, lag_mem_if)
+
+        if_node = self._set_xml_tag(xml_obj,
+                                    "interfaces",
+                                    "xmlns",
+                                    "http://openconfig.net/yang/" +
+                                    "interfaces",
+                                    None)
+
+        for lag_mem_if in lag_mem_ifs:
+            self._set_lag_mem_if_state(if_node, lag_mem_if)
+
+        return True
+
+    @decorater_log
+    def _gen_replace_internal_lag_variable_message(self,
+                                                   xml_obj,
+                                                   ec_message,
+                                                   device_info):
+        '''
+        Variable value to create message
+        (change internal link(xcost value change) for Netconf.
+        Called out when changing internal link.
+        Parameter:
+            xml_obj : xml object
+            ec_message : EC message
+        Return value.
+            Creation result : Boolean
+        '''
+        device_mes = ec_message.get("device", {})
+        device_name = device_mes.get("name")
+
+        try:
+            area_id = device_info["device"]["ospf"]["area_id"]
+            phy_ifs, lag_ifs, lag_mem_ifs, inner_if_names = \
+                self._get_replace_internal_link_from_ec(
+                    device_mes,
+                    service=self.name_internal_link)
+        except Exception as ex:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "ERROR : message = %s / Exception: %s" % (ec_message, ex),
+                __name__)
+            return False
+
+        node_1 = self._set_xml_tag(xml_obj,
+                                   "ospf",
+                                   "xmlns",
+                                   "http://cisco.com/ns/yang/" +
+                                   "Cisco-IOS-XR-ipv4-ospf-cfg",
+                                   None)
+        node_2 = self._set_xml_tag(node_1, "processes")
+        node_3 = self._set_xml_tag(node_2, "process")
+        self._set_xml_tag(node_3,
+                          "process-name",
+                          None,
+                          None,
+                          "v4_MSF_OSPF")
+        node_4 = self._set_xml_tag(node_3, "default-vrf")
+        node_5 = self._set_xml_tag(node_4, "area-addresses")
+
+        self._set_ospf_area_data(node_5,
+                                 area_id,
+                                 inner_if_names,
+                                 operation=self._REPLACE)
 
         return True
 
@@ -2403,6 +2636,10 @@ class CiscoDriver5501(EmSeparateDriver):
                 __name__)
             return False
 
+        self._set_ospf_infra_plane(xml_obj, self.name_internal_link)
+
+        self._set_infra_ldp(xml_obj, self.name_internal_link)
+
         if len(lag_ifs) + len(phy_ifs) > 0:
             if_node = self._set_xml_tag(xml_obj,
                                         "interface-configurations",
@@ -2457,12 +2694,61 @@ class CiscoDriver5501(EmSeparateDriver):
         return True
 
     @decorater_log
+    def _gen_if_condition_variable_message(self,
+                                           xml_obj,
+                                           device_info,
+                                           ec_message,
+                                           operation):
+        '''
+        Variable value to create Netconf message(InternalLag)
+        Called  ut when  Internal Lag message is generated.
+        (After fixed message has been  created)
+        Parameter:
+            xml_obj : xml object
+            device_info : Device information
+            operation : Designate "delete" when deleting.
+        Return value.
+            Creation result : Boolean
+        '''
+
+        device_mes = ec_message.get("device", {})
+        device_name = device_mes.get("name")
+
+        try:
+            phy_ifs, lag_ifs = \
+                self._get_if_condition_from_ec(
+                    device_mes,
+                    service=self.name_if_condition)
+        except Exception as ex:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "ERROR : message = %s / Exception: %s" % (ec_message, ex),
+                __name__)
+            return False
+
+        if_node = self._set_xml_tag(xml_obj,
+                                    "interface-configurations",
+                                    "xmlns",
+                                    "http://cisco.com/ns/yang/" +
+                                    "Cisco-IOS-XR-ifmgr-cfg",
+                                    None)
+
+        for lag_if in lag_ifs:
+            self._set_if_condition(if_node, lag_if)
+
+        for phy_if in phy_ifs:
+            self._set_if_condition(if_node, phy_if)
+
+        return True
+
+    @decorater_log
     def _gen_breakout_variable_message(self,
                                        xml_obj,
                                        device_info,
                                        ec_message,
                                        operation):
-        '''
+        ''' 
         Variable value to create message (breakout) for Netconf.
             Called out when creating message for breakout.
             (After fixed message has been created.)
@@ -3087,7 +3373,7 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _get_device_from_ec(self, device_mes, service=None):
         '''
-        Obtain EC message information regarding device expansion.
+      　Obtain EC message information regarding device expansion.
         (common for spine, leaf)
         '''
 
@@ -3210,9 +3496,13 @@ class CiscoDriver5501(EmSeparateDriver):
             lag_ifs.append(self._get_lag_if_info(tmp))
 
             for lag_mem in tmp.get("leaf-interface"):
-                if not lag_mem["name"]:
+                if not lag_mem.get("name"):
                     raise ValueError(
                         "leaf-interface not enough information ")
+                if operation == self._REPLACE:
+                    if lag_mem.get("operation")is None:
+                        raise ValueError(
+                            "leaf-interface not enough information ")
                 lag_mem_ifs.append(self._get_lag_mem_if_info(tmp, lag_mem))
 
         return lag_ifs, lag_mem_ifs
@@ -3336,8 +3626,7 @@ class CiscoDriver5501(EmSeparateDriver):
     @decorater_log
     def _get_cluster_if_info(self, if_info, if_type=None):
         '''
-        Obtain information of Link between clusters from EC message.
-        (regardless of physical or LAG).
+        Obtain port status from the physical IF name.
         '''
         tmp = {
             "IF-TYPE": if_type,
@@ -3356,7 +3645,7 @@ class CiscoDriver5501(EmSeparateDriver):
                                    operation=None,
                                    db_info=None):
         '''
-        Obtain EC message information regarding internal Link.
+         Obtain EC message information regarding internal Link.
         '''
         inner_ifs = []
 
@@ -3391,6 +3680,46 @@ class CiscoDriver5501(EmSeparateDriver):
                     raise ValueError(
                         "internal-interface not enough information ")
                 lag_mem_ifs.append(self._get_lag_mem_if_info(tmp, lag_mem))
+
+        return phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs
+
+    @decorater_log
+    def _get_replace_internal_link_from_ec(self,
+                                           device_mes,
+                                           service=None,
+                                           operation=None,
+                                           db_info=None):
+        '''
+        Get EC message information related to internal-link(LAG)
+        '''
+        inner_ifs = []
+
+        phy_ifs = []
+
+        for tmp in device_mes.get("internal-physical", ()):
+            if not tmp.get("name"):
+                raise ValueError("internal-physical not enough information")
+
+            inner_ifs.append(self._get_internal_if_info(
+                tmp, self._if_type_phy))
+
+        lag_ifs = []
+        lag_mem_ifs = []
+
+        for tmp in device_mes.get("internal-lag", ()):
+            if not tmp.get("name"):
+                raise ValueError("internal-lag not enough information")
+
+            inner_ifs.append(self._get_internal_if_info(
+                tmp, self._if_type_lag))
+
+            if tmp.get("internal-interface"):
+                for lag_mem in tmp.get("internal-interface"):
+                    if (not lag_mem.get("name")or
+                            lag_mem.get("operation")is None):
+                        raise ValueError(
+                            "internal-interface not enough information ")
+                    lag_mem_ifs.append(self._get_lag_mem_if_info(tmp, lag_mem))
 
         return phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs
 
@@ -3464,21 +3793,61 @@ class CiscoDriver5501(EmSeparateDriver):
 
         op_node_type = None
         op_node_vpn = None
-        if if_info.get("opposite-node-name"):
-            op_node_type, op_node_vpn = \
-                self.common_util_db.read_device_type(
-                    if_info.get("opposite-node-name"))
+        if_prefix = None
+        if if_info.get("prefix"):
+            if_prefix = self._conversion_cidr2mask(if_info.get("prefix"), 4)
 
         tmp = {
             "IF-TYPE": if_type,
             "IF-NAME": if_info.get("name"),
-            "OPPOSITE-NODE-TYPE": op_node_type,
-            "OPPOSITE-NODE-VPN": op_node_vpn,
             "IF-ADDR": if_info.get("address"),
-            "IF-PREFIX": self._conversion_cidr2mask(if_info.get("prefix"), 4)
+            "IF-PREFIX": if_prefix,
+            "IF-COST": if_info.get("cost"),
         }
         if if_type == self._if_type_lag:
             tmp.update(self._get_lag_if_info(if_info))
+        return tmp
+
+    @decorater_log
+    def _get_if_condition_from_ec(self,
+                                  device_mes,
+                                  service=None,
+                                  operation=None,
+                                  db_info=None):
+        '''
+        Get EC message information for IF opening and closing 
+        '''
+
+        phy_ifs = []
+
+        for tmp in device_mes.get("interface-physical", ()):
+            if (not tmp.get("name") or
+                    tmp.get("condition") is None):
+                raise ValueError("internal-physical not enough information")
+
+            phy_ifs.append(self._get_if_condition_info(tmp, self._if_type_phy))
+
+        lag_ifs = []
+
+        for tmp in device_mes.get("internal-lag", ()):
+            if (not tmp.get("name") or
+                    tmp.get("condition") is None):
+                raise ValueError("internal-lag not enough information")
+
+            lag_ifs.append(self._get_if_condition_info(tmp, self._if_type_lag))
+
+        return phy_ifs, lag_ifs
+
+    @decorater_log
+    def _get_if_condition_info(self, if_info, if_type=None):
+        '''
+        Obtain internal link information from EC message.
+        (regardless of physical or LAG)
+        '''
+        tmp = {
+            "IF-NAME": if_info.get("name"),
+            "IF-CONDITION": if_info.get("condition")
+        }
         return tmp
 
     @decorater_log
@@ -3572,7 +3941,8 @@ class CiscoDriver5501(EmSeparateDriver):
         tmp = {
             "IF-NAME": lag_mem_if.get("name"),
             "LAG-IF-NAME": lag_if["name"].lstrip("Bundle-Ether"),
-            "IF-CONDITION": lag_mem_if.get("condition")}
+            "IF-CONDITION": lag_mem_if.get("condition"),
+            "OPERATION": lag_mem_if.get("operation")}
         return tmp
 
     @decorater_log
@@ -3613,7 +3983,7 @@ class CiscoDriver5501(EmSeparateDriver):
 
     def _set_breakout_interfaces(self, xml_ifs, breakout_ifs, operation=None):
         '''
-        Set all breakout IF.
+         Set all breakout IF.
         '''
         for br_if in breakout_ifs:
             self._set_breakout_interface(xml_ifs,
@@ -3714,9 +4084,6 @@ class CiscoDriver5501(EmSeparateDriver):
             node_3 = self._set_xml_tag(node_2, "global")
             self._set_xml_tag(node_3, "router-id", None, None, router_id)
 
-#
-#
-#
 
     @decorater_log
     def _set_trackingobject(self, xml_obj, inner_ifs, operation=None):
@@ -3993,6 +4360,7 @@ class CiscoDriver5501(EmSeparateDriver):
         node_10 = self._set_xml_tag(node_9, "static-routes")
         self._set_xml_tag(node_10, "route-policy-name", None, None, policy)
 
+
     @decorater_log
     def _set_slice_vrrp(self, xml_obj, **params):
         '''
@@ -4200,6 +4568,35 @@ class CiscoDriver5501(EmSeparateDriver):
         return node_2
 
     @decorater_log
+    def _set_update_lag_if(self, if_node, lag_if, lag_type=None):
+        '''
+        Set the LAGIF. (if_node becomes parent)
+        '''
+        node_1 = self._set_xml_tag(if_node, "interface-configuration")
+        self._set_xml_tag(node_1, "active", None, None, "act")
+        self._set_xml_tag(node_1,
+                          "interface-name",
+                          None,
+                          None,
+                          lag_if["IF-NAME"])
+        if lag_type == self.name_celag:
+            self._set_xml_tag(node_1, "interface-virtual")
+        if lag_if["LAG-LINKS"] > 0:
+            node_2 = self._set_xml_tag(node_1,
+                                       "bundle",
+                                       "xmlns",
+                                       "http://cisco.com/ns/yang/" +
+                                       "Cisco-IOS-XR-bundlemgr-cfg",
+                                       None)
+            node_3 = self._set_xml_tag(node_2, "minimum-active")
+            self._set_xml_tag(node_3,
+                              "links",
+                              self._ATRI_OPE,
+                              self._REPLACE,
+                              lag_if["LAG-LINKS"])
+        return node_1
+
+    @decorater_log
     def _set_del_lag_if(self, if_node, lag_if):
         '''
         Set the LAGIF for deletion. (if_node becomes parent)
@@ -4288,6 +4685,135 @@ class CiscoDriver5501(EmSeparateDriver):
         return node_2
 
     @decorater_log
+    def _set_lag_mem_if_lag_speed(self, if_node, lag_mem_if):
+        '''
+        Set LAG member.(if_node becomes parent)[for LAG increasing speed]
+        '''
+        node_2 = self._set_xml_tag(if_node, "interface-configuration")
+        self._set_xml_tag(node_2, "active", None, None, "act")
+        self._set_xml_tag(node_2,
+                          "interface-name",
+                          None,
+                          None,
+                          lag_mem_if["IF-NAME"])
+        node_3 = self._set_xml_tag(node_2,
+                                   "bundle-member",
+                                   "xmlns",
+                                   "http://cisco.com/ns/yang/" +
+                                   "Cisco-IOS-XR-bundlemgr-cfg",
+                                   None)
+        node_4 = self._set_xml_tag(node_3, "id")
+        self._set_xml_tag(node_4,
+                          "bundle-id",
+                          None,
+                          None,
+                          lag_mem_if["LAG-IF-NAME"])
+        self._set_xml_tag(node_4, "port-activity", None, None, "active")
+        node_3 = self._set_xml_tag(node_2,
+                                   "lacp",
+                                   "xmlns",
+                                   "http://cisco.com/ns/yang/" +
+                                   "Cisco-IOS-XR-bundlemgr-cfg",
+                                   None)
+        self._set_xml_tag(node_3, "period-short", None, None, "true")
+
+        return node_2
+
+    @decorater_log
+    def _set_del_lag_mem_if_lag_speed(self, if_node, lag_mem_if):
+        '''
+        Set LAG member to be deleted.(if_node becomes parent)[for LAG decresing speed]
+        '''
+        node_2 = self._set_xml_tag(if_node, "interface-configuration")
+        self._set_xml_tag(node_2, "active", None, None, "act")
+        self._set_xml_tag(node_2,
+                          "interface-name",
+                          None,
+                          None,
+                          lag_mem_if["IF-NAME"])
+        node_3 = self._set_xml_tag(node_2,
+                                   "bundle-member",
+                                   "xmlns",
+                                   "http://cisco.com/ns/yang/" +
+                                   "Cisco-IOS-XR-bundlemgr-cfg",
+                                   None)
+        node_3.attrib[self._ATRI_OPE] = self._DELETE
+        node_3 = self._set_xml_tag(node_2,
+                                   "lacp",
+                                   "xmlns",
+                                   "http://cisco.com/ns/yang/" +
+                                   "Cisco-IOS-XR-bundlemgr-cfg",
+                                   None)
+        node_3.attrib[self._ATRI_OPE] = self._DELETE
+
+        return node_2
+
+    @decorater_log
+    def _set_lag_mem_if_state(self, if_node, lag_mem_if):
+        '''
+        Set LAG member(if_node become parent)
+        '''
+        node_2 = self._set_xml_tag(if_node, "interface")
+        self._set_xml_tag(node_2,
+                          "name",
+                          None,
+                          None,
+                          lag_mem_if["IF-NAME"])
+        node_3 = self._set_xml_tag(node_2, "config")
+        self._set_xml_tag(node_3,
+                          "name",
+                          None,
+                          None,
+                          lag_mem_if["IF-NAME"])
+        self._set_xml_tag(node_3,
+                          "type",
+                          self._REP_ATRI_XMLNS,
+                          "urn:ietf:params:xml:ns:yang:" +
+                          "iana-if-type",
+                          "idx:ethernetCsmacd")
+        upstate = "true"
+        if lag_mem_if.get("OPERATION") == "delete":
+            upstate = "false"
+        self._set_xml_tag(node_3,
+                          "enabled",
+                          None,
+                          None,
+                          upstate)
+
+        node_4 = self._set_xml_tag(node_2,
+                                   "ethernet",
+                                   "xmlns",
+                                   "http://openconfig.net/yang/" +
+                                   "interfaces/ethernet",
+                                   None)
+        node_5 = self._set_xml_tag(node_4, "config")
+        self._set_xml_tag(node_5, "auto-negotiate", None, None, "false")
+
+        return node_2
+
+    @decorater_log
+    def _set_if_condition(self, if_node, lag_if):
+        '''
+        Set IF open/close(if_node becomes parent) 
+        '''
+        node_2 = self._set_xml_tag(if_node, "interface-configuration")
+        self._set_xml_tag(node_2, "active", None, None, "act")
+        self._set_xml_tag(node_2,
+                          "interface-name",
+                          None,
+                          None,
+                          lag_if["IF-NAME"])
+        if lag_if["IF-CONDITION"] == self._port_cond_enable:
+            self._set_xml_tag(node_2,
+                              "shutdown",
+                              self._ATRI_OPE,
+                              self._DELETE,
+                              None)
+        else:
+            self._set_xml_tag(node_2, "shutdown")
+        return node_2
+
+    @decorater_log
     def _set_ospf_area_data(self,
                             areas_node,
                             area_id,
@@ -4330,7 +4856,8 @@ class CiscoDriver5501(EmSeparateDriver):
                               None,
                               None,
                               area_id)
-            self._set_xml_tag(node_6, "running")
+            if operation != self._REPLACE:
+                self._set_xml_tag(node_6, "running")
 
         if (dev_reg_info and
             (dev_reg_info.get("VIRTUAL-LINK-ROUTER-ID") or
@@ -4358,35 +4885,46 @@ class CiscoDriver5501(EmSeparateDriver):
                 self._set_xml_tag(node_8, "cost", None, None, "10")
                 self._set_xml_tag(node_8, "passive", None, None, "true")
             for tmp_if_name in inner_if_names if inner_if_names else ():
-                node_8 = self._set_xml_tag(
-                    node_7, "name-scope", attr, attr_val)
-                self._set_xml_tag(node_8,
-                                  "interface-name",
-                                  None,
-                                  None,
-                                  tmp_if_name)
-                if operation == self._DELETE:
-                    continue
-                self._set_xml_tag(node_8, "running")
-                self._set_xml_tag(
-                    node_8, "network-type", None, None, "point-to-point")
-                if cost is None:
-                    cost_val = 100
+                if operation == self._REPLACE:
+                    node_8 = self._set_xml_tag(
+                        node_7, "name-scope", attr, attr_val)
+                    self._set_xml_tag(node_8,
+                                      "interface-name",
+                                      None,
+                                      None,
+                                      tmp_if_name["IF-NAME"])
+                    self._set_xml_tag(node_8,
+                                      "cost",
+                                      self._ATRI_OPE,
+                                      self._REPLACE,
+                                      tmp_if_name["IF-COST"])
                 else:
-                    cost_val = cost.get(tmp_if_name, 100)
-                self._set_xml_tag(node_8, "cost", None, None, cost_val)
+                    node_8 = self._set_xml_tag(
+                        node_7, "name-scope", attr, attr_val)
+                    self._set_xml_tag(node_8,
+                                      "interface-name",
+                                      None,
+                                      None,
+                                      tmp_if_name)
+                    if operation == self._DELETE:
+                        continue
+                    self._set_xml_tag(node_8, "running")
+                    self._set_xml_tag(
+                        node_8, "network-type", None, None, "point-to-point")
+                    if cost is None:
+                        cost_val = 100
+                    else:
+                        cost_val = cost.get(tmp_if_name, 100)
+                    self._set_xml_tag(node_8, "cost", None, None, cost_val)
         return node_6
 
     @decorater_log
     def _set_ospf_area_virtual_link(self, area_node, dev_reg_info):
         '''
-        Set each area of IPv4 OSPF settings on MSF infrastructure side.
-        (including IF settings of internal Link)
-            params items to be set : is_lb :
-                                     Set the loopback IF when it says "True".
-                         operation : Operation type
-                             cost : Cost value  dictionary of
-                                     {IF name:cost value}
+        Set virtual link in OSPF
+            params items to be set  :
+              area_node    : area node  etree.Element object
+              dev_reg_info : device information (json)   dict
         '''
         vir_link = dev_reg_info.get("VIRTUAL-LINK-ROUTER-ID")
         if vir_link:
@@ -4726,12 +5264,14 @@ class CiscoDriver5501(EmSeparateDriver):
                           None,
                           None,
                           vrrp["L3-VRRP-GROUP-ID"])
+        priority = int(vrrp["L3-VRRP-VIRT-PRI"])
         self._set_xml_tag(node_6,
                           "priority",
                           None,
                           None,
-                          vrrp["L3-VRRP-VIRT-PRI"])
-        self._set_xml_tag(node_6, "preempt", None, None, "180")
+                          priority)
+        if priority == 100:
+            self._set_xml_tag(node_6, "preempt", None, None, "180")
         if ip_ver == 4:
             self._set_xml_tag(node_6,
                               "primary-ipv4-address",

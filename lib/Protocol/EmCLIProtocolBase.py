@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmCLIProtocolMultipleBase.py
 '''
 Protocol processing section(CLI)
@@ -9,6 +9,7 @@ import json
 import paramiko
 import re
 import traceback
+import threading
 import GlobalModule
 from EmCommonLog import decorater_log
 from EmCommonLog import decorater_log_in_out
@@ -19,11 +20,13 @@ class EmCLIProtocol(object):
     Protocol processing section(CLI)Class
     '''
 
+
     __CONNECT_OK = 1
     __CONNECT_CAPABILITY_NG = 2
     __CONNECT_NO_RESPONSE = 3
 
     _SSH_RECV_COUNT = 10
+
 
     @decorater_log
     def __init__(self, error_recv_message=[], connected_recv_message="#"):
@@ -45,6 +48,8 @@ class EmCLIProtocol(object):
         }
         self._send_message_type = self._send_message_methods.keys()
         self._test_mode = False
+        self._is_recv_timeout = False
+
 
     @decorater_log_in_out
     def connect_device(self, device_info):
@@ -106,7 +111,7 @@ class EmCLIProtocol(object):
             GlobalModule.EM_LOGGER.debug(
                 "CLI Timer: %s", timeout_val)
         self._ssh_timeout_val = timeout_val
-        self._ssh_recv_time = timeout_val / self._SSH_RECV_COUNT
+        self._ssh_recv_time = float(timeout_val) / self._SSH_RECV_COUNT
 
         try:
             self._ssh_connect()
@@ -120,7 +125,7 @@ class EmCLIProtocol(object):
             return GlobalModule.COM_CONNECT_NO_RESPONSE
         GlobalModule.EM_LOGGER.info("111001 SSH Connection(CLI) Open for %s",
                                     self._device_ip)
-        return GlobalModule.COM_CONNECT_OK
+        return GlobalModule.COM_CONNECT_OK  
 
     @decorater_log_in_out
     def send_control_signal(self, message_type, send_message=None):
@@ -142,9 +147,9 @@ class EmCLIProtocol(object):
         GlobalModule.EM_LOGGER.debug("__send_signal_judg:%s", is_judg_result)
         GlobalModule.EM_LOGGER.debug("judg_message_type:%s", judg_message_type)
 
-        if not is_judg_result:
+        if not is_judg_result:  
             GlobalModule.EM_LOGGER.debug("__send_signal_judg NG")
-            return False, None
+            return False, None  
 
         GlobalModule.EM_LOGGER.debug("_send_signal_judg OK")
 
@@ -175,10 +180,11 @@ class EmCLIProtocol(object):
                 self._ssh_connect_device.close()
         except Exception as exception:
             GlobalModule.EM_LOGGER.debug("Disconnect Error:%s", exception)
-            return False
+            return False  
         GlobalModule.EM_LOGGER.info(
             "111002 SSH Connection(CLI) Closed For %s", self._device_ip)
-        return True
+        return True  
+
 
     @decorater_log
     def _ssh_connect(self):
@@ -239,16 +245,16 @@ class EmCLIProtocol(object):
 
             judg_message_type = message_type.replace('-', '_')
 
-            return True, judg_message_type
+            return True, judg_message_type  
 
         GlobalModule.EM_LOGGER.debug("message_type UNMatch")
 
-        return False, None
+        return False, None  
 
     @decorater_log
     def _send_signal_to_device(self, send_message, mes_type):
         '''
-        Sends messages to the device
+        Send messages to the device
         '''
         if mes_type not in self._send_message_type:
             GlobalModule.EM_LOGGER.debug(
@@ -331,7 +337,6 @@ class EmCLIProtocol(object):
             shell_obj : ssh object
             send_message : Send message
             receive_keyword : Receive keyword
-            error_keyword : Error keyword（default:None）
         Return value
             Received message
         '''
@@ -341,20 +346,32 @@ class EmCLIProtocol(object):
     @decorater_log
     def _recv_message(self, shell_obj, receive_keyword):
         output = ''
+        self._is_recv_timeout = False
+        timer = threading.Timer(self._ssh_recv_time, self._set_timeout_flag)
+        timer.start()
         while True:
+            if self._is_recv_timeout:
+                raise Exception("SSH command receive timeout")
             tmp_rcv = shell_obj.recv(
                 self._ssh_recv_mes_max_bytes).decode('utf-8')
             GlobalModule.EM_LOGGER.debug("receive:%s" % (tmp_rcv,))
             output = output + tmp_rcv
             if(re.search(receive_keyword, output)):
                 break
+        timer.cancel()
         GlobalModule.EM_LOGGER.debug("receive all message:%s" % (output,))
         return output
 
     @decorater_log
+    def _set_timeout_flag(self):
+        GlobalModule.EM_LOGGER.debug("receive timeout")
+        self._is_recv_timeout = True
+
+
+    @decorater_log
     def _logging_send_command_str(self, command_list=[]):
         '''
-        Displays transmission command as string
+        Show sending command as string.
         '''
         tmp_ip = {"ip_addr": self._device_ip}
         com_str = "start_command_display[%(ip_addr)s]:\n" % tmp_ip

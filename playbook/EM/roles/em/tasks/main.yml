@@ -7,13 +7,15 @@
     shell: mkdir -p {{ em_path }}/bin
   - name: make em log folder
     shell: mkdir -p {{ em_path }}/{{ log_path }}
+  - name: make file update folder
+    shell: mkdir -p {{ folder_name_fup }}
   - include: getconf.yml
     when: download_flag
-  - copy: src={{ installing_em_path }}/conf/ dest={{ em_path }}/conf
+  - shell: cp -rf {{ installing_em_path }}/conf/* {{ em_path }}/conf
     when: download_flag == false
   - include: getbin.yml 
     when: download_flag
-  - copy: src={{ installing_em_path }}/bin/ dest={{ em_path }}/bin
+  - shell: cp {{ installing_em_path }}/bin/* {{ em_path }}/bin
     when: download_flag == false
   - shell: chmod 777 {{ em_path }}/bin/*
   - name: check path setting 1
@@ -41,7 +43,7 @@
       state=present
       backrefs=yes
       regexp='Rest_server_address.*'
-      line='Rest_server_address={{ em_rest_address }}'
+      line='Rest_server_address={{ em_listening_address }}'
   - name: em_main.conf data set 2
     lineinfile: >-
       dest='{{ em_path }}/conf/conf_if_process_rest.conf'
@@ -69,7 +71,7 @@
       state=present
       backrefs=yes
       regexp='Netconf_server_address.*'
-      line='Netconf_server_address={{ em_netconf_address }}'
+      line='Netconf_server_address={{ em_listening_address }}'
   - name: em_main.conf data set 6
     lineinfile: >-
       dest='{{ em_path }}/conf/conf_if_process.conf'
@@ -83,7 +85,7 @@
       state=present
       backrefs=yes
       regexp='Em_Rest_server_address.*'
-      line='Em_Rest_server_address={{ em_rest_address }}'
+      line='Em_Rest_server_address={{ em_listening_address }}'
   - name: em_main.conf data set 8
     lineinfile: >-
       dest='{{ em_path }}/conf/conf_sys_common.conf'
@@ -119,13 +121,45 @@
       backrefs=yes
       regexp='DB_access_table.*'
       line='DB_access_table={{ db_name }}'
+  - name: em_main.conf data set 14
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Em_standby_server_address.*'
+      line='Em_standby_server_address={{ oppo_login_address }}'
+    when: ha_flag
+  - name: em_main.conf data set 15
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Em_standby_server_address.*'
+      line='Em_standby_server_address='
+    when: ha_flag == false
+  - name: em_main.conf data set 16
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Em_standby_user.*'
+      line='Em_standby_user={{ oppo_usrname }}'
+    when: ha_flag
+  - name: em_main.conf data set 17
+    lineinfile: >-
+      dest='{{ em_path }}/conf/conf_sys_common.conf'
+      state=present
+      backrefs=yes
+      regexp='Em_standby_access_pass.*'
+      line='Em_standby_access_pass={{ oppo_password }}'
+    when: ha_flag
   - name: em_ctl.sh data set 1
     lineinfile: >-
       dest='{{ em_path }}/bin/em_ctl.sh'
       state=present
       backrefs=yes
       regexp='^IPV4=.*'
-      line='IPV4="{{ em_netconf_address }}"'
+      line='IPV4="{{ em_listening_address }}"'
   - name: em_ctl.sh data set 2
     lineinfile: >-
       dest='{{ em_path }}/bin/em_ctl.sh'
@@ -148,3 +182,30 @@
       regexp='^EC_PORT=.*'
       line='EC_PORT="{{ ec_rest_port }}"'
   - include: getem.yml
+
+  - name: make em config delete
+    shell: mkdir -p {{ folder_name_em_config_delete }}/sql_files
+  - include: getemconfigdelete.yml
+    when: download_flag
+  - shell: cp -r {{ installing_em_path }}/script/delete_deviceconfigurationinfo/* {{ folder_name_em_config_delete }}
+    when: download_flag == false
+  - shell: chmod 777 {{ folder_name_em_config_delete }}/*
+  - name: delete_deviceconfigurationinfo_record.sh data set 1
+    lineinfile: >-
+      dest='{{ folder_name_em_config_delete }}/delete_deviceconfigurationinfo_record.sh'
+      state=present
+      backrefs=yes
+      regexp='^DB_NAME=.*'
+      line='DB_NAME="{{ db_name }}"'
+  - name: delete_deviceconfigurationinfo_record.sh data set 2
+    lineinfile: >-
+      dest='{{ folder_name_em_config_delete }}/delete_deviceconfigurationinfo_record.sh'
+      state=present
+      backrefs=yes
+      regexp='^DB_HOST=.*'
+      line='DB_HOST="{{ db_address }}"'
+
+  - include: getfileupdate.yml
+    when: download_flag
+  - shell: cp {{ installing_em_path }}/file_update/* {{ folder_name_fup }}
+    when: download_flag == false

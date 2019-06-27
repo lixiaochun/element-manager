@@ -29,3 +29,14 @@
     shell: pip install --use-wheel --no-index --find-links={{ rpm_path }}/whl_package {{ rpm_path }}/whl_package/xmltodict-0.10.2-py2-none-any.whl
   - name: python install 8
     shell: pip install --use-wheel --no-index --find-links={{ rpm_path }}/whl_package {{ rpm_path }}/whl_package/psycopg2-2.6.2-cp27-cp27mu-linux_x86_64.whl
+  - name: python install 9
+    shell: pip install {{ rpm_path }}/installer/chardet-3.0.4-py2.py3-none-any.whl
+  - name: python install 10
+    shell: pip install {{ rpm_path }}/installer/certifi-2018.10.15-py2.py3-none-any.whl
+  - name: python install 11
+    shell: pip install {{ rpm_path }}/installer/urllib3-1.24.1-py2.py3-none-any.whl
+  - name: python install 12
+    shell: pip install {{ rpm_path }}/installer/idna-2.7-py2.py3-none-any.whl
+  - name: python install 13
+    shell: pip install {{ rpm_path }}/installer/requests-2.20.1-py2.py3-none-any.whl
+

@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmCommonLog.py
 
 '''
@@ -146,10 +146,9 @@ def init_decorator_log():
     __EM_START_STOP_LOGGER.propagate = False
 
 
-    if len(GlobalModule.EM_LOGGER.handlers) != 1:
-        raise ValueError("not rotate handler")
+    if len(GlobalModule.EM_LOGGER.handlers) != 2:
+        raise ValueError("not 2rotate handler")
     time_rotate_handle = GlobalModule.EM_LOGGER.handlers[0]
-
     handler = time_rotate_handle.getFileHandler()
     formatter = EmLoggingTool.Formatter(
         "[%(asctime)s] [%(levelname)s] [tid=%(thread)d] %(message)s")
@@ -157,7 +156,7 @@ def init_decorator_log():
 
     logging.addLevelName(
         GlobalModule.TRACE_LOG_LEVEL, GlobalModule.TRACE_LOG_LEVEL_LABEL)
-    handler.setLevel(GlobalModule.TRACE_LOG_LEVEL)
+    handler.setLevel(time_rotate_handle.level)
 
     __EM_START_STOP_LOGGER.addHandler(handler)
 

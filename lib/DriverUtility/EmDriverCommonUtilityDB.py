@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmDriverCommonUtilityDB.py
 '''
 Common utility (DB) module for the driver.
 '''
 import json
+import datetime
+import traceback
 import GlobalModule
 from EmCommonLog import decorater_log
 from EmCommonLog import decorater_log_in_out
@@ -34,6 +36,7 @@ class EmDriverCommonUtilityDB(object):
     _table_acl_detail = "ACLDetailInfo"
     _table_dummy_vlan_if = "DummyVlanIfInfo"
     _table_multi_homing = "MultiHomingInfo"
+    _table_config_info = "DeviceConfigrationinfo"
 
     _if_type_physical = 1
     _if_type_lag = 2
@@ -56,6 +59,7 @@ class EmDriverCommonUtilityDB(object):
         self._name_recover_node = GlobalModule.SERVICE_RECOVER_NODE
         self._name_recover_service = GlobalModule.SERVICE_RECOVER_SERVICE
         self._name_acl_filter = GlobalModule.SERVICE_ACL_FILTER
+        self._name_if_condition = GlobalModule.SERVICE_IF_CONDITION
 
         self._get_functions = {
             self._name_spine: (self._get_spine_info,
@@ -82,6 +86,8 @@ class EmDriverCommonUtilityDB(object):
                                          self._json_recover_service),
             self._name_acl_filter: (self._get_acl_filter_info,
                                     self._json_acl_filter),
+            self._name_if_condition: (self._get_if_condition_info,
+                                      self._json_if_condition),
         }
 
         self._get_db = {
@@ -121,6 +127,13 @@ class EmDriverCommonUtilityDB(object):
             GlobalModule.DB_CONTROL.read_dummy_vlan_if_info,
             self._table_multi_homing:
             GlobalModule.DB_CONTROL.read_multi_homing_info,
+            self._table_config_info:
+            GlobalModule.DB_CONTROL.read_device_configration_info,
+        }
+
+        self._write_db = {
+            self._table_config_info:
+            GlobalModule.DB_CONTROL.write_device_configration_info,
         }
 
         self._device_types = {1: self._name_spine, 2: self._name_leaf}
@@ -140,7 +153,7 @@ class EmDriverCommonUtilityDB(object):
         Obtain the Device type and VPN type from the device name of the individual section on driver.
         Explanation about parameter:
             device_name: Device_name
-        Explanation about return value:
+       Explanation about return value:
             Device type : str
             VPN type : str
         '''
@@ -158,7 +171,7 @@ class EmDriverCommonUtilityDB(object):
         Obtains OS name based on Device Name from Driver Individual Part
         Explanation about parameter:
             device_name: Device name
-        Explanation about return value:
+       Explanation about return value:
             Device type : str
             VPN type : str
         '''
@@ -168,6 +181,75 @@ class EmDriverCommonUtilityDB(object):
         return os_name
 
     @decorater_log_in_out
+    def read_device_driver_info(self, device_name):
+        '''
+        Obtain driver information  from individual part by using device name.
+        Explanation about parameter:
+            device_name: device name
+        Explanation about return value:
+            platform_name : str
+            os : str
+            firm_version : str
+        '''
+        db_info = self._get_db_infos(device_name, [self._table_device])
+        device = db_info[1][self._table_device][0]
+        platform_name = device["platform_name"]
+        os_name = device["os"]
+        firm_version = device["firm_version"]
+        return platform_name, os_name, firm_version
+
+    @decorater_log_in_out
+    def read_latest_device_configuration(self, device_name, **filter_data):
+        '''
+        Obtain  newest device config from config information table.
+        Explanation about parameter:
+            device_name: device name str
+            filter_data: refined condition dict(variable argument)
+        Explanation about return value:
+            newest device config : str
+        '''
+        try:
+            db_func = self._get_db[self._table_config_info]
+            is_ok, conf_rows = db_func(device_name=device_name)
+            if not is_ok:
+                raise IOError("Failed to get data from DeviceConfigrationinfo")
+            if not conf_rows:
+                return None, None
+
+            conf_rows = [row for row in conf_rows
+                         if self._check_filter_date(row, filter_data)]
+            if not conf_rows:
+                raise ValueError("No config with matching filter")
+
+            def key_date(row):
+                wk_date = "{0}{1}".format(row.get("working_date"),
+                                          row.get("working_time"))
+                date_format = "%Y%m%d%H%M%S"
+                return datetime.datetime.strptime(wk_date, date_format)
+
+            sort_row = sorted(conf_rows, key=key_date)
+            latest_row = sort_row[-1]
+            GlobalModule.EM_LOGGER.debug("latest config:%s", latest_row)
+            latest_config = latest_row["config_file"]
+            latest_date = "{0}{1}".format(latest_row["working_date"],
+                                          latest_row["working_time"])
+        except Exception as exc_info:
+            GlobalModule.EM_LOGGER.warning(
+                "208003 Get Latest Device Configuration Error")
+            GlobalModule.EM_LOGGER.debug("ERROR ; %s", exc_info)
+            GlobalModule.EM_LOGGER.debug(
+                "Traceback ; %s", traceback.format_exc())
+            raise
+        return latest_config, latest_date
+
+    @staticmethod
+    def _check_filter_date(row, filter_data):
+        for key, value in filter_data.items():
+            if row.get(key) != value:
+                return False
+        return True
+
+    @decorater_log_in_out
     def read_configureddata_info(self, device_name, service_name):
         '''
         Called out from individual section on driver when message to the device is created.
@@ -175,7 +257,7 @@ class EmDriverCommonUtilityDB(object):
         Explanation about parameter:
             device_name: Device name
             service_name: Service name
-        Explanation about return value:
+       Explanation about return value:
             Acquisition result : Boolean
             Edit information : {DB name:({Item name:value})}
         '''
@@ -207,6 +289,66 @@ class EmDriverCommonUtilityDB(object):
             (is_result, edit_info, json_text))
 
         return is_result, json_text
+
+    @decorater_log_in_out
+    def write_device_config_info(self,
+                                 device_name,
+                                 device_config,
+                                 platform_name=None):
+        '''
+        Gets called when information is registered in device by driver individual part.
+        Write information into DB.
+        Explanation about parameter:
+            device_name: dvice namae
+            device_config：device config
+            platform_name：platform name
+        Explanation about return value:
+            result : Boolean
+        '''
+        param = self._set_device_config_param(
+            device_name, device_config, platform_name)
+        is_ok = GlobalModule.DB_CONTROL.write_device_configration_info(**param)
+
+        return is_ok
+
+    @decorater_log
+    def _set_device_config_param(self,
+                                 device_name,
+                                 device_config=None,
+                                 platform_name=None):
+        '''
+        Return device config table to be registered.
+        Explanation about parameter:
+            param_list:parameter list
+            device_name: device name
+            device_config：device config
+        Explanation about return value:
+            result : Boolean
+        '''
+        date = datetime.datetime.now()
+        working_date = date.strftime('%Y%m%d')
+        working_time = date.strftime('%H%M%S')
+
+        device_config_param = dict.fromkeys(["db_control",
+                                             "device_name",
+                                             "working_date",
+                                             "working_time",
+                                             "platform_name",
+                                             "vrf_name",
+                                             "practice_system",
+                                             "log_type",
+                                             "get_timing",
+                                             "config_file",
+                                             ])
+        device_config_param["db_control"] = "INSERT"
+        device_config_param["device_name"] = device_name
+        device_config_param["working_date"] = working_date
+        device_config_param["working_time"] = working_time
+        device_config_param["platform_name"] = platform_name
+        device_config_param["config_file"] = device_config
+        device_config_param["get_timing"] = 2
+
+        return device_config_param
 
     @decorater_log
     def _get_db_infos(self, device_name, tables):
@@ -453,6 +595,23 @@ class EmDriverCommonUtilityDB(object):
         return self._get_db_infos(device_name, get_tables)
 
     @decorater_log
+    def _get_if_condition_info(self, device_name):
+        '''
+        Obtain  necessary information to open/close IF.
+        Explanation about parameter:
+            device_name: device name
+        Explanation about return value:
+            Result : Boolean
+            edited information : ({DB name:({Item name: Value})})
+        '''
+        get_tables = [self._table_device,
+                      self._table_phy_if,
+                      self._table_lag_if,
+                      ]
+
+        return self._get_db_infos(device_name, get_tables)
+
+    @decorater_log
     def _json_spine(self, db_info):
         '''
         Spine API data shaping
@@ -586,6 +745,7 @@ class EmDriverCommonUtilityDB(object):
             json_item["virtual_gateway_prefix"] = row.get(
                 "virtual_gateway_prefix")
             json_item["qos"] = self._get_json_common_qos(row)
+            json_item["q_in_q"] = row.get("q_in_q")
             json_list_item.append(json_item)
         json_return["cp"] = json_list_item
 
@@ -832,6 +992,7 @@ class EmDriverCommonUtilityDB(object):
             json_item["lag_if_id"] = row["lag_if_id"]
             json_item["links"] = row["minimum_links"]
             json_item["link_speed"] = row["link_speed"]
+            json_item["condition"] = row.get("condition")
             json_list_item.append(json_item)
         json_return["lag"] = json_list_item
 
@@ -995,6 +1156,49 @@ class EmDriverCommonUtilityDB(object):
             self._json_l3_slice(db_info))
         json_return[self._name_acl_filter] = json.loads(
             self._json_acl_filter(db_info))
+        json_return[self._name_if_condition] = json.loads(
+            self._json_if_condition(db_info))
+        return json.dumps(json_return)
+
+    @decorater_log
+    def _json_if_condition(self, db_info):
+        '''
+        Open/Close IF and Form API data.
+                        Gets called after data obtained from DB.
+            db_info : Acquired DB information({DB name:({Item name: Value})})
+        Return value explanation:
+            API data string(json format) ; str
+            (API data list(JSON format).xlsm  Refer to LAG information acquisition sheet for CE)
+        '''
+        json_return = {}
+
+        t_table = db_info.get(self._table_lag_if, ())
+        json_list_item = []
+        json_return["lag_value"] = len(t_table)
+        for row in t_table:
+            json_item = {}
+            json_item["if_name"] = row["lag_if_name"]
+            json_item["type"] = row["lag_type"]
+            json_item["links"] = row["minimum_links"]
+            json_item["link_speed"] = row["link_speed"]
+            json_item["condition"] = self._port_cond.get(row.get("condition"))
+            json_list_item.append(json_item)
+        json_return["lag"] = json_list_item
+
+        t_table = db_info.get(self._table_phy_if, ())
+        json_return["physical-interface_value"] = len(t_table)
+        tmp_json_list = []
+        for row in t_table:
+            tmp_json = {}
+            tmp_json["if_name"] = row.get("if_name")
+            tmp_json["condition"] = self._port_cond.get(row.get("condition"))
+            tmp_json_list.append(tmp_json)
+        json_return["physical-interface"] = tmp_json_list
+
+        json_return["device"] = None
+        if json_return.get("lag_value", 0) > 0:
+            json_return["device"] = t_table[0].get("device_name")
+
         return json.dumps(json_return)
 
     @decorater_log
@@ -1078,6 +1282,8 @@ class EmDriverCommonUtilityDB(object):
             json_item["vpn_type"] = t_table.get("vpn_type")
         if t_table.get("as_number") is not None:
             json_item["as_number"] = t_table.get("as_number")
+        if t_table.get("q_in_q_type") is not None:
+            json_item["q-in-q"] = t_table.get("q_in_q_type")
 
         return json_item
 
@@ -1168,7 +1374,7 @@ class EmDriverCommonUtilityDB(object):
     def _get_json_common_qos(self, db_info):
         '''
         Obtain VlanQoS information by processing the VlanInfo.
-        Called out when obtaining L2�臭3 slice information.
+        Called out when obtaining L2/L3 slice information.
         Explanation about parameter:
             db_info : DB information obtained
         Explanation about return value:

@@ -1,8 +1,8 @@
-# Element Manager Automate Installation Manual
+﻿# Element Manager Automate Installation Manual
 
 **Version 1.0**
-**December 7, 2018**
-**Copyright(c) 2018 Nippon Telegraph and Telephone Corporation**
+**June 27, 2019**
+**Copyright(c) 2019 Nippon Telegraph and Telephone Corporation**
 
 ## 1. Introduction
 
@@ -21,12 +21,33 @@ Module of Controller.
 
 The subjects other than that are not covered in this document.
 
+This manual supports both redundant and non-redundant EM systems.
+The EM system is composed of the EM server and the DB server.
+The EM server supports both the redundant and non-redundant configuration.
+The DB server supports only the non-redundant configuration.
+In this manual, you need the server (Ansible server) on which automatic install script is running in addition to the servers which consists of the EM system.
+
+Figure 1-1 illustrates the image of each configuration.
+
+![Figure 1-1 Figure 1-1 The image of EM system configuration.](img/Fig_1_1_EM.png "Fig1-1")<br>
+Figure 1-1 The image of EM system configuration.
+
 1.3. Expressional Conventions
 ------------------------
 
 There are certain expressions and text styles conventionally used in
 this document. Please make yourself clear about the items below before
 going on through the document.
+
+**\<Execution Host: XXX\>** - bold letters surrounded by triangle brackets
+
+This means ther server XXX executing commands. 
+XXX is the following. 
+
+　Ansible : Ansible server<br>
+　ACT : EM ACT server<br>
+　SBY : EM SBY server<br>
+　DB  : DB server
 
 **\[XX XX\]** - bold letters surrounded by square brackets
 
@@ -36,6 +57,10 @@ This means the command to be entered in Linux.
 
 > In this case, you need to enter the letters within brackets and press
 > the Enter key in the console screen.
+
+**\$EM_HOME**
+
+You need to replace with the same value as em_path in Table 3-1 vars Files.
 
 1.4. Trademark Notice
 ----------------
@@ -66,231 +91,335 @@ so that they are the same as the following file structure.
 
 Table 1-1 Included Accessories
 
-| \#      | Folder Structure  | |       |         | File Name    | Descriprion | Remarks |
-|---------|---------|---------|---------|---------|---------|---------|---------|
-| 1.      | em      | \-      | \-      | \-      | \-      | \-      | \-      |
-| 2.      |         |         |         |         | whl_package.tar | In-use Python Library Package  | In-Advance DL from GitHub  |
-| 3.      |         |         |         |         | paramiko-2.0.2-py2.py3-none-any.whl | In-use Python Library Package  | In-Advance DL |
-| 4.      |         |         |         |         | psycopg2-2.6.2-cp27-cp27mu-linux_x86_64.whl | In-use Python Library Package  | In-Advance DL |
-| 5.      |         |         |         |         | pip-8.1.2.tar.gz | PIP Command for Python Library Install     | In-Advance DL |
-| 6.      |         |         |         |         | setuptools-28.6.0.tar.gz | pip Dependent Package     | In-Advance DL |
-| 7.      |         | bin     |         |         | em      | Resource Agent | In-Advance DL from GitHub  |
-| 8.      |         |         |         |         | em_ctl.sh | EM Start-up Script      | In-Advance DL from GitHub  |
-| 9.      |         |         |         |         | EmMonitor.py | Alive Monitor Client   | In-Advance DL from GitHub  |
-| 10.      |         |         |         |         | controller_status.sh | Controller Status Information<br> Acquisition Script | In-Advance DL from GitHub  |
-| 11.      |         | lib     |         |         | MsfEmMain.py | Main Module    | In-Advance DL from GitHub  |
-| 12.      |         |         |         |         | GlobalModule.py | Global Module  | In-Advance DL from GitHub  |
-| 13.      |         |         |         |         | EmCommonLog.py | EM Common Log Module      | In-Advance DL from GitHub  |
-| 14.      |         |         |         |         | EmSetPATH.py | PYTHONPATH Configuration Module for EM | In-Advance DL from GitHub  |
-| 15.      |         |         |         |         | EmLoggingFormatter.py | Log Formater Module for EM     | In-Advance DL from GitHub  |
-| 16.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 17.      |         |         | CommonDriver |    | EmCommonDriver.py | Driver Common Part Module  | In-Advance DL from GitHub  |
-| 18.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 19.      |         |         | Config  |         | EmConfigManagement.py | Configuration Management Module | In-Advance DL from GitHub  |
-| 20.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 21.      |         |         | DB      |         | EmDBControl.py | DB Control Module      | In-Advance DL from GitHub  |
-| 22.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 23.      |         |         | DriverUtility |   | EmDriverCommonUtilityDB.py | Driver Common Utility (DB) Module  | In-Advance DL from GitHub  |
-| 24.      |         |         |         |         | EmDriverCommonUtilityLog.py | Driver Common Utility (Log) Module  | In-Advance DL from GitHub  |
-| 25.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 26.      |         |         | Netconf Serve |   | EmNetconfServer.py | EM Netconf Server Module      | In-Advance DL from GitHub  |
-| 27.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 28.      |         |         | OrderflowControl |         | EmOrderflowControl.py | Order Flow Control Module   | In-Advance DL from GitHub  |
-| 29.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 30.      |         |         | Protocol |        | EmNetconfProtocol.py | For-device Protocol Process Module | In-Advance DL from GitHub  |
-| 31.      |         |         |         |         | EmCLIProtocol.py | Protocol Processing (CLI) Module for Devices | In-Advance DL from GitHub  |
-| 32.      |         |         |         |         | EmNetconfClient.py | Ncclient Original implementation processing module | In-Advance DL from GitHub  |
-| 33.      |         |         |         |         | CumulusCLIProtocol.py | Protocol Processing (CLI) Module for Devices (Cumulus) | In-Advance DL from GitHub  |
-| 34.      |         |         |         |         | EmCLIProtocolBase.py | Protocol Processing (CLI) Module for Devices (Bse) | In-Advance DL from GitHub  |
-| 35.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 36.      |         |         | RestScenario |    | EmControllerLogGet.py | Controller Log Acquisition Scenario | In-Advance DL from GitHub  |
-| 37.      |         |         |         |         | EmControllerStatusGet.py | Controller Status Acquisition Scenario | In-Advance DL from GitHub  |
-| 38.      |         |         |         |         | EmSeparateRestScenario.py | REST Individual Scenario Module    | In-Advance DL from GitHub  |
-| 39.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 40.      |         |         | RestServer |      | EmRestServer.py | REST Server Module    | In-Advance DL from GitHub  |
-| 41.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 42.      |         |         | Scenario |        | EmACLFilterDelete.py | ACL Filter Deletion Scenario  | In-Advance DL from GitHub  |
-| 43.      |         |         |         |         | EmACLFilterMerge.py | ACL Filter Generation Scenario  | In-Advance DL from GitHub  |
-| 44.      |         |         |         |         | EmBLeafDelete.py | B-Leaf Deletion Scenario  | In-Advance DL from GitHub  |
-| 45.      |         |         |         |         | EmBLeafMerge.py | B-Leaf Generation Scenario  | In-Advance DL from GitHub  |
-| 46.      |         |         |         |         | EmBLeafScenario.py | B-Leaf Scenario Modulef  | In-Advance DL from GitHub  |
-| 47.      |         |         |         |         | EmBLeafUpdate.py | B-Leaf Update Scenario  | In-Advance DL from GitHub  |
-| 48.      |         |         |         |         | EmBreakoutIFDelete.py | BreakoutIF Deletion Scenario | In-Advance DL from GitHub  |
-| 49.      |         |         |         |         | EmBreakoutIFMerge.py | BreakoutIF Registration Scenario | In-Advance DL from GitHub  |
-| 50.      |         |         |         |         | EmCeLagDelete.py | LAG Deletion Scenario for CE     | In-Advance DL from GitHub  |
-| 51.      |         |         |         |         | EmCeLagMerge.py | LAG Addition Scenario for CE     | In-Advance DL from GitHub  |
-| 52.      |         |         |         |         | EmClusterLinkDelete.py | Inter-Claster Link I/F Deletion Scenario | In-Advance DL from GitHub  |
-| 53.      |         |         |         |         | EmClusterLinkMerge.py | Inter-Claster Link I/F Addition Scenario | In-Advance DL from GitHub  |
-| 54.      |         |         |         |         | EmDeleteScenario.py | Resource Deletion Scenario Module | In-Advance DL from GitHub  |
-| 55.      |         |         |         |         | EmInternalLinkDelete.py | Internal Link Delete Scenario | In-Advance DL from GitHub  |
-| 56.      |         |         |         |         | EmInternalLinkMerge.py | Internal Link Merge Scenario | In-Advance DL from GitHub  |
-| 57.      |         |         |         |         | EmL2SliceEvpnControl.py | L2 Slice EVPN Control Scenario | In-Advance DL from GitHub  |
-| 58.      |         |         |         |         | EmL2SliceDelete.py | L2 Slice Deletion Scenario      | In-Advance DL from GitHub  |
-| 59.      |         |         |         |         | EmL2SliceGet.py | L2 Slice Information Adjustment Scenario      | In-Advance DL from GitHub  |
-| 60.      |         |         |         |         | EmL2SliceMerge.py | L2 Slice Addition Scenario      | In-Advance DL from GitHub  |
-| 61.      |         |         |         |         | EmL2SliceUpdate.py | L2 Slice Update Scenario      | In-Advance DL from GitHub  |
-| 62.      |         |         |         |         | EmL3SliceDelete.py | L3 Slice Deletion Scenario      | In-Advance DL from GitHub  |
-| 63.      |         |         |         |         | EmL3SliceGet.py | L3 Slice Information Adjustment Scenario      | In-Advance DL from GitHub  |
-| 64.      |         |         |         |         | EmL3SliceMerge.py | L3 Slice Addition Scenario      | In-Advance DL from GitHub  |
-| 65.      |         |         |         |         | EmL3SliceUpdate.py | L3 Slice Update Scenario      | In-Advance DL from GitHub  |
-| 66.      |         |         |         |         | EmLeafDelete.py | Leaf Deletion Scenario    | In-Advance DL from GitHub  |
-| 67.      |         |         |         |         | EmLeafMerge.py | Leaf Addition Scenario    | In-Advance DL from GitHub  |
-| 68.      |         |         |         |         | EmMergeScenario.py | Resource Addition Scenario Module | In-Advance DL from GitHub  |
-| 69.      |         |         |         |         | EmRecover.py | Recover Node Scenario | In-Advance DL from GitHub  |
-| 70.      |         |         |         |         | EmRecoverNode.py | Recover Node Scenario | In-Advance DL from GitHub  |
-| 71.      |         |         |         |         | EmRecoverService.py | Recover Node Scenario | In-Advance DL from GitHub  |
-| 72.      |         |         |         |         | EmSpineDelete.py | Spine Deletion Scenario   | In-Advance DL from GitHub  |
-| 73.      |         |         |         |         | EmSpineMerge.py | Spine Addition Scenario   | In-Advance DL from GitHub  |
-| 74.      |         |         |         |         | EmSeparateScenario.py | Individual Scenario Module | In-Advance DL from GitHub  |
-| 75.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 76.      |         |         | SeparateDriver |  | BeluganosDriver.py | Beluganos Driver Module       | In-Advance DL from GitHub  |
-| 77.      |         |         |         |         | CiscoDriver.py | Cisco (5001, 5011) Driver Module       | In-Advance DL from GitHub  |
-| 78.      |         |         |         |         | CiscoDriver5501.py | Cisco 5501 Driver Module       | In-Advance DL from GitHub  |
-| 79.      |         |         |         |         | CLIDriver.py | CLI Driver Module       | In-Advance DL from GitHub  |
-| 80.      |         |         |         |         | CumulusDriver.py | Cumulus Driver Module       | In-Advance DL from GitHub  |
-| 81.      |         |         |         |         | JuniperDriver5100.py | Juniper 5100 Driver Module       | In-Advance DL from GitHub  |
-| 82.      |         |         |         |         | JuniperDriver5110.py | Juniper 5110 Driver Module       | In-Advance DL from GitHub  |
-| 83.      |         |         |         |         | JuniperDriver5200.py | Juniper 5200 Driver Module       | In-Advance DL from GitHub  |
-| 84.      |         |         |         |         | JuniperDriverMX240.py | J Company Core Router Driver Module       | In-Advance DL from GitHub  |
-| 85.      |         |         |         |         | OcNOSDriver.py | OcNOS Driver Module   | In-Advance DL from GitHub  |
-| 86.      |         |         |         |         | EmSeparateDriver.py | Driver Individual Module  | In-Advance DL from GitHub  |
-| 87.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 88.      |         |         |         | RecoverUtility | EmRecoverUtilBase.py | Recover Node Utility Module (base)  | In-Advance DL from GitHub  |
-| 89.      |         |         |         |         | EmRecoverUtilACL.py | Recover Node Utility Module (ACL Filter)  | In-Advance DL from GitHub  |
-| 90.      |         |         |         |         | EmRecoverUtilBLeaf.py | Recover Node Utility Module (B-Leaf)  | In-Advance DL from GitHub  |
-| 91.      |         |         |         |         | EmRecoverUtilCeLag.py | Recover Node Utility Module (CE LAG)  | In-Advance DL from GitHub  |
-| 92.      |         |         |         |         | EmRecoverUtilClusterLink.py | Recover Node Utility Module (Inter-Claster Link)  | In-Advance DL from GitHub  |
-| 93.      |         |         |         |         | EmRecoverUtilL2Slice.py | Recover Node Utility Module (L2 Slice)  | In-Advance DL from GitHub  |
-| 94.      |         |         |         |         | EmRecoverUtilL3Slice.py | Recover Node Utility Module (L3 Slice)  | In-Advance DL from GitHub  |
-| 95.      |         |         |         |         | EmRecoverUtilLeaf.py | Recover Node Utility Module (Leaf)  | In-Advance DL from GitHub  |
-| 96.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 97.      |         |         | SystemUtility |   | EmSysCommonUtilityDB.py | System Common (DB) Utility Module  | In-Advance DL from GitHub  |
-| 98.      |         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
-| 99.      |         | conf    |         |         | conf_driver.conf | Driver Individual Part Operational Configuration File  | In-Advance DL from GitHub  |
-| 100.      |         |         |         |         | conf_if_process.conf | I/F Process Part Operational Configuration File     | In-Advance DL from GitHub  |
-| 101.      |         |         |         |         | conf_scenario.conf | Scenario Individual Part Operational Configuration File | In-Advance DL from GitHub  |
-| 102.      |         |         |         |         | conf_sys_common.conf | EM Common Configuration File      | In-Advance DL from GitHub  |
-| 103.      |         |         |         |         | conf_separate_driver_cisco.conf | Cisco Driver Operation Configuration File       | In-Advance DL from GitHub  |
-| 104.      |         |         |         |         | conf_if_process_rest.conf | REST Server Operation Configuration FileT    | In-Advance DL from GitHub  |
-| 105.      |         |         |         |         | conf_scenario_rest.conf | REST Scenario Individual Part Operation Configuration File    | In-Advance DL from GitHub  |
-| 106.      |         |         |         |         | conf_service.conf | Service Definition Configuration FileT    | In-Advance DL from GitHub  |
-| 107.      |         |         |         |         | conf_internal_link_vlan.conf | OS (Requires VLAN ID on internal link) specification Configuration File    | In-Advance DL from GitHub  |
-| 108.      |         |         |         |         | Beluganos.conf | QoS of Beluganos Driver Operation Configuration File    | In-Advance DL from GitHub  |
-| 109.      |         |         |         |         | Cumulus.conf | QoS of Cumulus Driver Operation Configuration File    | In-Advance DL from GitHub  |
-| 110.      |         |         |         |         | Cisco.conf | QoS of Cisco Driver Operation Configuration File    | In-Advance DL from GitHub  |
-| 111.      |         |         |         |         | Juniper.conf | QoS of Juniper Driver Operation Configuration File    | In-Advance DL from GitHub  |
-| 112.      |         |         |         |         | OcNOS.conf | QoS of OcNOS Driver Operation Configuration File    | In-Advance DL from GitHub  |
-| 113.      |         | dhcp.v4.2.5 |     |         | dhcp-4.2.5-42.el7.centos.x86_64.rpm | DHCP Installation Package    | In-Advance DL |
-| 114.      |         | ntp.v4.2 |        |         | autogen-libopts-5.18-5.el7.x86_64.rpm | NTP Installation Package     | In-Advance DL |
-| 115.      |         |         |         |         | ntpdate-4.2.6p5-22.el7.centos.x86_64.rpm | NTP Installation Package     | In-Advance DL |
-| 116.      |         |         |         |         | ntp-4.2.6p5-22.el7.centos.x86_64.rpm | NTP Installation Package     | In-Advance DL |
-| 117.      |         | postgresql.v9.3.13 |     |  | postgresql93-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
-| 118.      |         |         |         |         | postgresql93-contrib-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
-| 119.      |         |         |         |         | postgresql93-devel-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
-| 120.      |         |         |         |         | postgresql93-libs-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
-| 121.      |         |         |         |         | postgresql93-server-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
-| 122.      |         |         |         |         | uuid-1.6.2-26.el7.x86_64.rpm | PostgreSQL Dependent Package | In-Advance DL |
-| 123.      |         |         |         |         | libxslt-1.1.28-5.el7.x86_64.rpm | PostgreSQL Dependent Package | In-Advance DL |
-| 124.      |         | pacemaker.v1.1.14-1.1 |  |  | pacemaker-1.1.14-1.el7.x86_64.rpm | Pacemaker Installation Package | In-Advance DL |
-| 125.      |         |         |         |         | corosync-2.3.5-1.el7.x86_64.rpm | Corosync Installation Package | In-Advance DL |
-| 126.      |         |         |         |         | crmsh-2.1.5-1.el7.x86_64.rpm | crm Command Installation Package     | In-Advance DL |
-| 127.      |         |         |         |         | cluster-glue-1.0.12-2.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 128.      |         |         |         |         | cluster-glue-libs-1.0.12-2.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 129.      |         |         |         |         | corosynclib-2.3.5-1.el7.x86_64.rpm | Corosync Dependent Package | In-Advance DL |
-| 130.      |         |         |         |         | ipmitool-1.8.13-9.el7_2.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 131.      |         |         |         |         | libqb-1.0-1.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 132.      |         |         |         |         | libtool-ltdl-2.4.2-21.el7_2.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 133.      |         |         |         |         | libxslt-1.1.28-5.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 134.      |         |         |         |         | libyaml-0.1.4-11.el7_0.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 135.      |         |         |         |         | lm_sensors-libs-3.3.4-11.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 136.      |         |         |         |         | nano-2.3.1-10.el7.x86_64.rpm | crm Dependent Package     | In-Advance DL |
-| 137.      |         |         |         |         | net-snmp-agent-libs-5.7.2-24.el7_2.1.x86_64.rpm | Corosync Dependent Package | In-Advance DL |
-| 138.      |         |         |         |         | net-snmp-libs-5.7.2-24.el7_2.1.x86_64.rpm | Corosync Dependent Package | In-Advance DL |
-| 139.      |         |         |         |         | openhpi-libs-3.4.0-2.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 140.      |         |         |         |         | OpenIPMI-libs-2.0.19-11.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 141.      |         |         |         |         | OpenIPMI-modalias-2.0.19-11.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 142.      |         |         |         |         | pacemaker-cli-1.1.14-1.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 143.      |         |         |         |         | pacemaker-cluster-libs-1.1.14-1.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 144.      |         |         |         |         | pacemaker-libs-1.1.14-1.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 145.      |         |         |         |         | pacemaker-all-1.1.14-1.1.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 146.      |         |         |         |         | perl-5.16.3-286.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 147.      |         |         |         |         | perl-Carp-1.26-244.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 148.      |         |         |         |         | perl-constant-1.27-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 149.      |         |         |         |         | perl-Encode-2.51-7.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 150.      |         |         |         |         | perl-Exporter-5.68-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 151.      |         |         |         |         | perl-File-Path-2.09-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 152.      |         |         |         |         | perl-File-Temp-0.23.01-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 153.      |         |         |         |         | perl-Filter-1.49-3.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 154.      |         |         |         |         | perl-Getopt-Long-2.40-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 155.      |         |         |         |         | perl-HTTP-Tiny-0.033-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 156.      |         |         |         |         | perl-libs-5.16.3-286.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 157.      |         |         |         |         | perl-macros-5.16.3-286.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 158.      |         |         |         |         | perl-parent-0.225-244.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 159.      |         |         |         |         | perl-PathTools-3.40-5.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 160.      |         |         |         |         | perl-Pod-Escapes-1.04-286.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 161.      |         |         |         |         | perl-podlators-2.5.1-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 162.      |         |         |         |         | perl-Pod-Perldoc-3.20-4.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 163.      |         |         |         |         | perl-Pod-Simple-3.28-4.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 164.      |         |         |         |         | perl-Pod-Usage-1.63-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 165.      |         |         |         |         | perl-Scalar-List-Utils-1.27-248.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 166.      |         |         |         |         | perl-Socket-2.010-3.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 167.      |         |         |         |         | perl-Storable-2.45-3.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 168.      |         |         |         |         | perl-Text-ParseWords-3.29-4.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 169.      |         |         |         |         | perl-threads-1.87-4.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 170.      |         |         |         |         | perl-threads-shared-1.43-6.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 171.      |         |         |         |         | perl-TimeDate-2.30-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 172.      |         |         |         |         | perl-Time-HiRes-1.9725-3.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 173.      |         |         |         |         | perl-Time-Local-1.2300-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 174.      |         |         |         |         | pm_crmgen-2.1-1.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 175.      |         |         |         |         | pm_diskd-2.2-1.el7.x86_64.rpm | Diskd RA Package   | In-Advance DL |
-| 176.      |         |         |         |         | pm_extras-2.2-1.el7.x86_64.rpm | VIPCheck RA Package | In-Advance DL |
-| 177.      |         |         |         |         | pm_logconv-cs-2.2-1.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 178.      |         |         |         |         | psmisc-22.20-9.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 179.      |         |         |         |         | pssh-2.3.1-5.el7.noarch.rpm | crm Dependent Package     | In-Advance DL |
-| 180.      |         |         |         |         | python-dateutil-1.5-7.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 181.      |         |         |         |         | python-lxml-3.2.1-4.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
-| 182.      |         |         |         |         | resource-agents-3.9.7-1.2.6f56.el7.x86_64.rpm | Standard RA Package Incl. Virtual IPRA | In-Advance DL |
-| 183.      |         | sysstat-11.6.0-1 |  |       | sysstat-11.6.0-1.x86_64.rpm | Sysstat Installation Package | In-Advance DL |
-| 184.      |         |         |         |         | lm_sensors-libs-3.3.4-11.el7.x86_64.rpm | Sysstat Dependent Package | In-Advance DL |
-| 185.      |         | flask-0.12.2 |    |         | Flask-0.12.2-py2.py3-none-any.whl | Flask Installation Package   | In-Advance DL |
-| 186.      |         |         |         |         | click-6.7-py2.py3-none-any.whl | Flask Dependent Package   | In-Advance DL |
-| 187.      |         |         |         |         | itsdangerous-0.24.tar.gz | Flask Dependent Package   | In-Advance DL |
-| 188.      |         |         |         |         | Jinja2-2.9.6-py2.py3-none-any.whl | Flask Dependent Package   | In-Advance DL |
-| 189.      |         |         |         |         | MarkupSafe-1.0.tar.gz | Flask Dependent Package   | In-Advance DL |
-| 190.      |         |         |         |         | Werkzeug-0.12.2-py2.py3-none-any.whl | Flask Dependent Package   | In-Advance DL |
-| 191.      |         | bc-1.06.95-13  |  |         | bc-1.06.95-13.el7.x86_64.rpm      | bc Installation Package   | In-Advance DL |
-| 192.      |         | script  | \-        | \-      | \-      | \-      | \-      |
-| 193.      |         |         |         |         | pm_crmgen_env.xls | Resource Agent Configuration File | In-Advance DL |
-| 194.      |         |         |         |         | create_table.sql | Table Creation Script   | In-Advance DL from GitHub  |
-| 195.      |         |         |         |         | drop_table.sql | Table Deletion Script   | In-Advance DL from GitHub  |
-| 196.    | Ansible |         |         |           |           |               |         |
-| 197.    |       |         |         |         | ansible-2.4.2.0-2.el7.noarch.rpm | Ansible Installation Package   | In-Advance DL  |
-| 198.    |       |         |         |         | PyYAML-3.10-11.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 199.    |       |         |         |         | libyaml-0.1.4-11.el7_0.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 200.    |       |         |         |         | openssl-1.0.2k-8.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 201.    |       |         |         |         | openssl-libs-1.0.2k-8.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 202.    |       |         |         |         | python-babel-0.9.6-8.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 203.    |       |         |         |         | python-backports-1.0-8.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 204.    |       |         |         |         | python-backports-ssl_match_hostname-3.4.0.2-4.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 205.    |       |         |         |         | python-cffi-1.6.0-5.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 206.    |       |         |         |         | python-enum34-1.0.4-1.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 207.    |       |         |         |         | python-httplib2-0.9.2-1.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 209.    |       |         |         |         | python-idna-2.4-1.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 209.    |       |         |         |         | python-ipaddress-1.0.16-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 210.    |       |         |         |         | python-jinja2-2.7.2-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 211.    |       |         |         |         | python-markupsafe-0.11-10.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 212.    |       |         |         |         | python-paramiko-2.1.1-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 213.    |       |         |         |         | python-passlib-1.6.5-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 214.    |       |         |         |         | python-ply-3.4-11.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 215.    |       |         |         |         | python-python-pycparser-2.14-1.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 216.    |       |         |         |         | python-setuptools-0.9.8-7.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 217.    |       |         |         |         | python-six-1.9.0-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 218.    |       |         |         |         | python2-cryptography-1.7.2-1.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 219.    |       |         |         |         | python2-jmespath-0.9.0-3.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 220.    |       |         |         |         | python2-pyasn1-0.1.9-7.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
-| 221.    |       |         |         |         | sshpass-1.06-2.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
-
-
+| Folder  |Structure   |       |         | File Name    | Descriprion | Remarks |
+|---------|---------|---------|---------|---------|---------|---------|
+| em      | \-      | \-      | \-      | \-      | \-      | \-      |
+|         |         |         |         | whl_package.tar | In-use Python Library Package  | In-Advance DL from GitHub  |
+|         |         |         |         | paramiko-2.0.2-py2.py3-none-any.whl | In-use Python Library Package  | In-Advance DL |
+|         |         |         |         | psycopg2-2.6.2-cp27-cp27mu-linux_x86_64.whl | In-use Python Library Package  | In-Advance DL |
+|         |         |         |         | pip-8.1.2.tar.gz | PIP Command for Python Library Install     | In-Advance DL |
+|         |         |         |         | requests-2.20.1-py2.py3-none-any.whl    | Library for Python(requests) installation   | In-Advance DL |
+|         |         |         |         | urllib3-1.24.1-py2.py3-none-any.whl     | requests Dependent Package        | In-Advance DL |
+|         |         |         |         | idna-2.7-py2.py3-none-any.whl           | requests Dependent Package        | In-Advance DL |
+|         |         |         |         | chardet-3.0.4-py2.py3-none-any.whl      | requests Dependent Package        | In-Advance DL |
+|         |         |         |         | certifi-2018.10.15-py2.py3-none-any.whl | requests Dependent Package        | In-Advance DL |
+|         |         |         |         | setuptools-28.6.0.tar.gz | pip Dependent Package     | In-Advance DL |
+|         | bin     |         |         | em      | Resource Agent | In-Advance DL from GitHub  |
+|         |         |         |         | em_ctl.sh | EM Start-up Script      | In-Advance DL from GitHub  |
+|         |         |         |         | EmMonitor.py | Alive Monitor Client   | In-Advance DL from GitHub  |
+|         |         |         |         | controller_status.sh     | Controller Status Information<br> Acquisition Script | In-Advance DL from GitHub  |
+|         |         |         |         | check_resource_lock.sh   | Pacemaker Resource Status Monitor Script | In-Advance DL from GitHub  |
+|         |         |         |         | resource_lock_release.sh | Pacemaker Resource Move Permission Script | In-Advance DL from GitHub  |
+|         |         |         |         | controller_switch.sh     | Controller Switch-over Script | In-Advance DL from GitHub  |
+|         | lib     |         |         | MsfEmMain.py | Main Module    | In-Advance DL from GitHub  |
+|         |         |         |         | GlobalModule.py | Global Module  | In-Advance DL from GitHub  |
+|         |         |         |         | EmCommonLog.py | EM Common Log Module      | In-Advance DL from GitHub  |
+|         |         |         |         | EmSetPATH.py | PYTHONPATH Configuration Module for EM | In-Advance DL from GitHub  |
+|         |         |         |         | EmLoggingTool.py | Log Formater Module for EM     | In-Advance DL from GitHub  |
+|         |         |         |         | PluginLoader.py | Plugin Control Module for EM     | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | CgwshUtility |    | CgwshDeviceConfigManagement.py| Device utility file for CGW-SH(Config Mgt)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshDeviceUtilityDB.py     | Device utility file for CGW-SH(DB) | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | CommonDriver |    | EmCommonDriver.py | Driver Common Part Module  | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | Config  |         | EmConfigManagement.py | Configuration Management Module | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | ControllerLogNotify  |         | ControllerLogNotify.py | Controller Log Notification Module | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | ControllerStatusGet  |         | EmControllerStatusGetExecutor.py | Module for controller status Periodic notification Executer | In-Advance DL from GitHub  |
+|         |         |         |         | EmControllerStatusGetManager.py | Manager module for controller status Periodic notification | In-Advance DL from GitHub  |
+|         |         |         |         | EmControllerStatusGetTimeKeep.py | Module for time management to get controller status | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | DB      |         | EmDBControl.py | DB Control Module      | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | DriverUtility |   | EmDriverCommonUtilityDB.py    | Driver Common Utility (DB) Module  | In-Advance DL from GitHub  |
+|         |         |         |         | EmDriverCommonUtilityLog.py   | Driver Common Utility (Log) Module  | In-Advance DL from GitHub  |
+|         |         |         |         | AuditConfigManagement.py      | Config Audit Management Module  | In-Advance DL from GitHub  |
+|         |         |         |         | ConfigAuditDriverUtility.py   | Driver Utility(Audit) Module  | In-Advance DL from GitHub  |
+|         |         |         |         | EmDifflib.py                  | Difflib Module for EM | In-Advance DL from GitHub  |
+|         |         |         |         | CgwshDeviceDriverUtilityDB.py | Utility(DB) File for CGW-SH device driver | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | EmStartPlugin |   | EmPluginCgwshDeviceControl.py | Plugin for increase/decrease CGW-SH device | In-Advance DL from GitHub  |
+|         |         | Netconf Server |  | EmNetconfServer.py   | EM Netconf Server Module      | In-Advance DL from GitHub  |
+|         |         |         |         | EmNetconfResponse.py | Netconf ResponseModule | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         |         | NcsPluginCreateResponse | NcsPluginCreateResponseMSF.py | Netconf Response Plugin for MSF | In-Advance DL from GitHub  |
+|         |         | OrderflowControl |         | EmOrderflowControl.py | Order Flow Control Module   | In-Advance DL from GitHub  |
+|         |         |         | OfcPluginMessage | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         |         |         | OfcPluginMSF.py   | Message Analysis Plugin Module for MSF normal Service | In-Advance DL from GitHub  |
+|         |         |         |         | OfcPluginCGWSH.py | Message Analysis Plugin for CGWSH | In-Advance DL from GitHub  |
+|         |         | PeriodicProcessing |  | EmPeriodicProcessing.py     | Periodic Process Management Module | In-Advance DL from GitHub  |
+|         |         |         |         | EmPeriodicProcessingTimeKeep.py | Periodic Process Time Management Module | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | Protocol |        | EmNetconfProtocol.py | For-device Protocol Process Module | In-Advance DL from GitHub  |
+|         |         |         |         | EmCLIProtocol.py | Protocol Processing (CLI) Module for Devices | In-Advance DL from GitHub  |
+|         |         |         |         | EmNetconfClient.py | Ncclient Original implementation processing module | In-Advance DL from GitHub  |
+|         |         |         |         | CumulusCLIProtocol.py | Protocol Processing (CLI) Module for Devices (Cumulus) | In-Advance DL from GitHub  |
+|         |         |         |         | EmCLIProtocolBase.py | Protocol Processing (CLI) Module for Devices (Base) | In-Advance DL from GitHub  |
+|         |         |         |         | CgwshDriverCLIProtocol.py | Protocol Processing(CLI) Module for CGW-SH driver(ASR,NVR) | In-Advance DL from GitHub  |
+|         |         |         |         | NVRDriverCLIProtocol.py   | Protocol Processing(CLI) Module for NVR driver | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | RestScenario |    | EmControllerLogGet.py | Controller Log Acquisition Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmControllerStatusGet.py | Controller Status Acquisition Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmSeparateRestScenario.py | REST Individual Scenario Module    | In-Advance DL from GitHub  |
+|         |         |         |         | EmControllerSwitch.py  | Controller Switch-over Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmDeviceConfigAudit.py | Device Config-Audit Scenario    | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | RestServer |      | EmRestServer.py | REST Server Module    | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | Scenario |        | EmACLFilterDelete.py | ACL Filter Deletion Scenario  | In-Advance DL from GitHub  |
+|         |         |         |         | EmACLFilterMerge.py | ACL Filter Generation Scenario  | In-Advance DL from GitHub  |
+|         |         |         |         | EmBLeafDelete.py | B-Leaf Deletion Scenario  | In-Advance DL from GitHub  |
+|         |         |         |         | EmBLeafMerge.py | B-Leaf Generation Scenario  | In-Advance DL from GitHub  |
+|         |         |         |         | EmBLeafScenario.py | B-Leaf Scenario Modulef  | In-Advance DL from GitHub  |
+|         |         |         |         | EmBLeafUpdate.py | B-Leaf Update Scenario  | In-Advance DL from GitHub  |
+|         |         |         |         | EmBreakoutIFDelete.py | BreakoutIF Deletion Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmBreakoutIFMerge.py | BreakoutIF Registration Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmCeLagDelete.py | LAG Deletion Scenario for CE     | In-Advance DL from GitHub  |
+|         |         |         |         | EmCeLagMerge.py | LAG Addition Scenario for CE     | In-Advance DL from GitHub  |
+|         |         |         |         | EmCeLagUpdate.py | LAG Update Scenario for CE     | In-Advance DL from GitHub  |
+|         |         |         |         | EmClusterLinkDelete.py | Inter-Claster Link I/F Deletion Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmClusterLinkMerge.py | Inter-Claster Link I/F Addition Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmDeleteScenario.py | Resource Deletion Scenario Module | In-Advance DL from GitHub  |
+|         |         |         |         | EmDeviceDelete.py | MSF device Deletion Scenario Module | In-Advance DL from GitHub  |
+|         |         |         |         | EmDeviceInfoUpdate.py | Device Information Update Scenario Module | In-Advance DL from GitHub  |
+|         |         |         |         | EmDeviceMerge.py | MSF device Addition Scenario Modulee | In-Advance DL from GitHub  |
+|         |         |         |         | EmIfConditionUpdate.py | IF Open/Close Scenario Modulee | In-Advance DL from GitHub  |
+|         |         |         |         | EmInternalLinkDelete.py | Internal Link Delete Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmInternalLinkMerge.py | Internal Link Merge Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmInternalLinkUpdate.py | Internal Link Update Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmL2SliceEvpnControl.py | L2 Slice EVPN Control Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmL2SliceDelete.py | L2 Slice Deletion Scenario      | In-Advance DL from GitHub  |
+|         |         |         |         | EmL2SliceGet.py | L2 Slice Information Adjustment Scenario      | In-Advance DL from GitHub  |
+|         |         |         |         | EmL2SliceMerge.py | L2 Slice Addition Scenario      | In-Advance DL from GitHub  |
+|         |         |         |         | EmL2SliceUpdate.py | L2 Slice Update Scenario      | In-Advance DL from GitHub  |
+|         |         |         |         | EmL3SliceDelete.py | L3 Slice Deletion Scenario      | In-Advance DL from GitHub  |
+|         |         |         |         | EmL3SliceGet.py | L3 Slice Information Adjustment Scenario      | In-Advance DL from GitHub  |
+|         |         |         |         | EmL3SliceMerge.py | L3 Slice Addition Scenario      | In-Advance DL from GitHub  |
+|         |         |         |         | EmL3SliceUpdate.py | L3 Slice Update Scenario      | In-Advance DL from GitHub  |
+|         |         |         |         | EmLeafDelete.py | Leaf Deletion Scenario    | In-Advance DL from GitHub  |
+|         |         |         |         | EmLeafMerge.py | Leaf Addition Scenario    | In-Advance DL from GitHub  |
+|         |         |         |         | EmMergeScenario.py | Resource Addition Scenario Module | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecover.py | Recover Node Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverNode.py | Recover Node Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverService.py | Recover Node Scenario | In-Advance DL from GitHub  |
+|         |         |         |         | EmSpineDelete.py | Spine Deletion Scenario   | In-Advance DL from GitHub  |
+|         |         |         |         | EmSpineMerge.py | Spine Addition Scenario   | In-Advance DL from GitHub  |
+|         |         |         |         | EmSeparateScenario.py | Individual Scenario Module | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         |         | CGW-SH  |                                   | Folder for storing CGW-SH Scenario                           | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshCustomerUniRouteDelete.py  | Individual Scenario for individual UNI Static Route Deletion in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshCustomerUniRouteMerge.py   | Individual Scenario for individual UNI Static Route Addition in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshPPPDelete.py               | Individual Scenario for individual PPP Deletion in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshPPPMerge.py                | Individual Scenario for individual PPP Addition in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshServiceBase.py             | Base Scenario Class for Cgwsh Service  | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshServiceFlavor.py           | Scenario Flavor Classfor Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshServiceManagementDelete.py | Individual Scenario for Service Deletion in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshServiceManagementMerge.py  | Individual Scenario for New Service Registration in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshTunnelDelete.py   | Individual Scenario for Tunnel Deletion in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshTunnelMerge.py    | Individual Scenario for Tunnel Addition in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshUniRouteDelete.py | Individual Scenario for UNI Static Route Deletion in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         |         |         | EmCgwshUniRouteMerge.py  | Individual Scenario for UNI Static Route Addition in Cgwsh Service | In-Advance DL from GitHub  |
+|         |         | SeparateDriver |  | BeluganosDriver.py | Beluganos Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | CiscoDriver.py | Cisco (5001, 5011) Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | CiscoDriver5501.py | Cisco 5501 Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | CLIDriver.py | CLI Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | CumulusDriver.py | Cumulus Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | JuniperDriver5100.py | Juniper 5100 Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | JuniperDriver5110.py | Juniper 5110 Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | JuniperDriver5200.py | Juniper 5200 Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | JuniperDriverMX240.py | J Company Core Router Driver Module       | In-Advance DL from GitHub  |
+|         |         |         |         | OcNOSDriver.py | OcNOS Driver Module   | In-Advance DL from GitHub  |
+|         |         |         |         | EmSeparateDriver.py | Driver Individual Module  | In-Advance DL from GitHub  |
+|         |         |         |         | ASRSetParameterECDB.py | Config Parameter Module File for Cisco ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | CgwshDeviceDriverSetParameterECDB.py | Config Parameter Module File for Cgwsh driver | In-Advance DL from GitHub  |
+|         |         |         |         | CgwshDriverBase.py | Cgwsh Driver(Base) Module File | In-Advance DL from GitHub  |
+|         |         |         |         | CiscoDriverASR1002_X.py | Cisco ASR 1002-X Driver File | In-Advance DL from GitHub  |
+|         |         |         |         | DriverSetParameterECDB.py | Config Parameter Module File for driver | In-Advance DL from GitHub  |
+|         |         |         |         | NVRSetParameterECDB.py | Config Parameter Module File for Yamaha NVR driver | In-Advance DL from GitHub  |
+|         |         |         |         | YamahaDriverNVR510.py | Yamaha NVR 510 Driver File | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         |         | ASRDriverParts | ASRDriverConfigBase.py | Config Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | BGP.py | BGP Config Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | InterfaceBase.py | IF Base Config Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | ShowCommand.py | Show Command Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | StaticRoute.py | Static Route Config Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | TunnelInterface.py | Tunnel Interface Config Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | UNIInterface.py | UNI Interface Config Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | UNOInterface.py | UNO Interface Config Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | VRF.py | VRF Config Parts Module for ASR driver | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         |         | NVRDriverParts | DefaultGateway.py | Default Gateway Config Parts Module for NVR Driver | In-Advance DL from GitHub  |
+|         |         |         |         | Filtering.py | Filtering Config Parts Module for NVR Driver | In-Advance DL from GitHub  |
+|         |         |         |         | Interface.py | Interface Config Parts Module for NVR Driver | In-Advance DL from GitHub  |
+|         |         |         |         | NVRDriverConfigBase.py | Config Parts Module for NVR Driver | In-Advance DL from GitHub  |
+|         |         |         |         | PPPoE.py | PPPoE Config Parts Module for NVR Driver | In-Advance DL from GitHub  |
+|         |         |         |         | ShowCommand.py | Show Command Parts Module for NVR Driver | In-Advance DL from GitHub  |
+|         |         |         |         | StaticRoute.py | Static Route Config Parts Module for NVR Driver | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         |         | RecoverUtility | EmRecoverUtilBase.py | Recover Node Utility Module (base)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverUtilACL.py | Recover Node Utility Module (ACL Filter)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverUtilBLeaf.py | Recover Node Utility Module (B-Leaf)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverUtilCeLag.py | Recover Node Utility Module (CE LAG)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverUtilClusterLink.py | Recover Node Utility Module (Inter-Claster Link)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverUtilL2Slice.py | Recover Node Utility Module (L2 Slice)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverUtilL3Slice.py | Recover Node Utility Module (L3 Slice)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverUtilLeaf.py | Recover Node Utility Module (Leaf)  | In-Advance DL from GitHub  |
+|         |         |         |         | EmRecoverUtilIfCondition.py | Recover Node Utility Module (IF Open/Close)  | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         |         | SystemUtility |   | EmSysCommonUtilityDB.py | System Common (DB) Utility Module  | In-Advance DL from GitHub  |
+|         |         |         |         | \__init__.py | Initialization Module | In-Advance DL from GitHub  |
+|         | conf    |         |         | conf_driver.conf | Driver Individual Part Operational Configuration File  | In-Advance DL from GitHub  |
+|         |         |         |         | conf_if_process.conf | I/F Process Part Operational Configuration File     | In-Advance DL from GitHub  |
+|         |         |         |         | conf_scenario.conf | Scenario Individual Part Operational Configuration File | In-Advance DL from GitHub  |
+|         |         |         |         | conf_sys_common.conf | EM Common Configuration File      | In-Advance DL from GitHub  |
+|         |         |         |         | conf_separate_driver_cisco.conf | Cisco Driver Operation Configuration File       | In-Advance DL from GitHub  |
+|         |         |         |         | conf_if_process_rest.conf | REST Server Operation Configuration FileT    | In-Advance DL from GitHub  |
+|         |         |         |         | conf_scenario_rest.conf | REST Scenario Individual Part Operation Configuration File    | In-Advance DL from GitHub  |
+|         |         |         |         | conf_service.conf | Service Definition Configuration FileT    | In-Advance DL from GitHub  |
+|         |         |         |         | conf_internal_link_vlan.conf | OS (Requires VLAN ID on internal link) specification Configuration File    | In-Advance DL from GitHub  |
+|         |         |         |         | Beluganos.conf | QoS of Beluganos Driver Operation Configuration File    | In-Advance DL from GitHub  |
+|         |         |         |         | Cumulus.conf | QoS of Cumulus Driver Operation Configuration File    | In-Advance DL from GitHub  |
+|         |         |         |         | Cisco.conf | QoS of Cisco Driver Operation Configuration File    | In-Advance DL from GitHub  |
+|         |         |         |         | Juniper.conf | QoS of Juniper Driver Operation Configuration File    | In-Advance DL from GitHub  |
+|         |         |         |         | OcNOS.conf | QoS of OcNOS Driver Operation Configuration File    | In-Advance DL from GitHub  |
+|         |         |         |         | conf_act_threshold.conf               | ACT Threshold Configuration File    | In-Advance DL from GitHub  |
+|         |         |         |         | conf_standby_threshold.conf           | SBY Threshold Configuration File    | In-Advance DL from GitHub  |
+|         |         | cgwsh_device |    | conf_asr_device_sample1.conf          | Configuration File for CGW-SH Device Setting Management    | In-Advance DL from GitHub  |
+|         |         |         |         | conf_nvr_device_sample1.conf          | Configuration File for CGW-SH Device Setting Management    | In-Advance DL from GitHub  |
+|         |         | conf_audit |      | conf_asr_audit_exclusion.conf         | Configuration File for execluded string during Config-Audit execution (ASR)   | In-Advance DL from GitHub  |
+|         |         |         |         | conf_nvr_audit_exclusion.conf         | Configuration File for execluded string during Config-Audit execution (NVR)   | In-Advance DL from GitHub  |
+|         |         |         |         | conf_qfx5110_audit_exclusion.conf     | Configuration File for execluded string during Config-Audit execution (QFX5110 non-IRB)   | In-Advance DL from GitHub  |
+|         |         |         |         | conf_qfx5110_irb_audit_exclusion.conf | Configuration File for execluded string during Config-Audit execution (QFX5110 IRB)   | In-Advance DL from GitHub  |
+|         | file_update |     |         | db_env                   | Environment Configuration File | In-Advance DL from GitHub |
+|         |         |         |         | db_schema_update.sh      | DB Schema Update Script        | In-Advance DL from GitHub |
+|         |         |         |         | MSF2017_MSF2018B.sh      | Script for Update DB Schema from MSF2017 to MSF2018B        | In-Advance DL from GitHub |
+|         |         |         |         | MSF2017_to_MSF2018B.sql  | DB Schema Update SQL (MSF2017 to MSF2018B)        | In-Advance DL from GitHub |
+|         |         |         |         | MSF2018A_MSF2018B.sh     | Script for Update DB Schema from MSF2018A to MSF2018B        | In-Advance DL from GitHub |
+|         |         |         |         | MSF2018A_to_MSF2018B.sql | DB Schema Update SQL (MSF2018A to MSF2018B)          | In-Advance DL from GitHub |
+|         |         |         |         | db_backup.sh             | DB Backup Script               | In-Advance DL from GitHub |
+|         |         |         |         | db_restore.sh            | DB Restore Script              | In-Advance DL from GitHub |
+|         |         |         |         | em_file_upgrade.sh  | Binary Update Script        | In-Advance DL from GitHub |
+|         |         |         |         | file_oldparam_env  | Parameter Definition File taken-over from Binary File | In-Advance DL from GitHub |
+|         | installer |       |         | |     |  |
+|         |         | dhcp.v4.2.5 |     | dhcp-4.2.5-42.el7.centos.x86_64.rpm | DHCP Installation Package    | In-Advance DL |
+|         |         | chrony.v3.2 |     | chrony-3.2-2.el7.x86_64.rpm | chrony Installation Package     | In-Advance DL |
+|         |         |         |         | libseccomp-2.3.1-3.el7.x86_64.rpm | chrony Installation Package     | In-Advance DL |
+|         |    | postgresql.v9.3.13  |  | postgresql93-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
+|         |         |         |         | postgresql93-contrib-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
+|         |         |         |         | postgresql93-devel-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
+|         |         |         |         | postgresql93-libs-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
+|         |         |         |         | postgresql93-server-9.3.13-1PGDG.rhel7.x86_64.rpm | PostgreSQL Installation Package | In-Advance DL |
+|         |         |         |         | uuid-1.6.2-26.el7.x86_64.rpm | PostgreSQL Dependent Package | In-Advance DL |
+|         |         |         |         | libxslt-1.1.28-5.el7.x86_64.rpm | PostgreSQL Dependent Package | In-Advance DL |
+|         |  | pacemaker.v1.1.14-1.1 |  | pacemaker-1.1.14-1.el7.x86_64.rpm | Pacemaker Installation Package | In-Advance DL |
+|         |         |         |         | corosync-2.3.5-1.el7.x86_64.rpm | Corosync Installation Package | In-Advance DL |
+|         |         |         |         | crmsh-2.1.5-1.el7.x86_64.rpm | crm Command Installation Package     | In-Advance DL |
+|         |         |         |         | cluster-glue-1.0.12-2.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | cluster-glue-libs-1.0.12-2.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | corosynclib-2.3.5-1.el7.x86_64.rpm | Corosync Dependent Package | In-Advance DL |
+|         |         |         |         | ipmitool-1.8.13-9.el7_2.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | libqb-1.0-1.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | libtool-ltdl-2.4.2-21.el7_2.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | libxslt-1.1.28-5.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | libyaml-0.1.4-11.el7_0.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | lm_sensors-libs-3.3.4-11.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | nano-2.3.1-10.el7.x86_64.rpm | crm Dependent Package     | In-Advance DL |
+|         |         |         |         | net-snmp-agent-libs-5.7.2-24.el7_2.1.x86_64.rpm | Corosync Dependent Package | In-Advance DL |
+|         |         |         |         | net-snmp-libs-5.7.2-24.el7_2.1.x86_64.rpm | Corosync Dependent Package | In-Advance DL |
+|         |         |         |         | openhpi-libs-3.4.0-2.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | OpenIPMI-libs-2.0.19-11.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | OpenIPMI-modalias-2.0.19-11.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | pacemaker-cli-1.1.14-1.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | pacemaker-cluster-libs-1.1.14-1.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | pacemaker-libs-1.1.14-1.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | pacemaker-all-1.1.14-1.1.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-5.16.3-286.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Carp-1.26-244.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-constant-1.27-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Encode-2.51-7.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Exporter-5.68-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-File-Path-2.09-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-File-Temp-0.23.01-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Filter-1.49-3.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Getopt-Long-2.40-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-HTTP-Tiny-0.033-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-libs-5.16.3-286.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-macros-5.16.3-286.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-parent-0.225-244.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-PathTools-3.40-5.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Pod-Escapes-1.04-286.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-podlators-2.5.1-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Pod-Perldoc-3.20-4.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Pod-Simple-3.28-4.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Pod-Usage-1.63-3.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Scalar-List-Utils-1.27-248.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Socket-2.010-3.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Storable-2.45-3.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Text-ParseWords-3.29-4.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-threads-1.87-4.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-threads-shared-1.43-6.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-TimeDate-2.30-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Time-HiRes-1.9725-3.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | perl-Time-Local-1.2300-2.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | pm_crmgen-2.1-1.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | pm_diskd-2.2-1.el7.x86_64.rpm | Diskd RA Package   | In-Advance DL |
+|         |         |         |         | pm_extras-2.2-1.el7.x86_64.rpm | VIPCheck RA Package | In-Advance DL |
+|         |         |         |         | pm_logconv-cs-2.2-1.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | psmisc-22.20-9.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | pssh-2.3.1-5.el7.noarch.rpm | crm Dependent Package     | In-Advance DL |
+|         |         |         |         | python-dateutil-1.5-7.el7.noarch.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | python-lxml-3.2.1-4.el7.x86_64.rpm | Pacemaker Dependent Package | In-Advance DL |
+|         |         |         |         | resource-agents-3.9.7-1.2.6f56.el7.x86_64.rpm | Standard RA Package Incl. Virtual IPRA | In-Advance DL |
+|         | | sysstat-11.6.0-1 |        | sysstat-11.6.0-1.x86_64.rpm | Sysstat Installation Package | In-Advance DL |
+|         |         |         |         | lm_sensors-libs-3.3.4-11.el7.x86_64.rpm | Sysstat Dependent Package | In-Advance DL |
+|         |         | flask-0.12.2 |    | Flask-0.12.2-py2.py3-none-any.whl | Flask Installation Package   | In-Advance DL |
+|         |         |         |         | click-6.7-py2.py3-none-any.whl | Flask Dependent Package   | In-Advance DL |
+|         |         |         |         | itsdangerous-0.24.tar.gz | Flask Dependent Package   | In-Advance DL |
+|         |         |         |         | Jinja2-2.9.6-py2.py3-none-any.whl | Flask Dependent Package   | In-Advance DL |
+|         |         |         |         | MarkupSafe-1.0.tar.gz | Flask Dependent Package   | In-Advance DL |
+|         |         |         |         | Werkzeug-0.12.2-py2.py3-none-any.whl | Flask Dependent Package   | In-Advance DL |
+|         |         |         |         | Flask_Cors-3.0.6-py2.py3-none-any.whl | Package corresponding to CORS | In-Advance DL |
+|         |  | expect-5.45-14 |         | expect-5.45-14.el7_1.x86_64.rpm | expect Installation Package   | In-Advance DL |
+|         |         |         |         | tcl-8.5.13-8.el7.x86_64.rpm | expect Dependent Package   | In-Advance DL |
+|         |   | bc-1.06.95-13 |         | bc-1.06.95-13.el7.x86_64.rpm      | bc Installation Package   | In-Advance DL |
+|         | script  | \-        | \-      | \-      | \-      | \-      |
+|         |         |         |         | pm_crmgen_env.xls | Resource Agent Configuration File | In-Advance DL |
+|         |         |         |         | create_table.sql | Table Creation Script   | In-Advance DL from GitHub  |
+|         |         |         |         | delete_data.sql  | DB Record Deletion Script | In-Advance DL from GitHub  |
+|         |         |         |         | drop_table.sql   | Table Deletion Script   | In-Advance DL from GitHub  |
+|         |         | delete_deviceconfigurationinfo | |  |    |   |
+|         |         |         |         | delete_deviceconfigurationinfo_record.sh | Script for DB and device config information record deletion   | In-Advance DL from GitHub  |
+|         |         |         | sql_files | | |  |
+|         |         |         |         | delete_recode.sql  | SQL File for DB and device config information record deletion | In-Advance DL from GitHub  |
+|         |         |         |         | get_table_size.sql | SQL File for table size acquisition | In-Advance DL from GitHub  |
+| Ansible |         |         |         |           |               |         |
+|         |         |         |         | ansible-2.4.2.0-2.el7.noarch.rpm | Ansible Installation Package   | In-Advance DL  |
+|         |         |         |         | PyYAML-3.10-11.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | libyaml-0.1.4-11.el7_0.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | openssl-1.0.2k-8.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | openssl-libs-1.0.2k-8.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-babel-0.9.6-8.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-backports-1.0-8.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-backports-ssl_match_hostname-3.4.0.2-4.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-cffi-1.6.0-5.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-enum34-1.0.4-1.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-httplib2-0.9.2-1.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-idna-2.4-1.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-ipaddress-1.0.16-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-jinja2-2.7.2-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-markupsafe-0.11-10.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-paramiko-2.1.1-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-passlib-1.6.5-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-ply-3.4-11.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-python-pycparser-2.14-1.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-setuptools-0.9.8-7.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python-six-1.9.0-2.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python2-cryptography-1.7.2-1.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python2-jmespath-0.9.0-3.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | python2-pyasn1-0.1.9-7.el7.noarch.rpm | Ansible Dependent Package   | In-Advance DL  |
+|         |         |         |         | sshpass-1.06-2.el7.x86_64.rpm | Ansible Dependent Package   | In-Advance DL  |
 
 ### 2.1.1. Hardware Operating environment
 
@@ -301,11 +430,13 @@ Table 2-1 Recommended Hardware Configuration
 
 | No.  | Computer      | Minimum Configuration                |
 |------|---------------|--------------------------------------|
-| 1.   | OS            | CentOS7.2 x86\_64                    |
+| 1.   | OS            | CentOS7.2 x86\_64 \*                    |
 | 2.   | CPU           | IntelR XeonR CPU E5-2420 v2 @2.20GHz <br> 6 Core/12 Thread or greater |
 | 3.   | Memory        | 32GB or larger                       |
 | 4.   | HD Free Space | 500G or larger                       |
 | 5.   | NIC           | More than 1 port                     |
+
+\* : You need to install it from CentOS-7-x86_64-DVD-1511.iso file.
 
 ### 2.1.2. Software Operating environment
 Assume that firewalld has already been installed as a package.
@@ -341,11 +472,11 @@ folder. (The Ansible folder is unnecessary.)<br>
 
 Before Installation, place the rpm files in Ansible installation destination server.
 The placement targets are the files under the Anslbile folder described in \"1.5 Configuration of the Included Accessories \".<br>
-(Locations: /root/setup/em/installer/ansible)
+(Locations: /root/setup/Ansible)
 
 Execute the following command to install Ansible.
 
-**\[cd /root/setup/em/installer/ansible\] \[Enter\]**
+**\[cd /root/setup/Ansible\] \[Enter\]**
 
 **\[rpm -Uvh \*rpm\] \[Enter\]**
 
@@ -365,13 +496,23 @@ Generate the SSH authentication key with the following command.
 
 After that, copy the generated key to the target servers.
 
-**\[scp ~/.ssh/id_rsa.pub root@$REMOTE_IP:~\] \[Enter\]**
+**\[scp \~/.ssh/id_rsa.pub root@$REMOTE_IP:\~\] \[Enter\]**
 
 ($REMOTE_IP: IP of the install target server (EM or DB))
 
 **&lt;Execution Host: ACT/SBY&gt;**
 
 Execute the following command on each server.
+
+Check whether the directory for locating SSH key is available or not. 
+
+**\[ls /root/.ssh/\] \[Enter\]**
+
+If it is not available, login to the host(your server) to be executed by using SSH to create the directory for locating SSH key.
+
+**\[ssh root@localhost\] \[Enter\]**
+
+Locate the SSH key in the designated place.
 
 **\[cd /root/.ssh/\] \[Enter\]**
 
@@ -398,81 +539,58 @@ If you do not use the Internet connection, place rpm files for install.
 
 
 #### 3.2.1.3. Edit playbook
-Write the IP information of EM and DB to the host file which use by playbook.
-Also, put the yml files which has environmental information for each server to the vars folder.
+Write the IP information of EM and DB to the host file (/root/setup/playbook/EM/hosts) which use by playbook.
+Also, put the yml files which has environmental information for each server to the vars folder (/root/setup/playbook/EM/vars/).
 
 
 ##### 3.2.1.3.1. Edit host file
-Write the DB server name in \[DB:children\].
+Figure 3-1 shows the configuration example for file : /root/setup/playbook/EM/hosts.
 
-Write the EM server name in \[EM:children\].
-
-Also, write the IP address for each of the above server names.
-
-example)
-> [DB:children]
->
-> db1
->
-> db2
->
-> [EM:children]
->
-> em1
->
-> em2
->
-> [db1]
->
-> 192.168.0.73
->
-> [db2]
->
-> 192.168.0.74
->
-> [em1]
->
-> 192.168.0.75
->
-> [em2]
->
-> 192.168.0.76
-
+![Figure 3-1 Figure 3-1 An example of hosts configuration.](img/Fig_3_1_EM.png "Fig3-1")<br>
+Figure 3-1 An example of hosts configuration.
 
 ##### 3.2.1.3.2. Deploy vars file
-Place tha information files defined by the host.
-The meaning of each parameter is described below.<br>
-Regarding variables in which the recommended value is described in the Description column,
-it is possible to operate by setting the recommended value especially when there is no need to perform arbitrary setting.
+The follwing are the files located within /root/setup/playbook/EM/vars/.<br>
+ Table 3-1 lists the setting values for configuration
+
+On the variables of which the recommened value are decribed in column “description”,
+You can set the recommended values, if you do not need to set any specific values.
+
+EM ACT server configuration file：em1.yml(See column“EM”in table 3-1)<br>
+EM SBY server configuration file：em2.yml(See column“EM in table 3-1)<br>
+DB server configuration file：db1.yml(See column“DB in table 3-1)<br>
+Common configuration file：common.yml(See column“Common in table 3-1)
+
 
 Table 3-1 vars Parameter
 
-| name                | Description                          | EM | DB |
-|---------------------|--------------------------------------|----|----|
-| rpm_path            | In the case of using network connection, the path of installing file location. <br> In the case of no network connection, it is installing files path in the Ansible server.(Recommendation: /root/setup/em) | ○ | ○ |
-| em_path             | The path of EM location. (Recommendation: /opt/em). | ○ | × |
-| download_flag       | Parameter for determining whether to acquire a file from the Internet or place it on an Ansible server. <br> If True, use the Internet connection. | ○ | ○ |
-| log_path            | Relative path of EM log file output destination. <br> (Recommendation: logs/em/log) | ○ | × |
-| em_conf_path        | The path of config folder location. <br> (Recommendation: /opt/em) | ○ | × |
-| installing_em_path  | The path of EM source folder location in Ansible Server. <br> (Recommendation: /root/setup/em) | ○ | × |
-| db_address          | DB server IP address.                | ○ | ○ |
-| db_name             | DB name.  (Recommendation: msf_em_1)   | ○ | ○ |
-| em_physical_address | EM physical IP address.              | ○ | × |
-| ec_rest_address     | EC REST IP address.                  | ○ | × |
-| ec_rest_port        | EC REST port. (Recommendation: 18080) | ○ | × |
-| em_netconf_address  | EM netconf IP address.               | ○ | × |
-| em_netconf_port     | EM netconf port. (Recommendation: 831) | ○ | × |
-| em_rest_address     | EM REST IP address.                  | ○ | × |
-| em_rest_port        | EM REST port. (Recommendation: 8080) | ○ | × |
-| controller_cidr     | The network name of the server that the DB allows for connections. (CIDR) | ○ | ○ |
-| ntp_server_address  | NTP server address.                  | ○ | × |
-| ha_flag             | Flag indicating whether to implement redundancy. In the case of truth it is implemented. | ○ | ○ |
-| act_address         | Inter connect IP address for act server. (When ha_flag is False, it is set to none) | ○ | ○ |
-| act_node_name       | Name for act server. (When ha_flag is False, it is set to none) | ○ | ○ |
-| sby_address         | Inter connect IP address for stand-by server. (When ha_flag is False, it is set to none) | ○ | ○ |
-| sby_node_name       | Name for stand-by server. (When ha_flag is False, it is set to none) | ○ | ○ |
-| cluster_name        | Cluster name (When ha_flag is False, it is set to none) <br> (Recommendation: em_cluster) | ○ | ○ |
-| install_flag        | When setting the DB, it decides whether to install PostgreSQL. <br> In case of True, execute installation. | × | ○ |
+| name                | Description                                                                                                                                                                                                  | EM | DB | Common |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----|----|--------|
+| rpm_path            | In the case of using network connection, the path of installing file location. <br> In the case of no network connection, it is installing files path in the Ansible server.(Recommendation: /root/setup/em) | × | × |   ○   |
+| em_path             | The path of EM location. (Recommendation: /opt/em).                                                                                                                                                          | ○ | × |   ×   |
+| download_flag       | Parameter for determining whether to acquire a file from the Internet or place it on an Ansible server. <br> If True, use the Internet connection.                                                           | ○ | ○ |   ×   |
+| log_path            | Relative path of EM log file output destination. <br> (Recommendation: logs/em/log)                                                                                                                          | ○ | × |   ×   |
+| installing_em_path  | The path of EM source folder location in Ansible Server. <br> (Recommendation: /root/setup/em)                                                                                                               | ○ | × |   ×   |
+| db_address          | DB server IP address.                                                                                                                                                                                        | ○ | ○ |   ×   |
+| db_name             | DB name.  (Recommendation: msf_em_1)                                                                                                                                                                         | ○ | ○ |   ×   |
+| em_physical_address | EM physical IP address.                                                                                                                                                                                      | ○ | × |   ×   |
+| ec_rest_address     | EC REST IP address.                                                                                                                                                                                          | ○ | × |   ×   |
+| ec_rest_port        | EC REST port. (Recommendation: 18080)                                                                                                                                                                        | ○ | × |   ×   |
+| em_listening_address| EM netconf, REST IP address.                                                                                                                                                                                 | ○ | × |   ×   |
+| em_netconf_port     | EM netconf port. (Recommendation: 831)                                                                                                                                                                       | ○ | × |   ×   |                                                                                                                                                                                        | ○ | × |   ×   |
+| em_rest_port        | EM REST port. (Recommendation: 8080)                                                                                                                                                                         | ○ | × |   ×   |
+| controller_cidr     | The network name of the server that the DB allows for connections. (CIDR)                                                                                                                                    | ○ | ○ |   ×   |
+| ntp_server_address  | NTP server address.                                                                                                                                                                                          | ○ | × |   ×   |
+| ha_flag             | Flag indicating whether to implement redundancy. In the case of truth it is implemented.                                                                                                                     | ○ | × |   ×   |
+| act_address         | Inter connect IP address for act server. (When ha_flag is False, it is set to none)                                                                                                                          | ○ | ○ |   ×   |
+| act_node_name       | Name for act server. (When ha_flag is False, it is set to none)                                                                                                                                              | ○ | ○ |   ×   |
+| sby_address         | Inter connect IP address for stand-by server. (When ha_flag is False, it is set to none)                                                                                                                     | ○ | ○ |   ×   |
+| sby_node_name       | Name for stand-by server. (When ha_flag is False, it is set to none)                                                                                                                                         | ○ | ○ |   ×   |
+| cluster_name        | Cluster name (When ha_flag is False, it is set to none) <br> (Recommendation: em_cluster)                                                                                                                    | ○ | ○ |   ×   |
+| oppo_login_address  | Log-in address of opposite controller. (When ha_flag is False, it is set to none)                                                                                                                            | ○ | × |   ×   |
+| oppo_usrname        | Log-in user name of opposite controller. (When ha_flag is False, it is set to none)                                                                                                                          | ○ | × |   ×   |
+| oppo_password       | Log-in password of opposite controller. (When ha_flag is False, it is set to none)                                                                                                                           | ○ | × |   ×   |
+| install_flag        | When setting the DB, it decides whether to install PostgreSQL. <br> In case of True, execute installation.                                                                                                   | × | ○ |   ×   |
 
 #### 3.2.1.4. Delete existing DB
 If the same name DB (db_name specified in the vars file) already exists in the installation DB server, it is necessary to delete it beforehand.
@@ -506,27 +624,22 @@ Change the EM Module configuration file by use of the following command.
 
 **\[vi \$EM\_HOME/conf/\[File Name\]\] \[Enter\]**
 
-For the "File Name" above, the followings will be inserted.
+\* See "element_manager_configuration_specifications" for changed config.
 
-・conf\_sys\_common.conf
+On the Configuration File for CGW-SH Device Setting Management, the sample configuration file is located.
 
-・conf\_scenario.conf
+In accordance with your environment, edit this sample file and change the file name by using the following commands.
 
-・conf\_if\_process.conf
+**\[vi $EM_HOME/conf/cgwsh_device/conf_asr_device_sample1.conf\] \[Enter\]**
 
-・conf\_driver.conf
+**\[vi $EM_HOME/conf/cgwsh_device/conf_nvr_device_sample1.conf\] \[Enter\]**
 
-・conf\_separate\_driver\_cisco.conf
+**\[mv $EM_HOME/conf/cgwsh_device/conf_asr_device_sample1.conf $EM_HOME/conf/cgwsh_device/conf_asr_device_CGW-SHdevice(ASR)device.conf\] \[Enter\]**
 
-・conf\_if\_process\_rest.conf
+**\[mv $EM_HOME/conf/cgwsh_device/conf_nvr_device_sample1.conf $EM_HOME/conf/cgwsh_device/conf_nvr_device_CGW-SHdevice(NVR)device.conf\] \[Enter\]**
 
-・conf\_scenario\_rest.conf
-
-・conf\_internal\_link\_vlan.conf
-
-Please refer to "element\_manager\_configuration\_specifications.md" for thedetails of the change.
-
-conf\_service.conf is necessary in system operation, however there is no need to edit it.
+\* The file name after the modification is an example.<br>
+\* See "element_manager_configuration_specifications" for changed config.
 
 #### 3.2.3.2. Making of crm File
 
@@ -549,47 +662,52 @@ location to be amended would be displayed.
 
 *1.  Make sure to acquire the file “pm_crmgen_env.xls” from the following URL.<br>
 URL : https://github.com/linux-ha-japan/pm_crmgen-1.0/blob/master/pm_crmgen_env.xls <br>
-In addition, please follow the procedures shown below when editing the file “pm_crmgen_env.xls”.<br>
+See sheet : pm_crmgen_environment definition(1.1)
+
+In addition, please follow the procedures shown below (Figure 3-2 Cluster property to Figure 3-11 Resource activation order restriction.)  when editing the file “pm_crmgen_env.xls”.<br>
 Moreover, add new lines to the original file when required.<br>
 
-Since the following values in the figure are examples, you need to change the value.
+Since the following values in the figure are examples, you need to change the value.<br>
+You should replace the following bold text with the values in Table 3-1 vars Parameter.
 
-EM_CONTROL_SHELL (Figure 3-4) : Path of em_ctl.sh (absolute path)<br>
-device (Figure 3-5) : Target physical volumes of disk check<br>
-target_ip (Figure 3-6) : IP Address (EM, virtual IP address)<br>
-ip (Figure 3-7) : IP Address (EM, virtual IP address)<br>
-nic (Figure 3-7) : Name of the NIC to which the virtual IP address is assigned.<br>
-cidr_netmask (Figure 3-7) : Network prefix of Virtual IP address<br>
+EM_CONTROL_SHELL (Figure 3-5) : __em_path__/bin/em_ctl.sh (absolute path)<br>
+device (Figure 3-6) : Target physical volumes of disk check<br>
+target_ip (Figure 3-7) : The same value as __em_listening_address__.<br>
+ip (Figure 3-8) : The same value as __em_listening_address__.<br>
+nic (Figure 3-8) : Name of the NIC to which the virtual IP address is assigned.<br>
+cidr_netmask (Figure 3-8) : The same value as __controller_cidr__.<br>
+Value of line which score is 200.(Figure 3-9) : The same value as __act_node_name__.<br>
+Value of line which score is 100.(Figure 3-9) : The same value as __sby_node_name__.<br>
 
-![Figure 3-1 Cluster property](img/Fig_3_1_EM.png "Fig3-1")<br>
-Figure 3-1 Cluster property
+![Figure 3-2 Cluster property](img/Fig_3_2_EM.png "Fig3-2")<br>
+Figure 3-2 Cluster property
 
-![Figure 3-2 Resource default](img/Fig_3_2_EM.png "Fig3-2")<br>
-Figure 3-2 Resource default
+![Figure 3-3 Resource default](img/Fig_3_3_EM.png "Fig3-3")<br>
+Figure 3-3 Resource default
 
-![Figure 3-3 Resource structure](img/Fig_3_3_EM.png "Fig3-3")<br>
-Figure 3-3 Resource structure
+![Figure 3-4 Resource structure](img/Fig_3_4_EM.png "Fig3-4")<br>
+Figure 3-4 Resource structure
 
-![Figure 3-4 Primitive resource (id=prmEM)](img/Fig_3_4_EM.png "Fig3-4")<br>
-Figure 3-4 Primitive resource (id=prmEM)
+![Figure 3-5 Primitive resource (id=prmEM)](img/Fig_3_5_EM.png "Fig3-5")<br>
+Figure 3-5 Primitive resource (id=prmEM)
 
-![Figure 3-5 Primitive resource (id=prmDiskd)](img/Fig_3_5_EM.png "Fig3-5")<br>
-Figure 3-5 Primitive resource (id=prmDiskd)
+![Figure 3-6 Primitive resource (id=prmDiskd)](img/Fig_3_6_EM.png "Fig3-6")<br>
+Figure 3-6 Primitive resource (id=prmDiskd)
 
-![Figure 3-6 Primitive resource (id=vipCheck)](img/Fig_3_6_EM.png "Fig3-6")<br>
-Figure 3-6 Primitive resource (id=vipCheck)
+![Figure 3-7 Primitive resource (id=vipCheck)](img/Fig_3_7_EM.png "Fig3-7")<br>
+Figure 3-7 Primitive resource (id=vipCheck)
 
-![Figure 3-7 Primitive resource (id=prmIP)](img/Fig_3_7_EM.png "Fig3-7")<br>
-Figure 3-7 Primitive resource (id=prmIP)
+![Figure 3-8 Primitive resource (id=prmIP)](img/Fig_3_8_EM.png "Fig3-8")<br>
+Figure 3-8 Primitive resource (id=prmIP)
 
-![Figure 3-8 Resource location restriction](img/Fig_3_8_EM.png "Fig3-8")<br>
-Figure 3-8 Resource location restriction
+![Figure 3-9 Resource location restriction](img/Fig_3_9_EM.png "Fig3-9")<br>
+Figure 3-9 Resource location restriction
 
-![Figure 3-9 Resource colocation restriction](img/Fig_3_9_EM.png "Fig3-9")<br>
-Figure 3-9 Resource colocation restriction
+![Figure 3-10 Resource colocation restriction](img/Fig_3_10_EM.png "Fig3-10")<br>
+Figure 3-10 Resource colocation restriction
 
-![Figure 3-10 Resource activation order restriction](img/Fig_3_10_EM.png "Fig3-10")<br>
-Figure 3-10 Resource activation order restriction
+![Figure 3-11 Resource activation order restriction](img/Fig_3_11_EM.png "Fig3-11")<br>
+Figure 3-11 Resource activation order restriction
 
 #### 3.2.3.3. Injection of crm File
 
@@ -611,6 +729,38 @@ answer with Y/N whether you want to keep the injection going or not.
 When this warning is displayed, there must be errors in the
 configuration, and you should answer it by entering \[N\] \[Enter\].
 
+#### 3.2.3.4. Registration of periodic executed tool for deleting device config information records
+**&lt;Execution Host: DB&gt;**
+
+You need to set by using cron in order that delete_deviceconfigurationinfo_record.sh is periodically executed.
+
+Execute the following command to open the configuration file for cron.
+
+**\[crontab -u root -e\] \[Enter\]**
+
+The editor will start up after the above command is executed.<br>
+See below for the setting method. 
+
+(For setting crontab) <br>
+     m h d M X exec <br>
+     [note] m:minute, h:hour,d:day, M:Month,X:day of the week exec: executing command <br>
+     The command designated in "exec" is executed at the designated time. <br>
+     In case of \*, all values to be designated are executed. <br>
+     In case of \*/z, in the range of the values which can be designated, the command is executed at Z intervals. 
+     (Example) <br>
+     In case of \*/20 \* \* \* \* exec, <br>
+     "exec" is executed at 20 minutes intervals("m" can be set beween 0 and 59)
+
+
+(Example 1) In case the executing interval is one month, <br>
+   0 0 1 \*/1 \* /root/em_config_delete/delete_deviceconfigurationinfo_record.sh <br>
+   If  you change the months for the interval, you can change “/1” in example 1. <br>
+
+(Example 2) In case the executing interval is 7 days, <br>
+   0 0 \*/7 \* \* /root/em_config_delete/delete_deviceconfigurationinfo_record.sh <br>
+   If  you change the months for the interval, you can change “/7” in example 2. <br>
+
+
 3.3. Confirm Setting
 ------------------
 
@@ -631,7 +781,13 @@ alembic
 
 Babel
 
+certifi
+
 cffi
+
+chardet
+
+click
 
 cryptography
 
@@ -641,13 +797,23 @@ decorator
 
 enum34
 
+Flask
+
+Flask-Cors
+
 funcsigs
 
 idna
 
+iniparse
+
 ipaddress
 
 iso8601
+
+itsdangerous
+
+Jinja2
 
 lxml
 
@@ -693,6 +859,8 @@ python-editor
 
 pytz
 
+requests
+
 rfc3986
 
 setuptools
@@ -710,6 +878,10 @@ sshutil
 stevedore
 
 Tempita
+
+urllib3
+
+Werkzeug
 
 wrapt
 
@@ -738,7 +910,7 @@ Confirm the current configuration by executing the following command
 
 **\[firewall-cmd \--list-all\] \[Enter\]**
 
-**&lt;Execution Host: ACT/SBY&gt;**
+**&lt;Execution Host: ACT/SBY/DB&gt;**
 
 >public (default, active)
 >
@@ -746,7 +918,7 @@ Confirm the current configuration by executing the following command
 >
 >sources:
 >
->services: dhcpv6-client `high-availability` ssh
+>services: dhcpv6-client ntp `high-availability` ssh
 >
 >ports: `830/tcp` `8080/tcp`
 >
@@ -779,20 +951,20 @@ Confirm the current configuration by executing the following command
 >rich rules:
 
 
-### 3.3.4. Confirmation of ntp operation
+### 3.3.4. Confirmation of Chrony behavior
 
 **&lt;Execution Host: ACT/SBY&gt;**
 
 Execute the following command to confirm the synchronization with the
 NTP server.
 
-**\[ntpq -p\] \[Enter\]**
+**\[chronyc sources\] \[Enter\]**
 
 &lt;The output example of successful synchronization&gt;
 
-| remote refid st t when poll reach delay offset jitter               |
-| ------------------------------------------------------------------- |
-| \*xxx.xxx.xxx.xxx LOCAL(0) 11 u 55 64 377 0.130 -0.017 0.017        |
+| MS Name/IP address  Stratum  Poll  Reach  LastRx  Last sample                                |
+| -------------------------------------------------------------------------------------------- |
+| \^\*   xxx.xxx.xxx.xxx         6     6   377     50    -1897ns\[-2575ns\] \+/\-   11ms       |
 
 
 ### 3.3.5. Confirmation of pacemaker operation
@@ -957,3 +1129,42 @@ If it injected successfully, a message will be displayed as follows.
 > \* Node (Active Node Name)
 >
 > \* Node (Stand-by Node Name)
+
+### 3.3.6. Confirmation of sysstat(sar) installation
+
+**&lt;Execution Host: ACT/SBY&gt;**
+
+Execute the following command to show the installed rpms and their versions.
+
+**\[rpm -qa | grep -e sysstat\] \[Enter\]**
+
+If the installation has been completed successfully, the following message in the list will be displayed.
+
+> sysstat-11.6.0-1.x86_64
+
+### 3.3.7. Confirmation of expect installation
+
+**&lt;Execution Host: ACT/SBY&gt;**
+
+Execute the following command to show the installed rpms and their versions.
+
+**\[rpm -qa | grep -e expect -e tcl-8.5.13\] \[Enter\]**
+
+If the installation has been completed successfully, the following message in the list will be displayed.
+
+> tcl-8.5.13-8.el7.x86_64
+>
+> expect-5.45-14.el7_1.x86_64
+
+### 3.3.8. Confirmation of bc installation
+
+**&lt;Execution Host: ACT/SBY&gt;**
+
+Execute the following command to show the installed rpms and their versions.
+
+**\[rpm -qa | grep -e bc-1.06\] \[Enter\]**
+
+If the installation has been completed successfully, the following message in the list will be displayed.
+
+> bc-1.06.95-13.el7.x86_64
+

@@ -9,5 +9,5 @@
   - shell: cp -r {{ rpm_path }}/element-manager-master/lib {{ em_path }}
     when: download_flag
   - name: copy src
-    copy: src={{ installing_em_path }}/lib/ dest={{ em_path }}/lib
+    shell: cp -r {{ installing_em_path }}/lib {{ em_path }}
     when: download_flag == false

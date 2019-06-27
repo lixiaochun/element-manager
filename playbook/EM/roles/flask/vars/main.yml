@@ -2,7 +2,7 @@ folder_name: 'flask-0.12.2'
 
 file_list:
   - file_name: 'click-6.7-py2.py3-none-any.whl'
-    url: 'https://pypi.python.org/packages/34/c1/8806f99713ddb993c5366c362b2f908f18269f8d792aff1abfd700775a77/click-6.7-py2.py3-none-any.whl#md5=5e7a4e296b3212da2ff11017675d7a4d'
+    url: 'https://github.com/pypa/pipenv/blob/master/tests/pypi/click/click-6.7-py2.py3-none-any.whl'
   - file_name: 'itsdangerous-0.24.tar.gz'
     url: 'https://pypi.python.org/packages/dc/b4/a60bcdba945c00f6d608d8975131ab3f25b22f2bcfe1dab221165194b2d4/itsdangerous-0.24.tar.gz#md5=a3d55aa79369aef5345c036a8a26307f'
   - file_name: 'Jinja2-2.9.6-py2.py3-none-any.whl'
@@ -13,3 +13,6 @@ file_list:
     url: 'https://pypi.python.org/packages/97/02/306e0d57fdbf467ec1c763bc1757ec6ba20b1332e0ea7e49111533d71d1c/Werkzeug-0.12.2-py2.py3-none-any.whl#md5=f2f1955f470f6eae8563c9e4e1ad1bba'
   - file_name: 'Flask-0.12.2-py2.py3-none-any.whl'
     url: 'https://pypi.python.org/packages/77/32/e3597cb19ffffe724ad4bf0beca4153419918e7fa4ba6a34b04ee4da3371/Flask-0.12.2-py2.py3-none-any.whl#md5=a0ded1d9a2066d3522efba953b4ed874'
+  - file_name: 'Flask_Cors-3.0.6-py2.py3-none-any.whl'
+    url: 'https://files.pythonhosted.org/packages/d1/db/f3495569d5c3e2bdb9fb8a66c54503364abb6f35a9da2227cf5c9c50dc42/Flask_Cors-3.0.6-py2.py3-none-any.whl'
+

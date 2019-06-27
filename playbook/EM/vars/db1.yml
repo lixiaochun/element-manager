@@ -1,8 +1,7 @@
-rpm_path: /root/setup/em
 install_flag: true
 download_flag: false
 db_address: 192.168.0.183
-db_name: msf_em_1
+db_name: msf_em
 controller_cidr: 192.168.0.0/24
 ha_flag: false
 act_address: none

@@ -4,6 +4,13 @@
     with_items:
       - "{{ files_conf }}"
 
+  - name: wget cgwsh_device_conf
+    shell: wget --no-check-certificate --no-cookies {{ item.url }} -O {{ em_path }}/{{ folder_name_cgwsh_device_conf}}/{{ item.file_name }}
+    with_items:
+      - "{{ files_cgwsh_device_conf }}"
 
+  - name: wget conf_audit_conf
+    shell: wget --no-check-certificate --no-cookies {{ item.url }} -O {{ em_path }}/{{ folder_name_conf_audit_conf }}/{{ item.file_name }}
+    with_items:
+      - "{{ files_conf_audit_conf }}"
 
-    

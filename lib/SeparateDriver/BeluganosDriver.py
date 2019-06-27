@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: BeluganosDriver.py
 '''
 Beluganos driver module
 '''
 import traceback
 from lxml import etree
-
 from xml.etree import ElementTree
 
 from EmSeparateDriver import EmSeparateDriver
@@ -56,6 +55,7 @@ class BeluganosDriver(EmSeparateDriver):
         self.ncclient_update = {
             self._xmlns_netconf_insert_point: "xmlns:netconf=\"urn:ietf:params:xml:ns:netconf:base:1.0\""
         }
+
 
     @decorater_log
     def _send_control_signal(self,
@@ -160,6 +160,7 @@ class BeluganosDriver(EmSeparateDriver):
                 return_xml_str = return_xml_str.replace(key, value)
         return return_xml_str
 
+
     @decorater_log
     def _gen_internal_link_fix_message(self, xml_obj, operation):
         '''
@@ -225,6 +226,7 @@ class BeluganosDriver(EmSeparateDriver):
         self._set_internal_link(xml_obj, inner_ifs, area_id, operation)
         return True
 
+
     @decorater_log
     def _get_del_internal_link_from_ec(self, device_mes, db_info=None):
         '''
@@ -281,7 +283,7 @@ class BeluganosDriver(EmSeparateDriver):
     @decorater_log
     def _get_replace_internal_link_from_ec(self, device_mes, device_info):
         '''
-        Obtain informatin of EC message relating to internal link
+        Obtain information of EC message relating to internal link
         '''
         inner_ifs = []
 
@@ -407,6 +409,8 @@ class BeluganosDriver(EmSeparateDriver):
             self._XML_LOG % (nw_inss_node.tag, etree.tostring(nw_inss_node),),
             __name__)
 
+
+
     @decorater_log
     def _set_interfaces_node(self, xml_obj, operation=None):
         '''
@@ -480,6 +484,7 @@ class BeluganosDriver(EmSeparateDriver):
         self._set_xml_tag(conf_node, "ip", text=address)
         self._set_xml_tag(conf_node, "prefix-length", text=prefix)
         return addrs_node
+
 
     @decorater_log
     def _set_network_instances_node(self, xml_obj, operation=None):

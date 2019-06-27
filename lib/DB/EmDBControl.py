@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmDBControl.py
 '''
 DB Control module.
@@ -39,6 +39,8 @@ class EmDBControl(object):
     table_ACLDetailInfo = "ACLDetailInfo"
     table_DummyVlanIfInfo = "DummyVlanIfInfo"
     table_MultiHomingInfo = "MultiHomingInfo"
+    table_DeviceConfigrationinfo = "DeviceConfigrationinfo"
+    table_NvrAdminPasswordMgmt = "NvrAdminPasswordMgmt"
 
     __delete_flg = "DELETE"
 
@@ -90,6 +92,7 @@ class EmDBControl(object):
                 'db_error_message = %s' % (ex_message,))
             raise
         GlobalModule.EM_LOGGER.debug('end')
+
 
     @decorater_log
     def __connect_db(self):
@@ -306,7 +309,7 @@ class EmDBControl(object):
             result = conn.execute(sql, where_tuple)
             out_data = self.__output_select_result(result)
             is_ok = True
-        except Exception, ex_message:
+        except Exception, ex_message:  
             GlobalModule.EM_LOGGER.error(
                 '305003 Database Control Error')
             GlobalModule.EM_LOGGER.debug(
@@ -384,6 +387,7 @@ class EmDBControl(object):
             if is_auto_commit:
                 self.__close_db(conn)
         return return_val
+
 
     @decorater_log_in_out
     def read_transactionid_list(self):
@@ -685,6 +689,7 @@ class EmDBControl(object):
                                  rr_loopback_address=None,
                                  rr_loopback_prefix=None,
                                  irb_type=None,
+                                 q_in_q_type=None,
                                  conn=None):
         '''
         Registers/updates/deletes the information of the equipment registration information table
@@ -716,7 +721,9 @@ class EmDBControl(object):
             cluster_ospf_area:OSPF_AREA in case of multi cludter
             rr_loopback_address:Loopback address for RR
             rr_loopback_prefix:Pre-fix of the loopback address for RR
-        Return value:
+            irb_type:IRB setting type
+            q_in_q_type:Q-in-Q type
+         Return value:
             Execution result : boolean(True or False)
         '''
         table_name = self.table_DeviceRegistrationInfo
@@ -764,6 +771,7 @@ class EmDBControl(object):
             is_ok = is_ok and self.__check_parameter(rr_loopback_address, str)
             is_ok = is_ok and self.__check_parameter(rr_loopback_prefix, int)
             is_ok = is_ok and self.__check_parameter(irb_type, str)
+            is_ok = is_ok and self.__check_parameter(q_in_q_type, str)
 
         if not is_ok:
             GlobalModule.EM_LOGGER.error('305003 Database Control Error')
@@ -798,6 +806,7 @@ class EmDBControl(object):
         tmp_list.append(rr_loopback_address)
         tmp_list.append(rr_loopback_prefix)
         tmp_list.append(irb_type)
+        tmp_list.append(q_in_q_type)
         upsert_param = tuple(tmp_list)
 
         where_query_str = ["WHERE device_name = %s"]
@@ -833,7 +842,8 @@ class EmDBControl(object):
                                   "cluster_ospf_area",
                                   "rr_loopback_address",
                                   "rr_loopback_prefix",
-                                  "irb_type"))
+                                  "irb_type",
+                                  "q_in_q_type"))
 
         return self.__exec_write_sql(select_query,
                                      insert_query,
@@ -900,6 +910,7 @@ class EmDBControl(object):
                           virtual_mac_address=None,
                           virtual_gateway_address=None,
                           virtual_gateway_prefix=None,
+                          q_in_q=None,
                           conn=None):
         '''
         The method which registers/updates/deletes the information of the VLAN interface information table
@@ -938,6 +949,7 @@ class EmDBControl(object):
             Virtual mac address:virtual_mac_address
             Virtual Gateway Address:virtual_gateway_address
             Virtual Gateway Prefix:virtual_gateway_prefix
+            q_in_q:Q-in-Q setting
         Return Value:
             Execution Results : boolean(True or False)
         '''
@@ -985,6 +997,7 @@ class EmDBControl(object):
                 virtual_gateway_address, str)
             is_ok = is_ok and self.__check_parameter(
                 virtual_gateway_prefix, int)
+            is_ok = is_ok and self.__check_parameter(q_in_q, bool)
 
         if not is_ok:
             GlobalModule.EM_LOGGER.error('305003 Database Control Error')
@@ -1025,6 +1038,7 @@ class EmDBControl(object):
         tmp_list.append(virtual_mac_address)
         tmp_list.append(virtual_gateway_address)
         tmp_list.append(virtual_gateway_prefix)
+        tmp_list.append(q_in_q)
         upsert_param = tuple(tmp_list)
 
         where_query_str = []
@@ -1071,7 +1085,8 @@ class EmDBControl(object):
                                   "irb_ipv4_prefix",
                                   'virtual_mac_address',
                                   "virtual_gateway_address",
-                                  "virtual_gateway_prefix"))
+                                  "virtual_gateway_prefix",
+                                  "q_in_q"))
 
         return self.__exec_write_sql(select_query,
                                      insert_query,
@@ -1112,6 +1127,7 @@ class EmDBControl(object):
                          lag_if_id=None,
                          minimum_links=None,
                          link_speed=None,
+                         condition=None,
                          conn=None):
         '''
         The method which registers/updates/deletes the information of the LAG interface information table
@@ -1124,7 +1140,8 @@ class EmDBControl(object):
             lag_if_id:LAGIFID
             minimum_links:LAG member count
             link_speed:Link speed
-        Return value:
+            condition:port status
+         Return value:
             Execution result : boolean(True or False)
         '''
         table_name = self.table_LagIfInfo
@@ -1144,6 +1161,8 @@ class EmDBControl(object):
             is_ok = (is_ok and
                      self.__check_parameter(minimum_links, int, not_null=True))
             is_ok = is_ok and self.__check_parameter(link_speed, str)
+            is_ok = (is_ok and self.__check_parameter(
+                condition, int, not_null=True))
 
         if not is_ok:
             GlobalModule.EM_LOGGER.error('305003 Database Control Error')
@@ -1159,6 +1178,7 @@ class EmDBControl(object):
         tmp_list.append(lag_if_id)
         tmp_list.append(minimum_links)
         tmp_list.append(link_speed)
+        tmp_list.append(condition)
         upsert_param = tuple(tmp_list)
 
         where_query_str = []
@@ -1178,7 +1198,8 @@ class EmDBControl(object):
                                   "lag_type",
                                   "lag_if_id",
                                   "minimum_links",
-                                  "link_speed"))
+                                  "link_speed",
+                                  "condition"))
 
         return self.__exec_write_sql(select_query,
                                      insert_query,
@@ -1428,15 +1449,15 @@ class EmDBControl(object):
             slice_name:Slice name
             vrf_name:VRF name
             vrf_id:VRF ID
-            rt:RT（Route Target鬟ｴalue
-            rd:RD（Route Distinguisher鬟ｴalue
+            rt:RT (Route Target) value
+            rd:RD (Route Distinguisher) value
             router_id:Router ID
             l3_vni:VNI Value for L3VNI
             l3_vlan_id:VLANID for L3VNI
             vrf_loopback_interface_address:Loopback IF Address for VRF
             vrf_loopback_interface_prefix:Loopback IF Address Prefix for VRF
         Return Value:
-            Execution Result : boolean(True or False)
+            Execution Result : boolean(True or False)            
         '''
         table_name = self.table_VrfDetailInfo
 
@@ -2059,7 +2080,11 @@ class EmDBControl(object):
             self.write_dummy_vlan_if_info.__name__:
                 self.write_dummy_vlan_if_info,
             self.write_multi_homing_info.__name__:
-                self.write_multi_homing_info
+                self.write_multi_homing_info,
+            self.write_nvr_administrator_password_info.__name__:
+                self.write_nvr_administrator_password_info,
+            self.write_device_configration_info.__name__:
+                self.write_device_configration_info,
         }
 
         con = None
@@ -2404,6 +2429,9 @@ class EmDBControl(object):
             link_speed:Link speed
             internal_link_ip_address:IF IPv4address for internal Link
             internal_link_ip_prefix:Pre-fix of the IF IPv4address for internal Link
+        Return value:
+            Execution result : boolean(True or False)            
+            cost:cost value
         Return value:
             Execution result : boolean(True or False)
         '''
@@ -3016,7 +3044,7 @@ class EmDBControl(object):
                                 peer_address=None,
                                 conn=None):
         '''
-            Method which registers/updates/deletes the information of Multihoming Configuration Information Table based on DB control information
+        Method which registers/updates/deletes the information of Multihoming Configuration Information Table based on DB control information
 
         Parameter Explanation :
             db_control:DB Control
@@ -3027,7 +3055,6 @@ class EmDBControl(object):
             clag_if_prefix:Clag Bridge IF Prefix
             backup_address:Backup IP Address
             peer_address:Peer IP Address
-
         Return Value:
             Execution Result : boolean(True or False)
         '''
@@ -3182,3 +3209,205 @@ class EmDBControl(object):
                                      where_param,
                                      db_control,
                                      conn)
+
+    @decorater_log_in_out
+    def write_device_configration_info(self,
+                                       db_control,
+                                       device_name,
+                                       working_date=None,
+                                       working_time=None,
+                                       platform_name=None,
+                                       vrf_name=None,
+                                       practice_system=None,
+                                       log_type=None,
+                                       get_timing=None,
+                                       config_file=None,
+                                       conn=None):
+        '''
+        Method which registers, updates  and deletes configuration information table
+        by DB control information.
+        Parameter:
+            db_control:DB cntrol
+            device_name:device name
+            working_date:working date
+            working_time:working time
+            platform_name:platform name
+            vrf_name:VRF name
+            practice_system:acting system
+            log_type:log type
+            get_timing:timing of obtaining
+            config_file:configuration file
+        Return Value:
+           Execution Result : boolean(True or False)
+
+        '''
+        table_name = self.table_DeviceConfigrationinfo
+
+        is_ok = self.__check_parameter(device_name, str, not_null=True)
+        if db_control != self.__delete_flg:
+            is_ok = (is_ok and
+                     self.__check_parameter(working_date, str, not_null=True))
+            is_ok = (is_ok and
+                     self.__check_parameter(working_time, str, not_null=True))
+            is_ok = (is_ok and
+                     self.__check_parameter(platform_name, str, not_null=True))
+            is_ok = (is_ok and
+                     self.__check_parameter(vrf_name, str, not_null=False))
+            is_ok = (
+                is_ok and
+                self.__check_parameter(practice_system, str, not_null=False))
+            is_ok = (is_ok and
+                     self.__check_parameter(log_type, str, not_null=False))
+            is_ok = (is_ok and
+                     self.__check_parameter(get_timing, int, not_null=False))
+            is_ok = (is_ok and
+                     self.__check_parameter(config_file, str, not_null=True))
+
+        if not is_ok:
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False
+
+        tmp_list = []
+        tmp_list.append(device_name)
+        where_param = tuple(tmp_list)
+
+        tmp_list.append(working_date)
+        tmp_list.append(working_time)
+        tmp_list.append(platform_name)
+        tmp_list.append(vrf_name)
+        tmp_list.append(practice_system)
+        tmp_list.append(log_type)
+        tmp_list.append(get_timing)
+        tmp_list.append(config_file)
+        upsert_param = tuple(tmp_list)
+
+        where_query_str = []
+        where_query_str.append("    WHERE")
+        where_query_str.append("          device_name = %s")
+        if db_control != self.__delete_flg:
+            where_query_str.append("    AND   1 = 2")
+
+        delete_query = self.__gen_delete_sql(table_name, where_query_str)
+
+        select_query = self.__gen_select_sql(table_name, where_query_str)
+
+        insert_query, update_query = (
+            self.__gen_upsert_sql(table_name,
+                                  where_query_str,
+                                  "device_name",
+                                  "working_date",
+                                  "working_time",
+                                  "platform_name",
+                                  "vrf_name",
+                                  "practice_system",
+                                  "log_type",
+                                  "get_timing",
+                                  "config_file"))
+
+        return self.__exec_write_sql(select_query,
+                                     insert_query,
+                                     update_query,
+                                     delete_query,
+                                     upsert_param,
+                                     where_param,
+                                     db_control,
+                                     conn)
+
+    @decorater_log_in_out
+    def read_device_configration_info(self, device_name):
+        '''
+        Method which returns information of coniguration information table.
+        Parameter:
+            device_name: device name
+        Return Value:
+            Execution Result : boolean(True or False)
+            Configuration information table : tuple
+        '''
+        table_name = self.table_DeviceConfigrationinfo
+
+        if not self.__check_parameter(device_name, str, not_null=True):
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False, None
+
+        where_query_str = ["WHERE device_name = %s"]
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((device_name,), q_str)
+
+    @decorater_log_in_out
+    def write_nvr_administrator_password_info(self,
+                                              db_control,
+                                              device_name,
+                                              administrator_password=None,
+                                              conn=None):
+        '''
+        Method which registers, updates  and deletes password management table for NVR
+        by DB control information.
+        Parameter:
+            db_control:DB control
+            device_name:device name
+            administrator_password:Administrator password
+        Return Value:
+            Execution Result : boolean(True or False)
+        '''
+        table_name = self.table_NvrAdminPasswordMgmt
+
+        is_ok = self.__check_parameter(device_name, str, not_null=True)
+        if db_control != self.__delete_flg:
+            is_ok = (is_ok and self.__check_parameter(administrator_password,
+                                                      str,
+                                                      not_null=True))
+
+        if not is_ok:
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False
+
+        tmp_list = []
+        tmp_list.append(device_name)
+        where_param = tuple(tmp_list)
+
+        tmp_list.append(administrator_password)
+        upsert_param = tuple(tmp_list)
+
+        where_query_str = []
+        where_query_str.append("    WHERE")
+        where_query_str.append("          device_name = %s")
+
+        delete_query = self.__gen_delete_sql(table_name, where_query_str)
+
+        select_query = self.__gen_select_sql(table_name, where_query_str)
+
+        insert_query, update_query = (
+            self.__gen_upsert_sql(table_name,
+                                  where_query_str,
+                                  "device_name",
+                                  "administrator_password"))
+
+        return self.__exec_write_sql(select_query,
+                                     insert_query,
+                                     update_query,
+                                     delete_query,
+                                     upsert_param,
+                                     where_param,
+                                     db_control,
+                                     conn)
+
+    @decorater_log_in_out
+    def read_nvr_administrator_password_info(self, device_name):
+        '''
+        Method which returns password  management information table for NVR.
+            device_name: device name
+        Return Value:
+            Execution Result : boolean(True or False)
+            password  management information table for NVR : tuple    
+        '''
+        table_name = self.table_NvrAdminPasswordMgmt
+
+        if not self.__check_parameter(device_name, str, not_null=True):
+            GlobalModule.EM_LOGGER.error('305003 Database Control Error')
+            return False, None
+
+        where_query_str = ["WHERE device_name = %s"]
+        q_str = self.__gen_select_sql(table_name, where_query_str)
+
+        return self.__execute_read_sql((device_name,), q_str)

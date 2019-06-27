@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmRecoverUtilBase.py
 '''
 Utility for restoration(Base)
@@ -18,7 +18,7 @@ from EmDriverCommonUtilityLog import EmDriverCommonUtilityLog
 class EmRecoverUtilBase(object):
     '''
     Utility for restoration
-    Called from individual section on driver (base class)
+    Called from individual section on driver (base class).
     '''
 
     log_level_debug = "DEBUG"
@@ -122,8 +122,11 @@ class EmRecoverUtilBase(object):
                 db_info : DB information
                 ec_message : EC message for restoration expansion/"recover service"
         '''
-        json["device"]["equipment"] = ec_message.get(
-            "device", {}).get("equipment")
+        equipment = ec_message.get("device", {}).get("equipment")
+        db_q_in_q = db_info.get("device", {}).get("q-in-q")
+        if equipment and db_q_in_q:
+            equipment["q-in-q"] = db_q_in_q
+        json["device"]["equipment"] = equipment
 
     @decorater_log
     def _gen_json_breakout(self, json, db_info, ec_message):
@@ -167,7 +170,9 @@ class EmRecoverUtilBase(object):
                 name = self._convert_ifname(
                     internal_if_db.get("if_name"),
                     ec_message, self._if_type_phy)
-                opposite_node_name = "Recover"
+                opposite_node_name = self._get_opposite_node_name(
+                    name, ec_message)
+
                 vlan_id = internal_if_db.get("vlan_id")
                 address = internal_if_db.get("ip_address")
                 prefix = internal_if_db.get("ip_prefix")
@@ -214,8 +219,11 @@ class EmRecoverUtilBase(object):
                 name = self._convert_ifname(
                     internal_if_db.get("if_name"),
                     ec_message, self._if_type_lag)
+                opposite_node_name = self._get_opposite_node_name(
+                    name, ec_message)
+
                 internal_lag["name"] = name
-                internal_lag["opposite-node-name"] = "Recover"
+                internal_lag["opposite-node-name"] = opposite_node_name
                 internal_lag["lag-id"] = internal_if_db.get("lag_if_id")
                 internal_lag["vlan-id"] = internal_if_db.get("vlan_id")
                 internal_lag[
@@ -243,6 +251,27 @@ class EmRecoverUtilBase(object):
 
         json["device"][
             "internal-lag_value"] = len(json["device"]["internal-lag"])
+
+    @decorater_log
+    def _get_opposite_node_name(self, if_name, ec_message):
+        '''
+            Obtain opposite device name based on EC message for restoration expansion/"recover service"
+            and DB information
+            Explanation about parameter：
+　　　　　　　　if_name : internal link IF name after recovery
+                ec_message : EC message for restoration expansion/"recover service"    
+        '''
+        opposite_node_name = "Recover"
+
+        ec_internal_if_nodes = ec_message.get(
+            "device").get("internal-interface", [])
+        if ec_internal_if_nodes:
+            for ec_internal_if_node in ec_internal_if_nodes:
+                ec_internal_if_name = ec_internal_if_node.get("name")
+                if if_name == ec_internal_if_name:
+                    opposite_node_name = ec_internal_if_node.get(
+                        "opposite-node-name")
+        return opposite_node_name
 
     @decorater_log
     def _gen_json_management(self, json, db_info, ec_message):

@@ -1,29 +1,48 @@
-- hosts: EM
+- hosts: localhost
+  gather_facts: no
   become: true
   vars_files:
-    - vars/{{group_names[1]}}.yml
+    - vars/common.yml
   roles:
     - before
+
+- hosts: EM
+  gather_facts: no
+  become: true
+  vars_files:
+    - vars/common.yml
+    - vars/{{group_names[1]}}.yml
+  roles:
+    - transfer
     - firewall
     - { role: pacemaker, when: "ha_flag"}
     - python
-    - ntp
+    - chrony
     - sar
     - flask
+    - expect
     - bc
     - em
     - { role: ra-em, when: "ha_flag"}
     - em-postgre
 
 - hosts: DB
+  gather_facts: no
   become: true 
   vars_files:
+    - vars/common.yml
     - vars/{{group_names[1]}}.yml
   roles:
-    - before
+    - transfer
     - { role: postgre, when: "install_flag"}
-    - { role: pacemaker, when: "ha_flag"}
     - db-em
     - firewall
 
+- hosts: localhost
+  gather_facts: no
+  become: true
+  vars_files:
+    - vars/common.yml
+  roles:
+    - after
 

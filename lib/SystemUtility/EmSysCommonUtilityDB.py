@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmSysCommonUtilityDB.py
 '''
 Utility (DB) module common for the system.
@@ -16,15 +16,15 @@ class EmSysCommonUtilityDB(object):
     '''
     Utility (DB) class common over the system.
     '''
-    STATE_STOP = 0
-    STATE_READY_TO_START = 10
-    STATE_CHANGE_OVER = 50
-    STATE_READY_TO_STOP = 90
-    STATE_START = 100
+    STATE_STOP = 0                  
+    STATE_READY_TO_START = 10       
+    STATE_CHANGE_OVER = 50          
+    STATE_READY_TO_STOP = 90        
+    STATE_START = 100               
 
-    GET_DATA_TYPE_DB = 1
-    GET_DATA_TYPE_MEMORY = 2
-    GET_DATA_TYPE_BOTH = 3
+    GET_DATA_TYPE_DB = 1                
+    GET_DATA_TYPE_MEMORY = 2            
+    GET_DATA_TYPE_BOTH = 3              
 
     table_TransactionMgmtInfo = "TransactionMgmtInfo"
     table_DeviceStatusMgmtInfo = "DeviceStatusMgmtInfo"
@@ -59,7 +59,10 @@ class EmSysCommonUtilityDB(object):
         cluster_link = GlobalModule.SERVICE_CLUSTER_LINK
         breakout = GlobalModule.SERVICE_BREAKOUT
         recover = GlobalModule.SERVICE_RECOVER_SERVICE
+        recover_node = GlobalModule.SERVICE_RECOVER_NODE
         acl_filter = GlobalModule.SERVICE_ACL_FILTER
+        device_info = GlobalModule.SERVICE_DEVICE_INFO
+        if_condition = GlobalModule.SERVICE_IF_CONDITION
 
     class __orders(object):
         delete = GlobalModule.ORDER_DELETE
@@ -84,6 +87,7 @@ class EmSysCommonUtilityDB(object):
 
         self._if_type_phy = "physical-if"
         self._if_type_lag = "lag-if"
+
 
     @staticmethod
     @decorater_log_in_out
@@ -300,10 +304,15 @@ class EmSysCommonUtilityDB(object):
             set_db_info_function = self.__set_db_function_info_cluster_link
         elif service_type == self.__service.breakout:
             set_db_info_function = self.__set_db_function_info_breakout
-        elif service_type == self.__service.recover:
+        elif service_type in (self.__service.recover, self.__service.recover_node):
             set_db_info_function = self.__set_db_function_info_recover
+            add_param.append(service_type)
         elif service_type == self.__service.acl_filter:
             set_db_info_function = self.__set_db_function_info_acl_filter
+        elif service_type == self.__service.device_info:
+            set_db_info_function = self.__set_db_function_info_deviceinfo
+        elif service_type == self.__service.if_condition:
+            set_db_info_function = self.__set_db_function_info_if_condition
         else:
             GlobalModule.EM_LOGGER.warning(
                 '209002 Database Edit Information Error')
@@ -707,6 +716,7 @@ class EmSysCommonUtilityDB(object):
 
         return result
 
+
     @decorater_log
     def __set_db_function_info_spine(self, ec_mes, db_control, device_name):
         '''
@@ -921,8 +931,17 @@ class EmSysCommonUtilityDB(object):
 
         service = self.__service.ce_lag
 
-        tmp_func, tmp_param = (
-            self.__get_func_lagif_info(ec_mes, db_control, service, service))
+        is_replace = self.__get_judge_replace(
+            ec_mes, service, "ce-lag-interface")
+
+        if is_replace:
+            tmp_func, tmp_param, db_control = (
+                self.__get_func_lagif_info_replace(ec_mes, db_control,
+                                                   service, service))
+        else:
+            tmp_func, tmp_param = (
+                self.__get_func_lagif_info(ec_mes, db_control,
+                                           service, service))
         func_list.extend(tmp_func)
         param_list.extend(tmp_param)
 
@@ -952,6 +971,7 @@ class EmSysCommonUtilityDB(object):
         param_list = []
 
         service = self.__service.internal_link
+        name_s = "{%s}" % (self._namespace.get(service),)
         db_vpn_type = {"l2": 2,
                        "l3": 3}
 
@@ -960,11 +980,19 @@ class EmSysCommonUtilityDB(object):
         is_replace = self.__get_judge_replace(
             ec_mes, service, "internal-interface")
         if is_replace:
-            tmp_func, tmp_param = (
-                self.__get_func_internal_link_replace(
-                    ec_mes, db_control, service))
-            func_list.extend(tmp_func)
-            param_list.extend(tmp_param)
+            internal_if = ec_mes.find(name_s + "internal-interface")
+            if self.__get_param(internal_if, name_s + "cost", int):
+                tmp_func, tmp_param = (
+                    self.__get_func_internal_link_replace(
+                        ec_mes, db_control, service))
+                func_list.extend(tmp_func)
+                param_list.extend(tmp_param)
+            if self.__get_param(internal_if, name_s + "minimum-links", int):
+                tmp_func, tmp_param, db_control = (
+                    self.__get_func_lagif_info_replace(ec_mes, db_control,
+                                                       service, service))
+                func_list.extend(tmp_func)
+                param_list.extend(tmp_param)
         else:
             tmp_func, tmp_param = (
                 self.__get_func_lagif_info(ec_mes, db_control,
@@ -1073,7 +1101,8 @@ class EmSysCommonUtilityDB(object):
     def __set_db_function_info_recover(self,
                                        ec_mes,
                                        db_control,
-                                       device_name):
+                                       device_name,
+                                       service):
         '''
         Analyze the EC message, create method list and
         method parameter to be executed by DB control. (Recover)
@@ -1088,10 +1117,36 @@ class EmSysCommonUtilityDB(object):
         func_list = []
         param_list = []
 
-        service = self.__service.recover
-
         tmp_func, tmp_param = (
             self.__get_func_recover_info(ec_mes, db_control, service))
+        func_list.extend(tmp_func)
+        param_list.extend(tmp_param)
+
+        return func_list, param_list
+
+    @decorater_log
+    def __set_db_function_info_if_condition(self,
+                                            ec_mes,
+                                            db_control,
+                                            device_name):
+        '''
+        Analyze EC message and create method list for executing DB control and method parameters
+        (IF open/close)
+        Explanation about parameter:
+            ec_mes:EC message
+            db_control:EC message
+            device_name:EC message
+        Explanation about return value:
+            method list   : list
+            parameter list : list
+         '''
+        func_list = []
+        param_list = []
+
+        service = self.__service.if_condition
+
+        tmp_func, tmp_param = (
+            self.__get_func_if_condition(ec_mes, db_control, service))
         func_list.extend(tmp_func)
         param_list.extend(tmp_param)
 
@@ -1131,7 +1186,7 @@ class EmSysCommonUtilityDB(object):
             if not self._check_acl_detail_all_del(device_name,
                                                   acl_detail_param):
                 acl_del_param_list.extend(acl_detail_param)
-                for i in acl_del_param_list:
+                for _i in acl_del_param_list:
                     acl_del_func_list.append(
                         GlobalModule.DB_CONTROL.write_acl_detail_info)
                 return acl_del_func_list, acl_del_param_list
@@ -1140,16 +1195,46 @@ class EmSysCommonUtilityDB(object):
         return func_list, param_list
 
     @decorater_log
+    def __set_db_function_info_deviceinfo(self,
+                                          ec_mes,
+                                          db_control,
+                                          device_name):
+        '''
+        Analyze EC message and create method list for executing DB control and method parameters
+        (device information update)
+        Explanation about parameter:
+            ec_mes:EC message
+            db_control:EC message
+            device_name:EC message
+        Explanation about return value:
+            method list   : list
+            parameter list : list
+            
+            
+         '''
+        func_list = []
+        param_list = []
+
+        service = self.__service.device_info
+
+        tmp_func, tmp_param = (
+            self.__get_func_device_regist_info(ec_mes, db_control, service))
+        func_list.extend(tmp_func)
+        param_list.extend(tmp_param)
+
+        return func_list, param_list
+
+    @decorater_log
     def __get_param(self, node, tag, val_class):
         '''
-        Search the tag in node object,
-        convert its text into val_class and return.
+        Search  tags in node object and
+        convert the text to val_class format and return it.
         Explanation about parameter:
-            node:Node object
-            tag:Tag name
-            val_class:After conversion type
+            node: node object
+            tag:tag name
+            val_class:converted format
         Return value:
-           Parameter for function  : val_class's object or None
+            parameter for functions : val_class object or None
          '''
         return_val = None
         if node is not None:
@@ -1197,7 +1282,10 @@ class EmSysCommonUtilityDB(object):
         return False
 
     @decorater_log
-    def __get_func_device_regist_info(self, dev_node, db_control, dev_type):
+    def __get_func_device_regist_info(self,
+                                      dev_node,
+                                      db_control,
+                                      service_type):
         '''
         Create parameter for write_device_regist_info based on device node.
         Explanation about parameter:
@@ -1208,7 +1296,7 @@ class EmSysCommonUtilityDB(object):
             Method list   : list
             Parameter list : list
          '''
-        name_s = "{%s}" % (self._namespace.get(dev_type),)
+        name_s = "{%s}" % (self._namespace.get(service_type),)
 
         regist_param = dict.fromkeys(["db_control",
                                       "device_name",
@@ -1236,7 +1324,8 @@ class EmSysCommonUtilityDB(object):
                                       "cluster_ospf_area",
                                       "rr_loopback_address",
                                       "rr_loopback_prefix",
-                                      "irb_type"])
+                                      "irb_type",
+                                      "q_in_q_type", ])
         db_dev_type = {self.__service.spine: 1,
                        self.__service.leaf: 2,
                        self.__service.b_leaf: 2}
@@ -1246,7 +1335,8 @@ class EmSysCommonUtilityDB(object):
 
         regist_param["db_control"] = db_control
 
-        regist_param["device_type"] = db_dev_type.get(dev_type)
+        if service_type in db_dev_type.keys():
+            regist_param["device_type"] = db_dev_type.get(service_type)
 
         device_name = self.__get_param(dev_node, name_s + "name", str)
         regist_param["device_name"] = device_name
@@ -1258,8 +1348,10 @@ class EmSysCommonUtilityDB(object):
                        (device_name,))
             GlobalModule.EM_LOGGER.debug(err_mes)
             raise ValueError("DB Control ERROR")
-
         ospf_node = dev_node.find(name_s + "ospf")
+
+        node_1 = dev_node.find(name_s + "equipment")
+        dev_loginid = self.__get_param(node_1, name_s + "loginid", str)
 
         db_exist = False
         for device_regist in db_device_regist:
@@ -1267,8 +1359,12 @@ class EmSysCommonUtilityDB(object):
                 tmp_device_regist = device_regist
                 db_exist = True
                 break
-
-        if not db_exist:
+        if db_exist and service_type == self.__service.device_info:
+            GlobalModule.EM_LOGGER.debug(
+                'Exist %s in DB. Start updating registration of the device.',
+                (device_name,))
+            regist_param.update(tmp_device_regist)
+        elif (not db_exist):
             GlobalModule.EM_LOGGER.debug(
                 'Not exist %s in DB. Start registration of the device.',
                 (device_name,))
@@ -1284,16 +1380,21 @@ class EmSysCommonUtilityDB(object):
 
         node_1 = dev_node.find(name_s + "equipment")
         if node_1 is not None:
+
             regist_param["platform_name"] = (
                 self.__get_param(node_1, name_s + "platform", str))
             regist_param["os"] = (
                 self.__get_param(node_1, name_s + "os", str))
             regist_param["firm_version"] = (
                 self.__get_param(node_1, name_s + "firmware", str))
-            regist_param["username"] = (
-                self.__get_param(node_1, name_s + "loginid", str))
-            regist_param["password"] = (
-                self.__get_param(node_1, name_s + "password", str))
+            if dev_loginid:
+                regist_param["username"] = dev_loginid
+            dev_password = self.__get_param(node_1, name_s + "password", str)
+            if dev_password:
+                regist_param["password"] = dev_password
+            q_in_q = self.__get_param(node_1, name_s + "q_in_q", str)
+            if q_in_q:
+                regist_param["q_in_q_type"] = q_in_q
 
         node_1 = dev_node.find(name_s + "management-interface")
         if node_1 is not None:
@@ -1362,6 +1463,191 @@ class EmSysCommonUtilityDB(object):
         return func_list, param_list
 
     @decorater_log
+    def __get_func_lagif_info_replace(self, dev_node,
+                                      db_control, lag_type, service):
+        '''
+        Create parameters in write_lagif_info, write_lagmemberif_info and write_physical_if_info
+        from device node.
+        Explanation about parameter:
+            dev_node : device node (xml object)
+            db_control : DB control (str)
+            lag_type : LAG type (str)
+            service : service type(str)
+        Explanation about return value:
+            method list   : list
+            parameter list : list
+            db_control : speed information on increasing/decreaing (str)
+         '''
+        name_s = "{%s}" % (self._namespace.get(service),)
+
+        db_lag_type = {self.__service.ce_lag: 2,
+                       self.__service.internal_link: 1}
+        lag_if_node_tag = {self.__service.ce_lag: "ce-lag-interface",
+                           self.__service.internal_link: "internal-interface"}
+        lag_mem_node_tag = {self.__service.ce_lag: "leaf-interface",
+                            self.__service.internal_link: "internal-interface"}
+
+        func_list = []
+        param_list = []
+
+        device_name = self.__get_param(dev_node, name_s + "name", str)
+        is_ok, db_lag = \
+            GlobalModule.DB_CONTROL.read_lagif_info(device_name)
+        if not is_ok:
+            err_mes = ('DB Fault read_lag_if(device_name = %s)' %
+                       (device_name,))
+            GlobalModule.EM_LOGGER.debug(err_mes)
+            raise ValueError("DB Control ERROR")
+
+        lag_if_nodes = dev_node.findall(name_s +
+                                        lag_if_node_tag.get(
+                                            lag_type, "none-interface"))
+
+        for lag_if_node in lag_if_nodes:
+            if_type = lag_if_node.find(name_s + "type")
+
+            if (if_type is not None and if_type.text == "lag-if") or\
+                    lag_type == self.__service.ce_lag:
+
+                lag_if_name = self.__get_param(
+                    lag_if_node, name_s + "name", str)
+                minimum_links = self.__get_param(
+                    lag_if_node, name_s + "minimum-links", int)
+
+                lag_if_param = self.__get_key_recode(
+                    db_lag, device_name=device_name,
+                    lag_if_name=lag_if_name)
+
+                if lag_if_param is None:
+                    GlobalModule.EM_LOGGER.debug(
+                        'DB Fault not found recode (device_name = ' +
+                        '%s,if name = %s)' % (device_name, lag_if_name))
+                    raise ValueError
+
+                lag_if_param["db_control"] = db_control
+                lag_if_param["lag_type"] = db_lag_type[lag_type]
+                lag_if_param["minimum_links"] = minimum_links
+
+                func_list.append(GlobalModule.DB_CONTROL.write_lagif_info)
+                param_list.append(lag_if_param)
+
+                if_nodes = lag_if_node.findall(name_s +
+                                               lag_mem_node_tag.get(
+                                                   lag_type, "none-interface"))
+                key_ope = "operation"
+                val_del = "delete"
+
+                for if_node in if_nodes:
+                    if if_node.get(key_ope) == val_del:
+                        db_operation = "DELETE"
+                    else:
+                        db_operation = "INSERT"
+
+                    self.__set_physicalif_param(func_list,
+                                                param_list,
+                                                name_s,
+                                                db_operation,
+                                                device_name,
+                                                node=if_node)
+                    self.__set_lagmemberif_param(func_list,
+                                                 param_list,
+                                                 name_s,
+                                                 db_operation,
+                                                 device_name,
+                                                 node=if_node,
+                                                 lag_if_name=lag_if_name)
+
+        return func_list, param_list, db_operation
+
+    @decorater_log
+    def __get_func_if_condition(self, dev_node, db_control, service):
+        '''
+        Create paramters in write_lagif_info and write_physical_if_info from device node.
+        Explanation about parameter:
+            dev_node : device node (xml object)
+            db_control : DB control (str)
+            lag_type : LAG type (str)
+            service : service type (str)
+        Explanation about return value:
+            method list   : list
+            parameter list : list
+         '''
+        name_s = "{%s}" % (self._namespace.get(service),)
+
+        condition_tag = {"enable": 1,
+                         "disable": 0}
+
+        func_list = []
+        param_list = []
+
+        device_name = self.__get_param(dev_node, name_s + "name", str)
+
+        if_nodes = dev_node.findall(name_s + "interface")
+
+        for if_node in if_nodes:
+            if_type = if_node.find(name_s + "type")
+
+            if (if_type is not None and if_type.text == "lag-ifs"):
+                lag_if_name = self.__get_param(
+                    if_node, name_s + "name", str)
+                condition = condition_tag.get(
+                    if_node.find(name_s + "condition").text)
+
+                is_ok, db_lag = \
+                    GlobalModule.DB_CONTROL.read_lagif_info(device_name)
+                if not is_ok:
+                    err_mes = ('DB Fault read_lagif(device_name = %s)' %
+                               (device_name,))
+                    GlobalModule.EM_LOGGER.debug(err_mes)
+                    raise ValueError("DB Control ERROR")
+
+                lag_if_param = self.__get_key_recode(
+                    db_lag, device_name=device_name,
+                    lag_if_name=lag_if_name)
+
+                if lag_if_param is None:
+                    GlobalModule.EM_LOGGER.debug(
+                        'DB Fault not found recode (device_name = ' +
+                        '%s,if name = %s)' % (device_name, lag_if_name))
+                    raise ValueError
+
+                lag_if_param["db_control"] = db_control
+                lag_if_param["condition"] = condition
+
+                func_list.append(GlobalModule.DB_CONTROL.write_lagif_info)
+                param_list.append(lag_if_param)
+            elif (if_type is not None and if_type.text == "physical-ifs"):
+                if_name = self.__get_param(
+                    if_node, name_s + "name", str)
+                condition = condition_tag.get(
+                    if_node.find(name_s + "condition").text)
+                is_ok, db_physical = \
+                    GlobalModule.DB_CONTROL.read_physical_if_info(device_name)
+                if not is_ok:
+                    err_mes = ('DB Fault read_physical_if(device_name = %s)' %
+                               (device_name,))
+                    GlobalModule.EM_LOGGER.debug(err_mes)
+                    raise ValueError("DB Control ERROR")
+
+                physical_if_param = self.__get_key_recode(
+                    db_physical, device_name=device_name,
+                    if_name=if_name)
+
+                if physical_if_param is None:
+                    GlobalModule.EM_LOGGER.debug(
+                        'DB Fault not found recode (device_name = ' +
+                        '%s,if name = %s)' % (device_name, if_name))
+                    raise ValueError
+                physical_if_param["db_control"] = db_control
+                physical_if_param["condition"] = condition
+
+                func_list.append(
+                    GlobalModule.DB_CONTROL.write_physical_if_info)
+                param_list.append(physical_if_param)
+
+        return func_list, param_list
+
+    @decorater_log
     def __get_func_lagif_info(self, dev_node, db_control, lag_type, service):
         '''
         Create parameters for write_lagif_info, write_lagmemberif_info
@@ -1383,6 +1669,7 @@ class EmSysCommonUtilityDB(object):
                            self.__service.internal_link: "internal-interface"}
         lag_mem_node_tag = {self.__service.ce_lag: "leaf-interface",
                             self.__service.internal_link: "internal-interface"}
+        __if_condition_enable = 1
 
         func_list = []
         param_list = []
@@ -1420,7 +1707,8 @@ class EmSysCommonUtilityDB(object):
                                              "lag_type",
                                              "lag_if_id",
                                              "minimum_links",
-                                             "link_speed"])
+                                             "link_speed",
+                                             "condition"])
                 lagif_param["db_control"] = db_control
                 lagif_param["device_name"] = device_name
                 lag_if_name = self.__get_param(
@@ -1434,6 +1722,7 @@ class EmSysCommonUtilityDB(object):
                                      int))
                 lagif_param["link_speed"] = (
                     self.__get_param(lag_if_node, name_s + "link-speed", str))
+                lagif_param["condition"] = __if_condition_enable
 
                 if_nodes = lag_if_node.findall(name_s +
                                                lag_mem_node_tag.get(
@@ -1715,7 +2004,8 @@ class EmSysCommonUtilityDB(object):
                                       "irb_ipv4_prefix",
                                       "virtual_mac_address",
                                       "virtual_gateway_address",
-                                      "virtual_gateway_prefix"])
+                                      "virtual_gateway_prefix",
+                                      "q_in_q", ])
             cp_param["db_control"] = db_control
             cp_param["device_name"] = device_name
             cp_param["slice_name"] = slice_name
@@ -1788,6 +2078,10 @@ class EmSysCommonUtilityDB(object):
                                          name_s,
                                          db_control,
                                          cp_param)
+                if cp_node.find(name_s + "q-in-q") is not None:
+                    cp_param["q_in_q"] = True
+                else:
+                    cp_param["q_in_q"] = False
 
                 tmp_func_list.append(
                     GlobalModule.DB_CONTROL.write_vlanif_info)
@@ -1962,7 +2256,7 @@ class EmSysCommonUtilityDB(object):
         Return value:
             Method list   : list
             Parameter list : list
-         '''
+        '''
         name_s = "{%s}" % (self._namespace.get(service),)
 
         device_name = self.__get_param(dev_node, name_s + "name", str)
@@ -2131,7 +2425,7 @@ class EmSysCommonUtilityDB(object):
                 if not (dev_regist_opp[0]['os'] in
                         need_vlan_os or
                         os_name in need_vlan_os):
-                    inner_linkif_param["vlan_id"] = None
+                    inner_linkif_param["vlan_id"] = None  
 
         func_list.append(GlobalModule.DB_CONTROL.write_inner_link_if_info)
         param_list.append(inner_linkif_param)
@@ -2317,7 +2611,7 @@ class EmSysCommonUtilityDB(object):
             acl_id : ACL Configuration ID
         Return value:
             Method list   : list
-            Parameter list : list
+            Parameter list : list            
          '''
         if acl_term is not None:
             acl_term_param = dict.fromkeys(["db_control",
@@ -2346,8 +2640,8 @@ class EmSysCommonUtilityDB(object):
             acl_term_param["source_mac_address"] = (self.__get_param(
                 acl_term, name_s + "source-mac-address", str))
             acl_term_param["destination_mac_address"] = (
-                self.__get_param(acl_term, name_s
-                                 + "destination-mac-address", str))
+                self.__get_param(acl_term,
+                                 name_s + "destination-mac-address", str))
             acl_term_param["source_ip_address"] = (self.__get_param(
                 acl_term, name_s + "source-ip-address", str))
             acl_term_param["destination_ip_address"] = (self.__get_param(
@@ -2413,11 +2707,20 @@ class EmSysCommonUtilityDB(object):
             raise ValueError("VLAN COUNT ZERO ERROR")
         cp_del_count = 0
         vlan_count = 0
+
+        db_if_name_dict = {}
+        for row in db_vlan_info:
+            tmp_key = row.get("if_name")
+            self._count_dict(tmp_key, db_if_name_dict)
+
+        delete_if_name_dict = {}
+
         for cp_node in dev_node.findall(name_s + "cp"):
             is_cp_del = False
             if_name = self.__get_param(cp_node, name_s + "name", str)
             vlan_id = self.__get_param(cp_node, name_s + "vlan-id", int)
             if cp_node.get(key_ope) == val_del:
+                self._count_dict(if_name, delete_if_name_dict)
                 is_cp_del = True
                 db_control_merge = "INSERT"
                 cp_del_count = cp_del_count + 1
@@ -2426,7 +2729,6 @@ class EmSysCommonUtilityDB(object):
                                                  if_name=if_name,
                                                  vlan_id=vlan_id,
                                                  slice_name=slice_name)
-                cp_param["db_control"] = (db_control)
                 if cp_param is None:
                     GlobalModule.EM_LOGGER.debug(
                         'DB Fault not found recode (device_name =' +
@@ -2435,6 +2737,7 @@ class EmSysCommonUtilityDB(object):
                     )
                     raise ValueError("DB UNKNOWN VLAN DELETE OPERATION ERROR")
                 else:
+                    cp_param["db_control"] = db_control
                     func_list.append(
                         GlobalModule.DB_CONTROL.write_vlanif_info)
                     param_list.append(cp_param)
@@ -2555,7 +2858,8 @@ class EmSysCommonUtilityDB(object):
                                           "irb_ipv4_prefix",
                                           "virtual_mac_address",
                                           "virtual_gateway_address",
-                                          "virtual_gateway_prefix"])
+                                          "virtual_gateway_prefix",
+                                          "q_in_q", ])
                 cp_param["db_control"] = db_control_merge
                 cp_param["device_name"] = device_name
                 cp_param["slice_name"] = slice_name
@@ -2637,6 +2941,10 @@ class EmSysCommonUtilityDB(object):
                     tmp_func_list.append(
                         GlobalModule.DB_CONTROL.write_vrf_detail_info)
                     tmp_param_list.append(vrf_param)
+                if cp_node.find(name_s + "q-in-q") is not None:
+                    cp_param["q_in_q"] = True
+                else:
+                    cp_param["q_in_q"] = False
                 tmp_func_list.append(
                     GlobalModule.DB_CONTROL.write_vlanif_info)
                 tmp_param_list.append(cp_param)
@@ -2685,6 +2993,19 @@ class EmSysCommonUtilityDB(object):
                     tmp_func_list.append(
                         GlobalModule.DB_CONTROL.write_multi_homing_info)
                     tmp_param_list.append(multi_homing_param)
+                func_list.extend(tmp_func_list)
+                param_list.extend(tmp_param_list)
+
+        for if_name in delete_if_name_dict:
+            if delete_if_name_dict[if_name] == db_if_name_dict[if_name]:
+                tmp_func_list = []
+                tmp_param_list = []
+                self.__set_physicalif_param(tmp_func_list,
+                                            tmp_param_list,
+                                            name_s,
+                                            db_control,
+                                            device_name,
+                                            if_name=if_name)
                 func_list.extend(tmp_func_list)
                 param_list.extend(tmp_param_list)
 
@@ -2800,22 +3121,22 @@ class EmSysCommonUtilityDB(object):
             if_name = self.__get_param(in_node, name_s + "name", str)
             if_type = self.__get_param(in_node, name_s + "type", str)
             cost = self.__get_param(in_node, name_s + "cost", int)
-            cp_param = self.__get_key_recode(db_internal_link_info,
-                                             device_name=device_name,
-                                             if_name=if_name)
+            lag_mem_param = self.__get_key_recode(db_internal_link_info,
+                                                  device_name=device_name,
+                                                  if_name=if_name)
 
-            if cp_param is None:
+            if lag_mem_param is None:
                 GlobalModule.EM_LOGGER.debug(
                     'DB Fault not found recode (device_name =' +
                     '%s ,if_name = %s)' %
                     (device_name, if_name)
                 )
                 raise ValueError
-            cp_param["db_control"] = db_control
-            cp_param["if_type"] = db_if_type[if_type]
-            cp_param["cost"] = cost
+            lag_mem_param["db_control"] = db_control
+            lag_mem_param["if_type"] = db_if_type[if_type]
+            lag_mem_param["cost"] = cost
             func_list.append(GlobalModule.DB_CONTROL.write_inner_link_if_info)
-            param_list.append(cp_param)
+            param_list.append(lag_mem_param)
 
         return func_list, param_list
 
@@ -2874,10 +3195,17 @@ class EmSysCommonUtilityDB(object):
             GlobalModule.EM_LOGGER.debug(err_mes)
             raise ValueError("VLAN COUNT ZERO ERROR")
 
-        cp_del_count = vlan_count = 0
+        vlan_count = 0
         for row in db_vlan_info:
             vlan_count += 1 if row.get("slice_name") == slice_name else 0
+        cp_del_count = 0
 
+        db_if_name_dict = {}
+        for row in db_vlan_info:
+            tmp_key = row.get("if_name")
+            self._count_dict(tmp_key, db_if_name_dict)
+
+        delete_if_name_dict = {}
         static_db_counts = {}
         for row in db_static:
             if row.get("slice_name") != slice_name:
@@ -2895,6 +3223,7 @@ class EmSysCommonUtilityDB(object):
             if_name = self.__get_param(cp_node, name_s + "name", str)
             vlan_id = self.__get_param(cp_node, name_s + "vlan-id", int)
             if cp_node.get(key_ope) == val_del:
+                self._count_dict(if_name, delete_if_name_dict)
                 is_cp_del = True
                 cp_del_count += 1
             cp_param = self.__get_key_recode(db_vlan_info,
@@ -3014,18 +3343,24 @@ class EmSysCommonUtilityDB(object):
                                        not cp_param["vrrp_flag"] and
                                        not cp_param["bgp_flag"] and
                                        not cp_param["static_flag"])
-            self.__set_physicalif_param(tmp_func_list,
-                                        tmp_param_list,
-                                        name_s,
-                                        db_control,
-                                        device_name,
-                                        node=cp_node)
 
             func_list.append(
                 GlobalModule.DB_CONTROL.write_vlanif_info)
             param_list.append(cp_param)
             func_list.extend(tmp_func_list)
             param_list.extend(tmp_param_list)
+        for if_name in delete_if_name_dict:
+            if delete_if_name_dict[if_name] == db_if_name_dict[if_name]:
+                tmp_func_list = []
+                tmp_param_list = []
+                self.__set_physicalif_param(tmp_func_list,
+                                            tmp_param_list,
+                                            name_s,
+                                            db_control,
+                                            device_name,
+                                            if_name=if_name)
+                func_list.extend(tmp_func_list)
+                param_list.extend(tmp_param_list)
 
         return func_list, param_list
 
@@ -3764,7 +4099,7 @@ class EmSysCommonUtilityDB(object):
         param["db_control"] = db_control
         param["device_name"] = device_name
         param["platform_name"] = platform
-        param["os"] = os
+        param["os"] = os  
         param["firm_version"] = firmware
         param["username"] = loginid
         param["password"] = password
@@ -4126,10 +4461,10 @@ class EmSysCommonUtilityDB(object):
         outflow_shaping_rate = {}
         remark_menu = {}
         egress_menu = {}
-
         qos_node = dev_node.find(name_s + "qos")
         if qos_node is None:
             return
+
         tmp = qos_node.find(name_s + "inflow-shaping-rate")
         if tmp is not None:
             if tmp.get("operation") == "delete":
@@ -4302,6 +4637,7 @@ class EmSysCommonUtilityDB(object):
                           device_name,
                           slice_name):
         '''
+
         Instert into the dummy VLAN interface information table.
         Explanation about parameter:
             tmp_func_list : Method list (list)
@@ -4457,7 +4793,8 @@ class EmSysCommonUtilityDB(object):
     @decorater_log
     def get_anycast_id(anycast_ip_address):
         get_anycast_id = -1
-        is_ok, multi_homings = GlobalModule.DB_CONTROL.read_multi_homing_all_info()
+        is_ok, multi_homings =\
+            GlobalModule.DB_CONTROL.read_multi_homing_all_info()
         if not is_ok:
             err_mes = (
                 'DB Fault read_multi_homing_all_info')
@@ -4509,7 +4846,8 @@ class EmSysCommonUtilityDB(object):
             raise ValueError("DB Control ERROR")
         else:
             for acl in acl_list:
-                if acl["device_name"] == device_name and acl["acl_id"] == acl_id:
+                if acl["device_name"] == device_name and (
+                        acl["acl_id"] == acl_id):
                     if_name["if_name"] = acl["if_name"]
                     return True, if_name
 
@@ -4517,7 +4855,8 @@ class EmSysCommonUtilityDB(object):
     def _check_acl_detail_all_del(self, device_name, acl_detail_params):
         '''
         Check which is intended for deleting the entire data within ACL information table
-        when only the registered information to be deleted exists in ACL details information table after the table has been searched.
+        when only the registered information to be deleted exists 
+        in ACL details information table after the table has been searched.
         Parameter:
             device_name: Device name
             acl_detail_params : ACL detail information
@@ -4575,6 +4914,13 @@ class EmSysCommonUtilityDB(object):
                 'Fault Parameter = %s (class is %s)'
                 % (param, isinstance(param, parms_class)))
         return is_ok
+
+    @decorater_log
+    def _count_dict(self, key, dict):
+        if key in dict:
+            dict[key] += 1
+        else:
+            dict[key] = 1
 
 
 class EmStatus(object):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmDriverCommonUtilityLog.py
 '''
 Common utility for the driver (Log)
@@ -36,15 +36,10 @@ class EmDriverCommonUtilityLog(object):
         if len(self.__driver_logger.handlers) == 0:
             self.__driver_logger.propagate = False
 
-            if len(GlobalModule.EM_LOGGER.handlers) != 1:
-                raise ValueError("not rotate handler")
-            time_rotate_handle = GlobalModule.EM_LOGGER.handlers[0]
-
-            handler = time_rotate_handle.getFileHandler()
-            formatter = EmLoggingTool.Formatter(
-                "[%(asctime)s] [%(levelname)s] [tid=%(thread)d] %(message)s")
-            handler.setFormatter(formatter)
-            self.__driver_logger.addHandler(handler)
+            if len(GlobalModule.EM_LOGGER.handlers) != 2:
+                raise ValueError("not 2rotate handler")
+            for i in range(len(GlobalModule.EM_LOGGER.handlers)):
+                self._sethandler(i)
 
     @decorater_log
     def logging(self,
@@ -98,3 +93,17 @@ class EmDriverCommonUtilityLog(object):
             return False
 
         return True
+
+    @decorater_log
+    def _sethandler(self, i):
+        '''
+        Log output (Individual section on the driver)
+        Explanation about parameter:
+            i: place where handler  is acquired
+        '''
+        time_rotate_handle = GlobalModule.EM_LOGGER.handlers[i]
+        handler = time_rotate_handle.getFileHandler()
+        formatter = EmLoggingTool.Formatter(
+            "[%(asctime)s] [%(levelname)s] [tid=%(thread)d] %(message)s")
+        handler.setFormatter(formatter)
+        self.__driver_logger.addHandler(handler)

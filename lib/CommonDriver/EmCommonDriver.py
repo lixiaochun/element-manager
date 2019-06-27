@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmCommonDriver.py
 
 '''
@@ -10,7 +10,7 @@ import imp
 import json
 import copy
 from os import path
-
+import traceback
 import xmltodict
 
 import GlobalModule
@@ -26,11 +26,11 @@ class EmCommonDriver(object):
     '''
     Driver common section module.
     '''
-    __db_utility = None
+    __db_utility = None  
 
-    __driver_path = ''
-    __target_module = None
-    __target_driver_class_ins = None
+    __driver_path = ''  
+    __target_module = None  
+    __target_driver_class_ins = None  
 
     @decorater_log_in_out
     def write_em_info(self, device_name, service_type,
@@ -51,7 +51,7 @@ class EmCommonDriver(object):
                 false: Abnormal
 
         '''
-        db_control_order = "UPDATE"
+        db_control_order = "UPDATE"  
         if order_type == "delete":
             db_control_order = "DELETE"
         elif (order_type == "merge") or (order_type == "replace"):
@@ -93,14 +93,14 @@ class EmCommonDriver(object):
         result_db, table_info =\
             GlobalModule.EMSYSCOMUTILDB.read_separate_driver_info(device_name)
 
-        table_info_dict = {}
+        table_info_dict = {}  
 
-        if result_db is False:
+        if not result_db:  
             GlobalModule.EM_LOGGER.warning(
                 "206011    Driver Definition Reading Error")
-            return False
+            return GlobalModule.COM_START_NO_DEVICE_NG
         else:
-            if table_info != "" and table_info is not None:
+            if table_info != "" and table_info is not None:  
                 GlobalModule.EM_LOGGER.debug(
                     "******    Getting Registered Info Success")
                 try:
@@ -112,13 +112,13 @@ class EmCommonDriver(object):
                 except (KeyError, ValueError):
                     GlobalModule.EM_LOGGER.warning(
                         "206011    Driver Definition Reading Error")
-                    return False
-            elif ec_message is not None:
+                    return GlobalModule.COM_START_NO_DEVICE_NG
+            elif ec_message is not None:  
                 GlobalModule.EM_LOGGER.debug(
                     "******    Driver Definition Read from EC Message")
                 try:
                     ec_message_copy = copy.deepcopy(ec_message)
-                    ec_message_copy = json.loads(ec_message_copy)
+                    ec_message_copy = json.loads(ec_message_copy)  
                     table_info_dict = ec_message_copy["device"]["equipment"]
                     res_conf, self.__driver_path, driver_class =\
                         GlobalModule.EM_CONFIG.read_driver_conf(
@@ -128,19 +128,19 @@ class EmCommonDriver(object):
                 except (KeyError, ValueError):
                     GlobalModule.EM_LOGGER.warning(
                         "206011    Driver Definition Reading Error")
-                    return False
-            else:
+                    return GlobalModule.COM_START_NO_DEVICE_NG
+            else:  
                 GlobalModule.EM_LOGGER.warning(
                     "206011    Driver Definition Reading Error")
-                return False
+                return GlobalModule.COM_START_NO_DEVICE_NG
 
-        if res_conf is False:
+        if not res_conf:
             GlobalModule.EM_LOGGER.warning(
                 "206012    Individual Driver Judgment Error")
-            return False
+            return GlobalModule.COM_START_DRIVER_FAULT
         else:
             self.__driver_path = path.normpath(
-                self.__driver_path)
+                self.__driver_path)  
             path_py, name = path.split(self.__driver_path)
 
             GlobalModule.EM_LOGGER.info(
@@ -171,7 +171,7 @@ class EmCommonDriver(object):
                     "206003    Driver Select NG")
                 GlobalModule.EM_LOGGER.warning(
                     "206003    %s" % (str(e)))
-                return False
+                return GlobalModule.COM_START_DRIVER_FAULT
 
             finally:
                 mutex.release()
@@ -180,14 +180,14 @@ class EmCommonDriver(object):
 
             GlobalModule.EM_LOGGER.debug(
                 "******    Loading Module Success")
-            return True
+            return GlobalModule.COM_START_OK
 
     @decorater_log_in_out
     def connect_device(self, device_name, service_type=None,
                        order_type=None, ec_message=None):
         '''
         Connection control over the equipment.
-             Gets launched through individual processing of each scenario,
+            Gets launched through individual processing of each scenario,
              obtains information about equipment from the common utility (DB)
              across the system or the EC message.
              Then, based on such information,
@@ -207,7 +207,7 @@ class EmCommonDriver(object):
                                          the individual section of the driver)
                 3(COM_CONNECT_NO_RESPONSE): No response from equipment
                                         (Take over the responding action over
-                                         the individual section of the driver)
+                                         the individual section of the driver)                
         '''
         GlobalModule.EM_LOGGER.debug(
             "******    Start Getting Registered info")
@@ -215,13 +215,13 @@ class EmCommonDriver(object):
             GlobalModule.EMSYSCOMUTILDB.read_device_registered_info(
                 device_name)
 
-        if result_info is False:
+        if result_info is False:  
             GlobalModule.EM_LOGGER.debug(
                 "******    DB Access Failed at DB Info Reading")
             GlobalModule.EM_LOGGER.warning(
                 "206004    Driver Individual Connecting Control Error")
             return GlobalModule.COM_CONNECT_NO_RESPONSE
-        else:
+        else:  
             if table_info != "" and table_info is not None:
                 table_info_dict = {}
                 for element in table_info:
@@ -245,14 +245,14 @@ class EmCommonDriver(object):
                     GlobalModule.EM_LOGGER.warning(
                         "206004    Driver Individual Connecting Control Error")
                     return GlobalModule.COM_CONNECT_NO_RESPONSE
-            else:
+            else:  
                 GlobalModule.EM_LOGGER.debug(
                     "******    Reading Info from EC Message...\
                     (getting registered info)")
                 try:
                     table_info_dict = {}
                     ec_message_copy = copy.deepcopy(ec_message)
-                    json_data = json.loads(ec_message_copy)
+                    json_data = json.loads(ec_message_copy)  
                     element = json_data["device"]["equipment"]
                     table_info_dict.update(element)
                     element = json_data["device"]["management-interface"]
@@ -406,8 +406,11 @@ class EmCommonDriver(object):
             return True
 
     @decorater_log_in_out
-    def disconnect_device(self, device_name,
-                          service_type, order_type):
+    def disconnect_device(self,
+                          device_name,
+                          service_type=None,
+                          order_type=None,
+                          get_config_flag=True):
         '''
         Disconnection control on equipment.
             Gets launched through individual processing of each scenario,
@@ -423,28 +426,31 @@ class EmCommonDriver(object):
                 False: Abnormal
         '''
         result = self.__target_driver_class_ins.disconnect_device(
-            device_name, service_type, order_type)
-        if result is False:
+            device_name, service_type, order_type, get_config_flag)
+        if not result:
             GlobalModule.EM_LOGGER.warning(
                 "206008    Driver Individual Disconnecting Control Error")
-            return False
         else:
             GlobalModule.EM_LOGGER.debug(
                 "******    Driver Disconnecting Success")
-            return True
+        return result
 
     @decorater_log_in_out
-    def get_device_setting(self, device_name, service_type, order_type):
+    def get_device_setting(self,
+                           device_name,
+                           service_type=None,
+                           order_type=None,
+                           ec_message=None):
         '''
         Acquisition control of settings on equipment.
             Gets launched through individual processing of each scenario,
             launches the acquisition control of settings on equipment
             over the individual section of the driver.
-
         Argument:
             device_name: str equipment name
             service_type: str type of service
             order_type: str type of order
+            ec_message: str message
         Return value:
             boolean method results
                 True: Normal
@@ -452,15 +458,54 @@ class EmCommonDriver(object):
             str type of response
         '''
         result, responce = self.__target_driver_class_ins.get_device_setting(
-            device_name, service_type, order_type)
-        if result is True:
-            GlobalModule.EM_LOGGER.debug(
-                "******    Driver Get Success")
-            return True, responce
+            device_name, service_type, order_type, ec_message)
+        if result:
+            GlobalModule.EM_LOGGER.debug("******    Driver Get Success")
         else:
             GlobalModule.EM_LOGGER.warning(
                 "206009    Driver Individual Get Control Error")
-            return False, None
+            responce = None
+        return result, responce
+
+    @decorater_log_in_out
+    def execute_driver_method(self,
+                              method_name,
+                              *method_args,
+                              **method_kwargs):
+        '''
+        Executes driver individual method.
+        　　Gets launched through individual processing of each scenario,
+            Calls method generated for each device. 
+            Passes method name and variable valuables.
+
+        Argument:
+            method_name: str method name
+            method_args: list method argument(variable)
+            method_kwargs: dict method keyword argument(variable)
+        Return value: 
+            object method results
+              (varys depending executed method)
+        '''
+        method_result = None
+        try:
+            mtd_dict = self.__target_driver_class_ins.driver_public_method
+            driver_method = mtd_dict.get(method_name)
+            if not driver_method:
+                raise ValueError("Driver Method Not Found")
+        except Exception:
+            GlobalModule.EM_LOGGER.warning("206015    Driver Method Not Found")
+            GlobalModule.EM_LOGGER.debug("Traceback:%s",
+                                         traceback.format_exc())
+            return None
+        try:
+            method_result = driver_method(*method_args, **method_kwargs)
+        except Exception as exc_info:
+            GlobalModule.EM_LOGGER.warning(
+                "206014     Driver Individual Execute Driver Method")
+            GlobalModule.EM_LOGGER.debug(
+                "Error(%s):%s", exc_info, exc_info.message)
+            return None
+        return method_result
 
     @decorater_log
     def compare_to_db_info(self, device_name, service_type,
@@ -520,7 +565,8 @@ class EmCommonDriver(object):
         Return value:
             boolean method results
                 True: Normal
-                False: Abnormal
+                False: Abnormal                
+
         '''
         result = self.__target_driver_class_ins.execute_comparing(
             device_name, service_type, order_type, device_signal)
@@ -564,12 +610,12 @@ class EmCommonDriver(object):
         ec_xml = xmltodict.parse(ec_message)
         if table_info is None:
             return False
-        if len(table_info) == 1:
+        if len(table_info) == 1:  
             if isinstance(ec_xml["device-leaf"]["cp"], list):
                 return False
             return self. __comp_db_info_in_table(
                 ec_xml, table_info[0], 0)
-        else:
+        else:  
             table_num = 0
             for element in table_info:
                 result =\
@@ -578,7 +624,7 @@ class EmCommonDriver(object):
                 if result is False:
                     return False
                 table_num += 1
-            return True
+            return True  
 
     @decorater_log
     def __comp_db_info_in_table(self, ec_xml, table_info, table_num):
@@ -663,8 +709,8 @@ class EmCommonDriver(object):
                     cp_info_element, "multicast-group"):
                 return False
             return True
-        elif "l3-slice" in service_url:
-            if table_num == 0:
+        elif "l3-slice" in service_url:  
+            if table_num == 0:  
                 table_info = table_info[0]
                 if "vrf" in device_leaf_element:
                     vrf_dict = device_leaf_element["vrf"]
@@ -680,9 +726,9 @@ class EmCommonDriver(object):
                             table_info, "router_id",
                             vrf_dict, "router-id"):
                         return False
-                else:
+                else:  
                     return False
-            elif table_num == 1:
+            elif table_num == 1:  
                 ec1 = 3
                 db1 = table_info[0]["slice_type"]
                 if ec1 != db1:
@@ -697,18 +743,18 @@ class EmCommonDriver(object):
                     return False
                 for cp_info_element in device_leaf_element["cp"]:
                     cp_loop_flag = True
-                    if not isinstance(device_leaf_element["cp"], list):
+                    if not isinstance(device_leaf_element["cp"], list):  
                         cp_info_element = device_leaf_element["cp"]
-                        if len(table_info) != 1:
+                        if len(table_info) != 1:  
                             GlobalModule.EM_LOGGER.debug(
                                 "When there is single CP with multiple pieces of CP information in DB, it is NG")
                             return False
                         cp_loop_flag = False
-                        table_info_elem = table_info[0]
-                    else:
+                        table_info_elem = table_info[0]  
+                    else:  
                         cp_len = len(device_leaf_element["cp"])
                         db_len = len(table_info)
-                        if cp_len != db_len:
+                        if cp_len != db_len:  
                             GlobalModule.EM_LOGGER.debug(
                                 "Not matching number of target cps" +
                                 "number of cps in DB.")
@@ -779,7 +825,7 @@ class EmCommonDriver(object):
                         elif not self.__compare_dict_elements(
                                 table_info_elem, "mtu_size", ce_i_dict, "mtu"):
                             return False
-                    else:
+                    else:  
                         return False
                     if table_info_elem["vrrp_flag"] is not None:
                         if "vrrp" in cp_info_element:
@@ -792,7 +838,7 @@ class EmCommonDriver(object):
                             GlobalModule.EM_LOGGER.debug(
                                 "VRRPFLUG matching is NG@CP")
                             return False
-                    else:
+                    else:  
                         return False
                     if table_info_elem["static_flag"] is not None:
                         if "static" in cp_info_element:
@@ -805,7 +851,7 @@ class EmCommonDriver(object):
                             GlobalModule.EM_LOGGER.debug(
                                 "STATICFLUG matching is NG@CP")
                             return False
-                    else:
+                    else:  
                         return False
                     if table_info_elem["ospf_flag"] is not None:
                         if "ospf" in cp_info_element:
@@ -819,14 +865,14 @@ class EmCommonDriver(object):
                             db13 = table_info_elem["ospf_flag"]
                             if ec13 != db13:
                                 return False
-                    else:
+                    else:  
                         return False
                     if not cp_loop_flag:
                         break
             else:
                 if len(table_info) == 0:
                     pass
-                elif "address_type"in table_info[0]:
+                elif "address_type"in table_info[0]:  
                     check_num = 0
                     cp_loop_flag = True
                     for cp_info_element in device_leaf_element["cp"]:
@@ -943,7 +989,7 @@ class EmCommonDriver(object):
                         GlobalModule.EM_LOGGER.debug(
                             "Not matching no. of STATIC checked against DB")
                         return False
-                elif "remote_as_number" in table_info[0]:
+                elif "remote_as_number" in table_info[0]:  
                     GlobalModule.EM_LOGGER.debug("Start BGP matching")
                     investigate_flag = False
                     for table_info_elem in table_info:
@@ -1032,7 +1078,7 @@ class EmCommonDriver(object):
                             pass
                     if investigate_flag:
                         return False
-                elif "priority" in table_info[0]:
+                elif "priority" in table_info[0]:  
                     investigate_flag = False
                     for table_info_elem in table_info:
                         investigate_flag = True
@@ -1098,9 +1144,9 @@ class EmCommonDriver(object):
                             return False
                     if investigate_flag:
                         return False
-                elif "track_if_name" in table_info[0]:
+                elif "track_if_name" in table_info[0]:  
                     cp_loop_flag = True
-                    check_num = 0
+                    check_num = 0  
                     for cp_info_element in device_leaf_element["cp"]:
                         if not isinstance(device_leaf_element["cp"], list):
                             cp_info_element = device_leaf_element["cp"]

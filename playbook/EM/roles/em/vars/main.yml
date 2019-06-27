@@ -2,6 +2,10 @@
 folder_name_lib: 'lib'
 folder_name_conf: 'conf'
 folder_name_bin: 'bin'
+folder_name_fup: '/usr/file_update'
+folder_name_em_config_delete: '/root/em_config_delete'
+folder_name_cgwsh_device_conf: 'conf/cgwsh_device'
+folder_name_conf_audit_conf: 'conf/conf_audit'
 
 files_conf:
  -  file_name: 'conf_driver.conf'
@@ -22,6 +26,10 @@ files_conf:
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_service.conf'
  -  file_name: 'conf_internal_link_vlan.conf'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_internal_link_vlan.conf'
+ -  file_name: 'conf_act_threshold.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_act_threshold.conf'
+ -  file_name: 'conf_standby_threshold.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_standby_threshold.conf'
  -  file_name: 'Cisco.conf'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/Cisco.conf'
  -  file_name: 'Juniper.conf'
@@ -33,17 +41,68 @@ files_conf:
  -  file_name: 'Cumulus.conf'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/Cumulus.conf'
 
+files_cgwsh_device_conf:
+ -  file_name: 'conf_asr_device_sample1.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/cgwsh_device/conf_asr_device_sample1.conf'
+ -  file_name: 'conf_nvr_device_sample1.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/cgwsh_device/conf_nvr_device_sample1.conf'
+
+files_conf_audit_conf:
+ -  file_name: 'conf_asr_audit_exclusion.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_audit_conf/conf_asr_audit_exclusion.conf'
+ -  file_name: 'conf_nvr_audit_exclusion.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_audit_conf/conf_nvr_audit_exclusion.conf'
+ -  file_name: 'conf_qfx5110_audit_exclusion.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_audit_conf/conf_qfx5110_audit_exclusion.conf'
+ -  file_name: 'conf_qfx5110_irb_audit_exclusion.conf'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/conf/conf_audit_conf/conf_qfx5110_irb_audit_exclusion.conf'
 
 files_bin:
   - file_name: 'em_ctl.sh'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/em_ctl.sh'
   - file_name: 'EmMonitor.py'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/EmMonitor.py'
-  - file_name: 'controller_status.sh '
+  - file_name: 'controller_status.sh'
     url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/controller_status.sh'
+  - file_name: 'check_resource_lock.sh'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/check_resource_lock.sh'
+  - file_name: 'resource_lock_release.sh'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/resource_lock_release.sh'
+  - file_name: 'controller_switch.sh'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/bin/controller_switch.sh'
 
 files_em:
   file_name: 'master.tar.gz'
   url: 'https://github.com/multi-service-fabric/element-manager/archive/master.tar.gz'
 
-    
+files_delete_deviceconf_script:
+  file_name: 'delete_deviceconfigurationinfo_record.sh'
+  url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/delete_deviceconfigurationinfo/delete_deviceconfigurationinfo_record.sh'
+
+files_delete_deviceconf_sql:
+  - file_name: 'delete_recode.sql'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/delete_deviceconfigurationinfo/sql_files/delete_recode.sql'
+  - file_name: 'get_table_size.sql'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/delete_deviceconfigurationinfo/sql_files/get_table_size.sql'
+
+file_update_list:
+  - file_name: 'MSF2017_MSF2018B.sh'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/file_update/MSF2017_MSF2018B.sh'
+  - file_name: 'MSF2017_to_MSF2018B.sql'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/file_update/MSF2017_to_MSF2018B.sql'
+  - file_name: 'MSF2018A_MSF2018B.sh'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/file_update/MSF2018A_MSF2018B.sh'
+  - file_name: 'MSF2018A_to_MSF2018B.sql'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/file_update/MSF2018A_to_MSF2018B.sql'
+  - file_name: 'em_file_upgrade.sh'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/file_update/em_file_upgrade.sh'
+  - file_name: 'file_oldparam_env'
+    url: 'https://github.com/multi-service-fabric/element-manager/raw/master/script/file_update/file_oldparam_env'
+  - file_name: 'db_env'
+    url: 'https://github.com/multi-service-fabric/element-controller/raw/master/script/ControllerFileUpdateShell/DbDumpRestore/db_env'
+  - file_name: 'db_backup.sh'
+    url: 'https://github.com/multi-service-fabric/element-controller/raw/master/script/ControllerFileUpdateShell/DbDumpRestore/db_backup.sh'
+  - file_name: 'db_restore.sh'
+    url: 'https://github.com/multi-service-fabric/element-controller/raw/master/script/ControllerFileUpdateShell/DbDumpRestore/db_restore.sh'
+  - file_name: 'db_schema_update.sh'
+    url: 'https://github.com/multi-service-fabric/element-controller/raw/master/script/ControllerFileUpdateShell/DbDumpRestore/db_schema_update.sh'

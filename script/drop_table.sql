@@ -15,6 +15,8 @@ DROP TABLE IF EXISTS VrfDetailInfo;
 DROP TABLE IF EXISTS VrrpDetailInfo;
 DROP TABLE IF EXISTS VlanIfInfo;
 DROP TABLE IF EXISTS EmSystemStatusInfo;
+DROP TABLE IF EXISTS DeviceConfigrationinfo;
+DROP TABLE IF EXISTS NvrAdminPasswordMgmt;
 DROP TABLE IF EXISTS DeviceRegistrationInfo;
 DROP TABLE IF EXISTS DeviceStatusMgmtInfo;
 DROP TABLE IF EXISTS TransactionMgmtInfo;

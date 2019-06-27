@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: JuniperDriver5200.py
 '''
 Individual section on driver (JuniperDriver's (QFX5200-32C) driver)
@@ -49,6 +49,7 @@ class JuniperDriver5200(EmSeparateDriver):
                                     self.name_cluster_link,
                                     self.name_recover_node,
                                     self.name_recover_service,
+                                    self.name_if_condition,
                                     ]
         self._lag_check = re.compile("^ae([0-9]{1,})")
         self._breakout_check = re.compile("[0-9]{1,}/[0-9]{1,}/([0-9]{1,})")
@@ -92,6 +93,7 @@ class JuniperDriver5200(EmSeparateDriver):
     def _set_conf_device_count(self, ec_message=None, device_info=None):
         ret_val = 448
         return ret_val
+
 
     @decorater_log
     def _set_configuration_node(self, xml_obj):
@@ -214,25 +216,27 @@ class JuniperDriver5200(EmSeparateDriver):
     @decorater_log
     def _set_interface_lag_member(self,
                                   if_node,
-                                  base_if_name=None,
-                                  lag_if_name=None,
+                                  lag_mem_ifs=None,
                                   operation=None):
         '''
         Set LAG member IF.
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
 
+        if operation == self._REPLACE:
+            attr, attr_val = self._get_attr_from_operation(
+                lag_mem_ifs["OPERATION"])
         node_1 = self._set_xml_tag(if_node, "interface", attr, attr_val)
         self._set_xml_tag(node_1,
                           "interface_name",
                           None,
                           None,
-                          base_if_name)
+                          lag_mem_ifs["IF-NAME"])
         if operation == self._DELETE:
             return node_1
         node_2 = self._set_xml_tag(node_1, "ether-options")
         node_3 = self._set_xml_tag(node_2, "ieee-802.3ad")
-        bundle_val = lag_if_name
+        bundle_val = lag_mem_ifs["LAG-IF-NAME"]
         self._set_xml_tag(node_3,
                           "bundle",
                           None,
@@ -284,19 +288,23 @@ class JuniperDriver5200(EmSeparateDriver):
         self._set_xml_tag(node_1, "interface_name", None, None, lag_if_name)
         if operation != self._DELETE:
             node_2 = self._set_xml_tag(node_1, "aggregated-ether-options")
+            if operation == self._REPLACE:
+                attr = self._ATRI_OPE
+                attr_val = self._REPLACE
             self._set_xml_tag(node_2,
                               "minimum-links",
-                              None,
-                              None,
+                              attr,
+                              attr_val,
                               lag_links)
-            self._set_xml_tag(node_2,
-                              "link-speed",
-                              None,
-                              None,
-                              lag_speed)
-            node_3 = self._set_xml_tag(node_2, "lacp")
-            self._set_xml_tag(node_3, "active")
-            self._set_xml_tag(node_3, "periodic", None, None, "fast")
+            if operation != self._REPLACE:
+                self._set_xml_tag(node_2,
+                                  "link-speed",
+                                  None,
+                                  None,
+                                  lag_speed)
+                node_3 = self._set_xml_tag(node_2, "lacp")
+                self._set_xml_tag(node_3, "active")
+                self._set_xml_tag(node_3, "periodic", None, None, "fast")
         self.common_util_log.logging(
             None, self.log_level_debug,
             self._XML_LOG % (if_node.tag, etree.tostring(node_1),),
@@ -319,8 +327,7 @@ class JuniperDriver5200(EmSeparateDriver):
 
         for tmp_if in ifs_info.get("lag_mem_ifs", ()):
             self._set_interface_lag_member(if_node,
-                                           tmp_if["IF-NAME"],
-                                           tmp_if["LAG-IF-NAME"],
+                                           lag_mem_ifs=tmp_if,
                                            operation=operation)
         for tmp_if in ifs_info.get("lag_ifs", ()):
             self._set_interface_inner_link(if_node,
@@ -379,14 +386,39 @@ class JuniperDriver5200(EmSeparateDriver):
             self._set_xml_tag(node_1, "vlan-tagging")
             mtu = 4114
             inner_vlan = if_info.get("INNER-IF-VLAN")
-        self._set_xml_tag(node_1, "mtu", None, None, mtu)
-        self._set_interface_unit_inner(node_1,
-                                       if_info.get("IF-ADDR"),
-                                       if_info.get("IF-PREFIX"),
-                                       vpn_type,
-                                       if_info.get("OPPOSITE-NODE-VPN"),
-                                       inner_vlan
-                                       )
+        if operation != self._REPLACE:
+            self._set_xml_tag(node_1, "mtu", None, None, mtu)
+            self._set_interface_unit_inner(node_1,
+                                           if_info.get("IF-ADDR"),
+                                           if_info.get("IF-PREFIX"),
+                                           vpn_type,
+                                           if_info.get("OPPOSITE-NODE-VPN"),
+                                           inner_vlan
+                                           )
+        self.common_util_log.logging(
+            None, self.log_level_debug,
+            self._XML_LOG % (if_node.tag, etree.tostring(node_1),),
+            __name__)
+        return node_1
+
+    @decorater_log
+    def _set_interface_condition(self,
+                                 if_node,
+                                 if_mes_ec=None,
+                                 operation=None):
+        '''
+        Set information on IO open/close(common to physical and LAG)
+        '''
+
+        node_1 = self._set_xml_tag(if_node,
+                                   "interface",
+                                   None, None)
+        self._set_xml_tag(node_1, "interface_name", None,
+                          None, if_mes_ec["IF-NAME"])
+        if if_mes_ec["CONDITION"] == "enable":
+            self._set_xml_tag(node_1, "disable", self._ATTR_OPE, self._DELETE)
+        else:
+            self._set_xml_tag(node_1, "disable")
         self.common_util_log.logging(
             None, self.log_level_debug,
             self._XML_LOG % (if_node.tag, etree.tostring(node_1),),
@@ -822,6 +854,7 @@ class JuniperDriver5200(EmSeparateDriver):
         '''
         Conduct settings on device-dependent section for
         class-of-service node. (internal link/inter-cluster link)
+ 
         '''
         self._set_xml_tag(if_node,
                           "scheduler-map",
@@ -1372,6 +1405,7 @@ class JuniperDriver5200(EmSeparateDriver):
             __name__)
         return node_2
 
+
     @decorater_log
     def _get_device_from_ec(self, device_mes, service=None):
         '''
@@ -1509,6 +1543,11 @@ class JuniperDriver5200(EmSeparateDriver):
                 tmp_bool = bool(not tmp.get("name") or
                                 not tmp.get("leaf-interface") or
                                 len(tmp["leaf-interface"]) == 0)
+            elif operation == self._REPLACE:
+                tmp_bool = bool(not tmp.get("name") or
+                                tmp.get("minimum-links") is None or
+                                not tmp.get("leaf-interface") or
+                                len(tmp["leaf-interface"]) == 0)
             else:
                 tmp_bool = bool(not tmp.get("name") or
                                 tmp.get("minimum-links") is None or
@@ -1519,9 +1558,13 @@ class JuniperDriver5200(EmSeparateDriver):
                 raise ValueError("ce-lag not enough information")
             lag_ifs.append(self._get_lag_if_info(tmp))
             for lag_mem in tmp.get("leaf-interface"):
-                if not lag_mem["name"]:
+                if not lag_mem.get("name"):
                     raise ValueError(
                         "leaf-interface not enough information ")
+                if operation == self._REPLACE:
+                    if lag_mem.get("operation")is None:
+                        raise ValueError(
+                            "leaf-interface not enough information ")
                 lag_mem_ifs.append(self._get_lag_mem_if_info(tmp, lag_mem))
         return lag_ifs, lag_mem_ifs
 
@@ -1543,7 +1586,8 @@ class JuniperDriver5200(EmSeparateDriver):
         Obtain LAG member information from EC message.
         '''
         tmp = {"IF-NAME": lag_mem_if.get("name"),
-               "LAG-IF-NAME": lag_if["name"], }
+               "LAG-IF-NAME": lag_if["name"],
+               "OPERATION": lag_mem_if.get("operation"), }
         return tmp
 
     @decorater_log
@@ -1631,7 +1675,8 @@ class JuniperDriver5200(EmSeparateDriver):
 
         if (service == self.name_spine) or \
                 (service == self.name_internal_link and
-                 db_info.get("device", {}).get("device_type") == self._device_type_spine):
+                 db_info.get("device", {}).get(
+                     "device_type") == self._device_type_spine):
             need_oppo_info = True
         else:
             need_oppo_info = False
@@ -1733,7 +1778,8 @@ class JuniperDriver5200(EmSeparateDriver):
                                            device_mes,
                                            service=None,
                                            operation=None,
-                                           db_info=None):
+                                           db_info=None,
+                                           is_cost_replace=True):
         '''
         Obtain the information of EC message/DB regarding Internal Link for deletion
         '''
@@ -1742,8 +1788,8 @@ class JuniperDriver5200(EmSeparateDriver):
         phy_ifs = []
 
         for tmp_if in device_mes.get("internal-physical", ()):
-            if (not tmp_if.get("name") or
-                    tmp_if.get("cost") is None):
+            if (not tmp_if.get("name")) or\
+                    (is_cost_replace and (not tmp_if.get("cost"))):
                 raise ValueError("internal-physical not enough information")
 
             tmp = copy.deepcopy(tmp_if)
@@ -1757,9 +1803,9 @@ class JuniperDriver5200(EmSeparateDriver):
         lag_mem_ifs = []
 
         for tmp_if in device_mes.get("internal-lag", ()):
-            if (not tmp_if.get("name") or
-                    tmp_if.get("cost") is None):
-                raise ValueError("internal-physical not enough information")
+            if (not tmp_if.get("name")) or\
+                    (is_cost_replace and (not tmp_if.get("cost"))):
+                raise ValueError("internal-lag not enough information")
 
             tmp = copy.deepcopy(tmp_if)
 
@@ -1767,6 +1813,14 @@ class JuniperDriver5200(EmSeparateDriver):
             lag_ifs.append(
                 self._get_internal_if_replace_info(tmp,
                                                    self._if_type_lag, db_info))
+
+            if tmp.get("internal-interface"):
+                for lag_mem in tmp.get("internal-interface"):
+                    if (not lag_mem.get("name")or
+                            lag_mem.get("operation")is None):
+                        raise ValueError(
+                            "internal-interface not enough information ")
+                    lag_mem_ifs.append(self._get_lag_mem_if_info(tmp, lag_mem))
 
         inner_ifs = copy.deepcopy(phy_ifs)
         inner_ifs.extend(lag_ifs)
@@ -1869,6 +1923,55 @@ class JuniperDriver5200(EmSeparateDriver):
             "IF-NAME": if_info.get("name"),
             "INNER-IF-VLAN": internal_link_db.get("vlan_id"),
             "OSPF-METRIC": if_info.get("cost")
+        }
+        if if_type == self._if_type_lag:
+            tmp.update(self._get_lag_if_info(if_info))
+        return tmp
+
+    @decorater_log
+    def _get_if_condition_from_ec(self,
+                                  device_mes,
+                                  service=None,
+                                  operation=None,
+                                  db_info=None):
+        '''
+        Obtain EC message and DB information related to IP open/close.
+        '''
+
+        phy_ifs = []
+
+        for tmp_if in device_mes.get("interface-physical", ()):
+            if (not tmp_if.get("name") or
+                    tmp_if.get("condition")is None):
+                raise ValueError("interface-physical not enough information")
+
+            tmp = copy.deepcopy(tmp_if)
+
+            phy_ifs.append(
+                self._get_if_condition_info(tmp))
+
+        lag_ifs = []
+
+        for tmp_if in device_mes.get("internal-lag", ()):
+            if (not tmp_if.get("name") or
+                    tmp_if.get("condition") is None):
+                raise ValueError("internal-lag not enough information")
+
+            tmp = copy.deepcopy(tmp_if)
+
+            lag_ifs.append(
+                self._get_if_condition_info(tmp))
+
+        return phy_ifs, lag_ifs
+
+    @decorater_log
+    def _get_if_condition_info(self, if_info):
+        '''
+        Obtain IF information from EC message.(regardless of physical/LAG)
+        '''
+        tmp = {
+            "IF-NAME": if_info.get("name"),
+            "CONDITION": if_info.get("condition"),
         }
         return tmp
 
@@ -2496,6 +2599,7 @@ class JuniperDriver5200(EmSeparateDriver):
         db_ifs = len(self._get_db_cp_ifs(device_info, slice_name))
         return bool(del_if_count == db_ifs)
 
+
     @decorater_log
     def _gen_spine_fix_message(self, xml_obj, operation):
         '''
@@ -2562,6 +2666,19 @@ class JuniperDriver5200(EmSeparateDriver):
         return True
 
     @decorater_log
+    def _gen_if_condition_fix_message(self, xml_obj, operation):
+        '''
+        Fixed value to create message (IfCondition) for Netconf.
+            Called out when creating message for IfCondition.
+        Parameter:
+            xml_obj : xml object
+            operation : Designate "delete" when deleting.
+        Return value.
+            Creation result : Boolean
+        '''
+        return True
+
+    @decorater_log
     def _gen_breakout_fix_message(self, xml_obj, operation):
         '''
         Fixed value to create message (breakout) for Netconf.
@@ -2586,6 +2703,7 @@ class JuniperDriver5200(EmSeparateDriver):
             Creation result : Boolean (Write properly using override method)
         '''
         return True
+
 
     @decorater_log
     def _gen_spine_variable_message(self,
@@ -2627,6 +2745,7 @@ class JuniperDriver5200(EmSeparateDriver):
                 "Traceback:%s" % (traceback.format_exc(),),
                 __name__)
             return False
+
 
         conf_node = self._set_configuration_node(xml_obj)
 
@@ -2709,6 +2828,7 @@ class JuniperDriver5200(EmSeparateDriver):
                 "Traceback:%s" % (traceback.format_exc(),),
                 __name__)
             return False
+
 
         conf_node = self._set_configuration_node(xml_obj)
 
@@ -3114,8 +3234,7 @@ class JuniperDriver5200(EmSeparateDriver):
 
         for tmp_if in lag_mem_ifs:
             self._set_interface_lag_member(if_node,
-                                           tmp_if["IF-NAME"],
-                                           tmp_if["LAG-IF-NAME"],
+                                           lag_mem_ifs=tmp_if,
                                            operation=operation)
         for tmp_if in lag_ifs:
             self._set_interface_lag(if_node,
@@ -3151,6 +3270,7 @@ class JuniperDriver5200(EmSeparateDriver):
             area_id = device_info["device"]["ospf"]["area_id"]
             breakout_ifs = None
             vpn_type = None
+            is_cost_replace = False
             if operation == self._DELETE:
                 phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs = \
                     self._get_del_internal_link_from_ec(
@@ -3159,12 +3279,14 @@ class JuniperDriver5200(EmSeparateDriver):
                         operation=operation,
                         db_info=device_info)
             elif operation == self._REPLACE:
+                is_cost_replace = self._check_replace_kind(device_mes)
                 phy_ifs, lag_ifs, lag_mem_ifs, inner_ifs = \
                     self._get_replace_internal_link_from_ec(
                         device_mes,
                         service=self.name_internal_link,
                         operation=operation,
-                        db_info=device_info)
+                        db_info=device_info,
+                        is_cost_replace=is_cost_replace)
             else:
                 vpn_type = vpns.get(
                     ec_message.get("device", {}).get("vpn-type"))
@@ -3194,6 +3316,7 @@ class JuniperDriver5200(EmSeparateDriver):
             if breakout_ifs and operation != self._DELETE:
                 self._set_chassis_breakout(conf_node, breakout_ifs)
 
+        if not is_cost_replace:
             if_node = self._set_interfaces_node(conf_node)
             self._set_interface_inner_links(if_node,
                                             lag_mem_ifs=lag_mem_ifs,
@@ -3202,17 +3325,99 @@ class JuniperDriver5200(EmSeparateDriver):
                                             operation=operation,
                                             vpn_type=vpn_type)
 
-        protocols_node = self._set_device_protocols(conf_node)
-        area_node = self._set_device_protocols_ospf_area_N(protocols_node,
-                                                           area_id)
-        self._set_ospf_area_interfaces(area_node,
-                                       inner_ifs,
-                                       operation=operation,)
+        if operation != self._REPLACE or is_cost_replace:
+            protocols_node = self._set_device_protocols(conf_node)
+            area_node = self._set_device_protocols_ospf_area_N(protocols_node,
+                                                               area_id)
+            self._set_ospf_area_interfaces(area_node,
+                                           inner_ifs,
+                                           operation=operation,)
         if operation != self._REPLACE:
             self._set_qos_policy_interfaces(conf_node,
                                             inner_ifs,
                                             self.name_internal_link,
                                             operation=operation,)
+
+        return True
+
+    @decorater_log
+    def _check_replace_kind(self, device_mes):
+        '''
+        Judge whether internal link change depends on cost value change or Lag speed change.
+        Parameter:
+            device_mes : EC message (device and below)（json）
+        Return value:
+            result : Boolean(cost value change：True, Lag speed change：False)
+        '''
+        result = True
+
+        for tmp in device_mes.get("internal-physical", ()):
+            if tmp.get("cost"):
+                result = True
+                break
+        for tmp in device_mes.get("internal-lag", ()):
+            if tmp.get("cost"):
+                result = True
+                break
+            if tmp.get("minimum-links"):
+                result = False
+                break
+
+        return result
+
+    @decorater_log
+    def _gen_if_condition_variable_message(self,
+                                           xml_obj,
+                                           device_info,
+                                           ec_message,
+                                           operation):
+        '''
+        Fixed value to create message (IfCondition) for Netconf.
+            Called out when creating message for IfCondition.
+        Parameter:
+            xml_obj : xml object
+            operation : Designate "delete" when deleting.
+        Return value:
+            Creation result : Boolean(Write properly using override method)
+        '''
+        device_mes = ec_message.get("device", {})
+        device_name = device_mes.get("name")
+
+        try:
+            phy_ifs, lag_ifs = \
+                self._get_if_condition_from_ec(
+                    device_mes,
+                    service=self.name_if_condition,
+                    operation=operation,
+                    db_info=device_info)
+        except Exception as ex:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "ERROR : message = %s / Exception: %s" % (ec_message, ex),
+                __name__)
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "Traceback:%s" % (traceback.format_exc(),),
+                __name__)
+            return False
+
+        conf_node = self._set_configuration_node(xml_obj)
+
+        if_node = self._set_interfaces_node(conf_node)
+        for tmp_if in lag_ifs:
+            self._set_interface_condition(if_node,
+                                          if_mes_ec=tmp_if,
+                                          operation=operation)
+        for tmp_if in phy_ifs:
+            self._set_interface_condition(if_node,
+                                          if_mes_ec=tmp_if,
+                                          operation=operation)
+        self.common_util_log.logging(
+            None, self.log_level_debug,
+            self._XML_LOG % (if_node.tag, etree.tostring(if_node),),
+            __name__)
 
         return True
 
@@ -3327,6 +3532,7 @@ class JuniperDriver5200(EmSeparateDriver):
                                         operation=operation,)
 
         return True
+
 
     @decorater_log
     def _comparsion_sw_db_l3_slice(self, message, db_info):
@@ -3615,6 +3821,7 @@ class JuniperDriver5200(EmSeparateDriver):
                                     __name__)
                                 is_return = False
                                 break
+
 
         node_1 = ns_p.ns_find_node(config_node,
                                    "routing-instances",

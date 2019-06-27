@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmBLeafUpdate.py
+
 '''
 Individual scenario for updating B-Leaf.
 '''
@@ -9,8 +10,9 @@ import json
 from lxml import etree
 import GlobalModule
 from EmCommonLog import decorater_log
-from EmLeafMerge import EmLeafMerge
 from EmBLeafScenario import EmBLeafScenario
+from EmLeafMerge import EmLeafMerge
+from EmDeviceMerge import EmDeviceMerge
 
 
 class EmBLeafUpdate(EmBLeafScenario, EmLeafMerge):
@@ -25,13 +27,14 @@ class EmBLeafUpdate(EmBLeafScenario, EmLeafMerge):
         Constructor
         '''
 
+        super(EmBLeafUpdate, self).__init__()
         super(EmBLeafScenario, self).__init__()
 
         self.service = GlobalModule.SERVICE_B_LEAF
 
         self._xml_ns = "{%s}" % GlobalModule.EM_NAME_SPACES[self.service]
 
-        self.scenario_name = "B-LeafUpdate"
+        self._scenario_name = "B-LeafUpdate"
 
         self.device_type = "device"
 
@@ -60,3 +63,32 @@ class EmBLeafUpdate(EmBLeafScenario, EmLeafMerge):
             "device__json_message = %s", device_json_message)
 
         return json.dumps(device_json_message)
+
+    @decorater_log
+    def _process_scenario(self,
+                          device_message=None,
+                          transaction_id=None,
+                          order_type=None,
+                          condition=None,
+                          device_name=None,
+                          force=False):
+        '''
+        Executes scenario process in each device
+        Explanation about parameter：
+            device_message: Message for each device(byte)
+            transaction_id: Transaction ID (uuid)
+            order_type: Order type (int)
+            condition: Thread control information (condition object)
+            device_name: Device name (str)
+            force: Frag of deletion to be forced(boolean)
+        Explanation about return value
+            None
+        '''
+
+        super(EmDeviceMerge, self)._process_scenario(
+            device_message=device_message,
+            transaction_id=transaction_id,
+            order_type=order_type,
+            condition=condition,
+            device_name=device_name,
+            force=force)

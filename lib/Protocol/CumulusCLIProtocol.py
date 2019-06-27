@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: CumulusCLIProtocol.py
 
 import json
@@ -19,7 +19,7 @@ class CumulusCLIProtocol(EmCLIProtocol):
     '''
 
     _CUMULU_ROOT_RECV_MES = "#"
-    _CUMULU_USER_RECV_MES = "$"
+    _CUMULU_USER_RECV_MES = "\$"
 
     _COMM_ACLTOOL_INS = "cl-acltool -i"
 
@@ -78,6 +78,7 @@ class CumulusCLIProtocol(EmCLIProtocol):
                 self.is_complete_discard_change):
             self._roleback_policy_d()
         return super(CumulusCLIProtocol, self).disconnect_device()
+
 
     @decorater_log
     def _ssh_connect(self):
@@ -194,7 +195,7 @@ class CumulusCLIProtocol(EmCLIProtocol):
     @decorater_log
     def _send_commit(self, send_message=None):
         '''
-        commit for CumulusCLI(Send CLI command list to device connected by SSH.)
+        Commit for CumulusCLI(Sends messages for the connected object by using SSH)
         '''
         GlobalModule.EM_LOGGER.debug(
             "param command :\n%s" % (send_message,))
@@ -215,7 +216,8 @@ class CumulusCLIProtocol(EmCLIProtocol):
     def _exec_confirmed_commit(self, confirm_time=10):
         output = ""
         mes = ("net commit confirm %s" % (confirm_time,),
-               "Press <ENTER> to confirm connectivity")
+               "Press <ENTER> to confirm connectivity" +
+               "|There are no pending changes")
         GlobalModule.EM_LOGGER.debug("send command :%s" % (mes,))
         output += self._send_command(self._ssh_shell, mes[0], mes[1])
         self._check_command_error(output,

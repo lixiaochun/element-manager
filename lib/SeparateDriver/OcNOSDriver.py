@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: OcNOSDriver.py
 '''
 Individual section on driver (Ocnos's driver)
@@ -64,7 +64,7 @@ class OcNOSDriver(EmSeparateDriver):
             order_type : Order type
         Return value :
             Protocol processing section response :
-                int (1:Normal, 2:Capability abnormal, 3:No response)
+                int (1:Normal, 3:No response)            
         '''
         if service_type in self.list_no_edit_service:
             return GlobalModule.COM_CONNECT_OK
@@ -96,8 +96,7 @@ class OcNOSDriver(EmSeparateDriver):
             order_type : Order type
         Return value :
             Processing finish status : int (1:Successfully updated
-
-                                3:Updating unsuccessful)
+                                            3:Updating unsuccessful)                                
         '''
         self.common_util_log.logging(
             device_name, self.log_level_debug,
@@ -141,7 +140,7 @@ class OcNOSDriver(EmSeparateDriver):
         Return value :
             Processing finish status : int (1:Successfully deleted
                                 2:Validation check NG
-                                3:Deletion unsuccessful)
+                                3:Deletion unsuccessful)                                
         '''
         self.common_util_log.logging(
             device_name, self.log_level_debug,
@@ -153,7 +152,7 @@ class OcNOSDriver(EmSeparateDriver):
             return self._update_ok
 
     @decorater_log_in_out
-    def disconnect_device(self, device_name, service_type, order_type):
+    def disconnect_device(self, device_name, service_type, order_type, get_config_flag=True):
         '''
         Driver individual section disconnection control.
             Launch from the common section on driver,
@@ -171,7 +170,8 @@ class OcNOSDriver(EmSeparateDriver):
         else:
             return self.as_super.disconnect_device(device_name,
                                                    service_type,
-                                                   order_type)
+                                                   order_type,
+                                                   get_config_flag)
 
     @decorater_log
     def _gen_l2_slice_command_list(self,
@@ -241,6 +241,7 @@ class OcNOSDriver(EmSeparateDriver):
             __name__)
         return ocnos_command_list
 
+
     @decorater_log
     def _set_command_initial(self):
         '''
@@ -266,7 +267,7 @@ class OcNOSDriver(EmSeparateDriver):
     @decorater_log
     def _set_command_finaly(self):
         '''
-        Create command list after executing config command.
+         Create command list after executing config command.
             Cancel configuration mode
             Copy the currently used config to startup-config
             Cancel privileged mode
@@ -429,6 +430,7 @@ class OcNOSDriver(EmSeparateDriver):
             "nvo vxlan access-port command : \n%s" % (tmp_comm_list,),
             __name__)
         return tmp_comm_list
+
 
     @decorater_log
     def _get_l2_cps_from_ec(self,
@@ -724,6 +726,7 @@ class OcNOSDriver(EmSeparateDriver):
             else:
                 if_dict[if_name] = [vlan_id]
         return if_dict
+
 
     @staticmethod
     @decorater_log

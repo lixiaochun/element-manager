@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: JuniperDriverMX240.py
 '''
 Individual section on driver (JuniperDriver's driver (MX240))
@@ -162,7 +162,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                                        order_type)
 
     @decorater_log_in_out
-    def disconnect_device(self, device_name, service_type, order_type):
+    def disconnect_device(self, device_name, service_type, order_type, get_config_flag=True):
         '''
         Driver individual section disconnection control.
             Launch from the common section on driver,
@@ -184,7 +184,8 @@ class JuniperDriverMX240(EmSeparateDriver):
         else:
             return self.as_super.disconnect_device(device_name,
                                                    service_type,
-                                                   order_type)
+                                                   order_type,
+                                                   get_config_flag)
 
     @decorater_log
     def __init__(self):
@@ -205,7 +206,7 @@ class JuniperDriverMX240(EmSeparateDriver):
                                     self.name_internal_link,
                                     self.name_cluster_link,
                                     self.name_recover_service,
-                                    ]
+                                    self.name_if_condition, ]
         self._lag_check = re.compile("^ae([0-9]{1,})")
         tmp_get_mes = (
             '<filter>' +
@@ -266,25 +267,27 @@ class JuniperDriverMX240(EmSeparateDriver):
     @decorater_log
     def _set_interface_lag_member(self,
                                   if_node,
-                                  base_if_name=None,
-                                  lag_if_name=None,
+                                  lag_mem_ifs=None,
                                   operation=None):
         '''
         Set LAG member IF.
         '''
         attr, attr_val = self._get_attr_from_operation(operation)
 
+        if operation == self._REPLACE:
+            attr, attr_val = self._get_attr_from_operation(
+                lag_mem_ifs["OPERATION"])
         node_1 = self._set_xml_tag(if_node, "interface", attr, attr_val)
         self._set_xml_tag(node_1,
                           "interface_name",
                           None,
                           None,
-                          base_if_name)
+                          lag_mem_ifs["IF-NAME"])
         if operation == self._DELETE:
             return node_1
         node_2 = self._set_xml_tag(node_1, "gigether-options")
         node_3 = self._set_xml_tag(node_2, "ieee-802.3ad")
-        bundle_val = lag_if_name
+        bundle_val = lag_mem_ifs["LAG-IF-NAME"]
         self._set_xml_tag(node_3,
                           "bundle",
                           None,
@@ -336,19 +339,48 @@ class JuniperDriverMX240(EmSeparateDriver):
         self._set_xml_tag(node_1, "interface_name", None, None, lag_if_name)
         if operation != self._DELETE:
             node_2 = self._set_xml_tag(node_1, "aggregated-ether-options")
+            if operation == self._REPLACE:
+                attr = self._ATRI_OPE
+                attr_val = self._REPLACE
             self._set_xml_tag(node_2,
                               "minimum-links",
-                              None,
-                              None,
+                              attr,
+                              attr_val,
                               lag_links)
-            self._set_xml_tag(node_2,
-                              "link-speed",
-                              None,
-                              None,
-                              lag_speed)
-            node_3 = self._set_xml_tag(node_2, "lacp")
-            self._set_xml_tag(node_3, "active")
-            self._set_xml_tag(node_3, "periodic", None, None, "fast")
+            if operation != self._REPLACE:
+                self._set_xml_tag(node_2,
+                                  "link-speed",
+                                  None,
+                                  None,
+                                  lag_speed)
+                node_3 = self._set_xml_tag(node_2, "lacp")
+                self._set_xml_tag(node_3, "active")
+                self._set_xml_tag(node_3, "periodic", None, None, "fast")
+        self.common_util_log.logging(
+            None, self.log_level_debug,
+            self._XML_LOG % (if_node.tag, etree.tostring(node_1),),
+            __name__)
+        return node_1
+
+    @decorater_log
+    def _set_interface_condition(self,
+                                 if_node,
+                                 if_mes_ec=None,
+                                 operation=None):
+        '''
+        Set information to open and close IF(common for physical, LAG)
+        (independent unit CPs). (common for L2, L3)
+        '''
+
+        node_1 = self._set_xml_tag(if_node,
+                                   "interface",
+                                   None, None)
+        self._set_xml_tag(node_1, "interface_name", None,
+                          None, if_mes_ec["IF-NAME"])
+        if if_mes_ec["CONDITION"] == "enable":
+            self._set_xml_tag(node_1, "disable", self._ATTR_OPE, self._DELETE)
+        else:
+            self._set_xml_tag(node_1, "disable")
         self.common_util_log.logging(
             None, self.log_level_debug,
             self._XML_LOG % (if_node.tag, etree.tostring(node_1),),
@@ -867,6 +899,11 @@ class JuniperDriverMX240(EmSeparateDriver):
                 tmp_bool = bool(not tmp.get("name") or
                                 not tmp.get("leaf-interface") or
                                 len(tmp["leaf-interface"]) == 0)
+            elif operation == self._REPLACE:
+                tmp_bool = bool(not tmp.get("name") or
+                                tmp.get("minimum-links") is None or
+                                not tmp.get("leaf-interface") or
+                                len(tmp["leaf-interface"]) == 0)
             else:
                 tmp_bool = bool(not tmp.get("name") or
                                 tmp.get("minimum-links") is None or
@@ -877,9 +914,13 @@ class JuniperDriverMX240(EmSeparateDriver):
                 raise ValueError("ce-lag not enough information")
             lag_ifs.append(self._get_lag_if_info(tmp))
             for lag_mem in tmp.get("leaf-interface"):
-                if not lag_mem["name"]:
+                if not lag_mem.get("name"):
                     raise ValueError(
                         "leaf-interface not enough information ")
+                if operation == self._REPLACE:
+                    if lag_mem.get("operation")is None:
+                        raise ValueError(
+                            "leaf-interface not enough information ")
                 lag_mem_ifs.append(self._get_lag_mem_if_info(tmp, lag_mem))
         return lag_ifs, lag_mem_ifs
 
@@ -901,7 +942,56 @@ class JuniperDriverMX240(EmSeparateDriver):
         Obtain LAG member information from EC message.
         '''
         tmp = {"IF-NAME": lag_mem_if.get("name"),
-               "LAG-IF-NAME": lag_if["name"], }
+               "LAG-IF-NAME": lag_if["name"],
+               "OPERATION": lag_mem_if.get("operation"), }
+        return tmp
+
+    @decorater_log
+    def _get_if_condition_from_ec(self,
+                                  device_mes,
+                                  service=None,
+                                  operation=None,
+                                  db_info=None):
+        '''
+        Obtain EC message and DB information  related to IF open/close.
+        '''
+
+        phy_ifs = []
+
+        for tmp_if in device_mes.get("interface-physical", ()):
+            if (not tmp_if.get("name") or
+                    tmp_if.get("condition")is None):
+                raise ValueError("interface-physical not enough information")
+
+            tmp = copy.deepcopy(tmp_if)
+
+            phy_ifs.append(
+                self._get_if_condition_info(tmp))
+
+        lag_ifs = []
+
+        for tmp_if in device_mes.get("internal-lag", ()):
+            if (not tmp_if.get("name") or
+                    tmp_if.get("condition") is None):
+                raise ValueError("internal-lag not enough information")
+
+            tmp = copy.deepcopy(tmp_if)
+
+            lag_ifs.append(
+                self._get_if_condition_info(tmp))
+
+        return phy_ifs, lag_ifs
+
+    decorater_log
+
+    def _get_if_condition_info(self, if_info):
+        '''
+        Obtain IF information from EC messege(regardless of physical/LAG)
+        '''
+        tmp = {
+            "IF-NAME": if_info.get("name"),
+            "CONDITION": if_info.get("condition"),
+        }
         return tmp
 
     @decorater_log
@@ -1324,7 +1414,22 @@ class JuniperDriverMX240(EmSeparateDriver):
             xml_obj : xml object
             operation : Designate "delete" when deleting.
         Return value.
-            Creation result : Boolean (Write properly using override method)
+            Creation result : Boolean (Write properly using override method)           
+            
+            
+        '''
+        return True
+
+    @decorater_log
+    def _gen_if_condition_fix_message(self, xml_obj, operation):
+        '''
+        Fixed value to create message (IfCondition) for Netconf.
+            Called out when creating message for IfCondition.
+        Parameter:
+            xml_obj : xml object
+            operation : Designate "delete" when deleting.
+        Return value.
+            Creation result : Boolean
         '''
         return True
 
@@ -1509,8 +1614,7 @@ class JuniperDriverMX240(EmSeparateDriver):
 
         for tmp_if in lag_mem_ifs:
             self._set_interface_lag_member(if_node,
-                                           tmp_if["IF-NAME"],
-                                           tmp_if["LAG-IF-NAME"],
+                                           lag_mem_ifs=tmp_if,
                                            operation=operation)
         for tmp_if in lag_ifs:
             self._set_interface_lag(if_node,
@@ -1518,6 +1622,63 @@ class JuniperDriverMX240(EmSeparateDriver):
                                     tmp_if.get("LAG-LINKS"),
                                     tmp_if.get("LAG-SPEED"),
                                     operation=operation)
+        return True
+
+    @decorater_log
+    def _gen_if_condition_variable_message(self,
+                                           xml_obj,
+                                           device_info,
+                                           ec_message,
+                                           operation):
+        '''
+        Fixed value to create message (IfCondition) for Netconf.
+            Called out when creating message for IfCondition.
+        Parameter:
+            xml_obj : xml
+            device_info : device information
+            operation : Designate "delete" when deleting.
+        Return value.
+            Creation result : Boolean (Write properly using override method)
+        '''
+        device_mes = ec_message.get("device", {})
+        device_name = device_mes.get("name")
+
+        try:
+            phy_ifs, lag_ifs = \
+                self._get_if_condition_from_ec(
+                    device_mes,
+                    service=self.name_if_condition,
+                    operation=operation,
+                    db_info=device_info)
+        except Exception as ex:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "ERROR : message = %s / Exception: %s" % (ec_message, ex),
+                __name__)
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "Traceback:%s" % (traceback.format_exc(),),
+                __name__)
+            return False
+
+        conf_node = self._set_configuration_node(xml_obj)
+
+        if_node = self._set_interfaces_node(conf_node)
+        for tmp_if in lag_ifs:
+            self._set_interface_condition(if_node,
+                                          if_mes_ec=tmp_if,
+                                          operation=operation)
+        for tmp_if in phy_ifs:
+            self._set_interface_condition(if_node,
+                                          if_mes_ec=tmp_if,
+                                          operation=operation)
+        self.common_util_log.logging(
+            None, self.log_level_debug,
+            self._XML_LOG % (if_node.tag, etree.tostring(if_node),),
+            __name__)
+
         return True
 
     @decorater_log

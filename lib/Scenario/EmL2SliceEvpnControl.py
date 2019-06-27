@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmL2SliceEvpnControl.py
 '''
 Individual scenario to add L2 slice.
@@ -216,6 +216,10 @@ class EmL2SliceEvpnControl(EmMergeScenario):
                 cp_message["operation"] = "delete"
                 cp_message["system-id"] = "0"
                 cp_message["esi"] = "0"
+
+            tmp = cp_info.find(self._xml_ns + "q-in-q")
+            if tmp is not None:
+                cp_message["q-in-q"] = True
 
             device_json_message["device-leaf"]["cp"].append(cp_message)
 

@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmRecoverUtilLeaf.py
 '''
 Utility for restoration(Leaf expansion)
@@ -32,7 +32,7 @@ class EmRecoverUtilLeaf(EmRecoverUtilBase.EmRecoverUtilBase):
             ec_message : EC message for restoration expansion
             db_info : DB information
         Return Value :
-            Result : Success�FTrue  Failure�FFalse
+            Result : Success:True  Failure:False
             EC message for restoration(JSON)
         '''
         self.common_util_log.logging(

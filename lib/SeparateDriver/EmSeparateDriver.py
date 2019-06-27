@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright(c) 2018 Nippon Telegraph and Telephone Corporation
+# Copyright(c) 2019 Nippon Telegraph and Telephone Corporation
 # Filename: EmSeparateDriver.py
 '''
 Individual section on deriver (base class)
@@ -10,6 +10,7 @@ import os
 import re
 import imp
 import traceback
+import functools
 from codecs import BOM_UTF8
 from lxml import etree
 import ipaddress
@@ -20,6 +21,65 @@ from EmCommonLog import decorater_log_in_out
 from EmNetconfProtocol import EmNetconfProtocol
 from EmDriverCommonUtilityDB import EmDriverCommonUtilityDB
 from EmDriverCommonUtilityLog import EmDriverCommonUtilityLog
+from ConfigAuditDriverUtility import ConfigAuditDriverUtility
+
+
+def except_unlock(func):
+    '''
+    Unlock decoder in error status after locking
+    Decoder 
+        Put @except_unlock to the target method when using this decorator.
+        The decorator order is above.
+          decorater_log => except_unlock
+          Put @except_unlock on @decorater_log
+    '''
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        '''
+        Decorder wrapper
+        '''
+        cls_ins = args[0]
+
+        def send_unlock():
+            try:
+                cls_ins.common_util_log.logging(
+                    cls_ins.device_name,
+                    cls_ins.log_level_debug,
+                    "Send unlock to device",
+                    __name__)
+                is_ok = cls_ins._send_control_signal(cls_ins.device_name,
+                                                     "unlock")[0]
+                if not is_ok:
+                    cls_ins.common_util_log.logging(
+                        cls_ins.device_name,
+                        cls_ins.log_level_warn,
+                        cls_ins.Logmessage["NetConf_Fault"] % ("unlock",),
+                        __name__)
+                cls_ins.common_util_log.logging(
+                    cls_ins.device_name,
+                    cls_ins.log_level_debug,
+                    "Complete Sending unlock to device",
+                    __name__)
+            except Exception as exc_info:
+                GlobalModule.EM_LOGGER.debug(
+                    "unlock ERROR:%s", exc_info.message)
+            return is_ok
+
+        try:
+            return_val = func(*args, **kwargs)
+        except Exception:
+            send_unlock()
+            raise
+        else:
+            if return_val in (False,
+                              GlobalModule.COM_UPDATE_VALICHECK_NG,
+                              GlobalModule.COM_UPDATE_NG,
+                              GlobalModule.COM_DELETE_VALICHECK_NG,
+                              GlobalModule.COM_DELETE_NG,):
+                send_unlock()
+        return return_val
+    return wrapper
 
 
 class EmSeparateDriver(object):
@@ -47,9 +107,9 @@ class EmSeparateDriver(object):
 
     _send_message_top_tag = "config"
 
-    _update_ok = 1
-    _update_validation_ng = 2
-    _update_error = 3
+    _update_ok = 1              
+    _update_validation_ng = 2    
+    _update_error = 3           
 
     _if_type_lag = "lag-if"
     _if_type_phy = "physical-if"
@@ -61,7 +121,7 @@ class EmSeparateDriver(object):
     @decorater_log
     def __init__(self):
         '''
-        Constructor
+         Constructor
         '''
         self.name_spine = GlobalModule.SERVICE_SPINE
         self.name_leaf = GlobalModule.SERVICE_LEAF
@@ -75,6 +135,7 @@ class EmSeparateDriver(object):
         self.name_recover_node = GlobalModule.SERVICE_RECOVER_NODE
         self.name_recover_service = GlobalModule.SERVICE_RECOVER_SERVICE
         self.name_acl_filter = GlobalModule.SERVICE_ACL_FILTER
+        self.name_if_condition = GlobalModule.SERVICE_IF_CONDITION
 
         self._MERGE = GlobalModule.ORDER_MERGE
         self._DELETE = GlobalModule.ORDER_DELETE
@@ -104,6 +165,8 @@ class EmSeparateDriver(object):
                                      self._gen_cluster_link_variable_message),
             self.name_acl_filter: (self._gen_acl_filter_fix_message,
                                    self._gen_acl_filter_variable_message),
+            self.name_if_condition: (self._gen_if_condition_fix_message,
+                                     self._gen_if_condition_variable_message),
         }
 
         self._validation_methods = {
@@ -117,6 +180,7 @@ class EmSeparateDriver(object):
             self.name_breakout: self._validation_breakout,
             self.name_cluster_link: self._validation_cluster_link,
             self.name_acl_filter: self._validation_acl_filter,
+            self.name_if_condition: self._validation_if_condition,
         }
 
         self.net_protocol = EmNetconfProtocol()
@@ -124,8 +188,14 @@ class EmSeparateDriver(object):
         self.common_util_log = EmDriverCommonUtilityLog()
         self.list_enable_service = []
         self.get_config_message = {}
+        self.get_config_default = None
+
+        self.driver_public_method = {}
 
         self.lib_path = GlobalModule.EM_LIB_PATH
+
+        self.device_name = None
+        self.device_info = None
 
         self.internal_link_vlan_config = self._get_internal_link_vlan_config()
 
@@ -147,10 +217,11 @@ class EmSeparateDriver(object):
         self.common_util_log.logging(
             device_name, self.log_level_debug,
             "order_type=%s" % (order_type,), __name__)
-        if self._check_service_type(device_name, service_type) is False:
-            return 3
+        self.device_name = device_name
+        self.device_info = device_info
         return self.net_protocol.connect_device(device_info)
 
+    @except_unlock
     @decorater_log_in_out
     def update_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
@@ -267,7 +338,7 @@ class EmSeparateDriver(object):
 
             return target_recover_util_class_ins
 
-        except (AttributeError, ImportError, IOError) as e:
+        except (AttributeError, ImportError, IOError) as _e:
             self.common_util_log.logging(
                 "", self.log_level_error,
                 self.Logmessage["RecoverUtilSelect"] % (
@@ -361,6 +432,7 @@ class EmSeparateDriver(object):
                 device_name, service_type)
         if not is_db_result:
             return self._update_error
+
 
         recover_util_cls_dict = self._get_recover_list(service_type)
 
@@ -461,6 +533,7 @@ class EmSeparateDriver(object):
         else:
             return self._update_ok
 
+    @except_unlock
     @decorater_log_in_out
     def delete_device_setting(self, device_name,
                               service_type, order_type, ec_message=None):
@@ -507,6 +580,7 @@ class EmSeparateDriver(object):
         else:
             return self._update_ok
 
+    @except_unlock
     @decorater_log_in_out
     def reserve_device_setting(self, device_name, service_type, order_type):
         '''
@@ -527,6 +601,7 @@ class EmSeparateDriver(object):
             return False
         return self._send_control_signal(device_name, "confirmed-commit")[0]
 
+    @except_unlock
     @decorater_log_in_out
     def enable_device_setting(self, device_name, service_type, order_type):
         '''
@@ -562,7 +637,11 @@ class EmSeparateDriver(object):
         return True
 
     @decorater_log_in_out
-    def disconnect_device(self, device_name, service_type, order_type):
+    def disconnect_device(self,
+                          device_name,
+                          service_type=None,
+                          order_type=None,
+                          get_config_flag=True):
         '''
         Driver individual section disconnection control.
             Launch from the common section on driver,
@@ -574,10 +653,6 @@ class EmSeparateDriver(object):
         Return value :
             Processing finish status : Should always return "True"
         '''
-        self.common_util_log.logging(
-            device_name, self.log_level_debug,
-            "order_type=%s" % (order_type,), __name__)
-        self._check_service_type(device_name, service_type)
         try:
             is_ok = self.net_protocol.disconnect_device()
         except Exception, ex_message:
@@ -595,8 +670,9 @@ class EmSeparateDriver(object):
     @decorater_log_in_out
     def get_device_setting(self,
                            device_name,
-                           service_type,
-                           order_type):
+                           service_type=None,
+                           order_type=None,
+                           ec_message=None):
         '''
         Driver individual section acquisition control.
             Launch from the common section on driver,
@@ -605,20 +681,13 @@ class EmSeparateDriver(object):
             device_name : Device name
             service_type : Service type
             order_type : Order type
+          　ec_message : EC　message
         Return value :
             Processing finish status : Boolean (True:Normal, False:Abnormal)
             Device response signal : Str
         '''
-        self.common_util_log.logging(
-            device_name, self.log_level_debug,
-            "order_type=%s" % (order_type,), __name__)
-        if self._check_service_type(device_name, service_type) is False:
-            return False, None
-        is_db_result = (self.common_util_db.read_configureddata_info
-                        (device_name, service_type)[0])
-        if is_db_result is False:
-            return False, None
-        send_message = self.get_config_message.get(service_type)
+        send_message = self.get_config_message.get(service_type,
+                                                   self.get_config_default)
         if send_message is None:
             self.common_util_log.logging(
                 device_name, self.log_level_warn,
@@ -628,10 +697,74 @@ class EmSeparateDriver(object):
             self._send_control_signal(device_name,
                                       "get-config",
                                       send_message)
-        if is_send_result is False:
-            return False, None
-        else:
-            return True, return_message
+        tmp_result = return_message if is_send_result else None
+        return is_send_result, tmp_result
+
+    @decorater_log_in_out
+    def compare_to_latest_device_configuration(self,
+                                               device_name,
+                                               device_config):
+        '''
+        Comparison with device config.
+            Launch from the common section on driver,
+            compare device config in argument with the newest device config in DB.
+            Return the difference information.
+        Parameter:
+            device_name : device name str
+            device_config : device config str
+        Return value :
+            status processing termination : Boolean (True:success , False:failure)
+            diffeence information : Str
+            the newest device config ; Str
+            time of obtaining the newest device config ; Str
+        '''
+        try:
+            latest_config, latest_date = (
+                self._get_latest_device_configuration(device_name))
+        except Exception as exc_info:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "Error;{0},Traceback:{1}".format(exc_info,
+                                                 traceback.format_exc()),
+                __name__)
+            return GlobalModule.COM_AUDIT_DB_INFO_NG, None, None, None
+        if not latest_config:
+            return GlobalModule.COM_AUDIT_OK, "", None, None
+        try:
+            driver_info = self.common_util_db.read_device_driver_info(
+                device_name)
+            conf_audit = ConfigAuditDriverUtility(from_config=latest_config,
+                                                  from_config_name="before",
+                                                  to_config=device_config,
+                                                  to_config_name="after",
+                                                  driver_info=driver_info)
+            diff_data = conf_audit.compare_device_configuration()
+        except Exception as exc_info:
+            self.common_util_log.logging(
+                device_name,
+                self.log_level_debug,
+                "Error;{0},Traceback:{1}".format(exc_info,
+                                                 traceback.format_exc()),
+                __name__)
+            return GlobalModule.COM_AUDIT_AUDIT_NG, None, None, None
+        return GlobalModule.COM_AUDIT_OK, diff_data, latest_config, latest_date
+
+    @decorater_log
+    def _get_latest_device_configuration(self, device_name):
+        '''
+        Obtain the newest device config.
+        Parameter
+            device_name : device name str
+        Return value :
+            the newest device config ; Str
+            time of obtaining the newest device config ; Str
+        '''
+        latest_config, latest_date = (
+            self.common_util_db.read_latest_device_configuration(device_name,
+                                                                 get_timing=2)
+        )
+        return latest_config, latest_date
 
     @decorater_log_in_out
     def execute_comparing(self, device_name,
@@ -662,12 +795,40 @@ class EmSeparateDriver(object):
             device_name, service_type, device_signal, device_info)
 
     @decorater_log
-    def _check_service_type(self, device_name, service_type):
+    def _write_device_setting(self,
+                              device_name,
+                              get_config_flag=True):
         '''
         Service type analysis
-            Called out when starting external IF, check whether service type is suitable.
+            Call driver individual acquisition cntrol part.
+            If it is configAudit function call, register in DB by using driver common DB.
         Parameter:
+            device_name : Device name
+            get_config_flag：Flag indicating cpnfig-acqusitiong(except for case of configAudit function)
+        Return value :
+            Result : Boolenan
+        '''
+        if get_config_flag:
+            is_result, conf_str = self.get_device_setting(device_name)
+            if not is_result:
+                return False
+            else:
+                self.common_util_log.logging(
+                    device_name, self.log_level_debug,
+                    "write_device_config=%s" % (conf_str,), __name__)
+                tmp = json.loads(self.device_info)
+                platform_name = tmp.get("device_info", {}).get("platform_name")
+                write_result = self.common_util_db.write_device_config_info(
+                    device_name, conf_str, platform_name)
+                if write_result is False:
+                    return False
+        return True
 
+    @decorater_log
+    def _check_service_type(self, device_name, service_type):
+        '''
+        Called out when starting external IF, check whether service type is suitable.
+        Parameter:
             device_name : service_type
             service_type : Service type
         Return value
@@ -736,6 +897,7 @@ class EmSeparateDriver(object):
             operation : Operation attribute (Set "delete" if the function is "delete function".)
         Return value:
             Creation result ; Boolean
+
         '''
 
         is_message_gen_result = False
@@ -887,7 +1049,8 @@ class EmSeparateDriver(object):
     @decorater_log
     def _xml_setdefault_node(self, parent, tag):
         '''
-        Search node by Tag name, return the node if the node exists. Create new node for the Tag name to return, if nothing.
+        Search node by Tag name, return the node if the node exists. 
+        Create new node for the Tag name to return, if nothing.
         '''
         tmp_node = self._find_xml_node(parent, tag)
         if tmp_node is None:
@@ -1017,6 +1180,8 @@ class EmSeparateDriver(object):
                 (netconf_val.text if netconf_val is not None else None),
                 db_val), __name__)
         return is_ok
+
+
 
     @decorater_log
     def _gen_spine_fix_message(self, xml_obj, operation):
@@ -1205,6 +1370,7 @@ class EmSeparateDriver(object):
     @decorater_log
     def _gen_acl_filter_fix_message(self, xml_obj, operation):
         '''
+            
         Fixed value to create message (acl-filter) for Netconf.
             Called out when creating message for acl-filter.
         Parameter:
@@ -1226,6 +1392,30 @@ class EmSeparateDriver(object):
         return False
 
     @decorater_log
+    def _gen_if_condition_fix_message(self, xml_obj, operation):
+        '''
+        Fixed value to create message (acl-filter) for Netconf.
+            Called out when creating message for acl-filter.
+        Parameter:
+            xml_obj : xml object
+            operation : Designate "delete" when deleting.
+        Return value.
+            Creation result : Boolean (Write properly using override method.)
+        '''
+        self.common_util_log.logging(
+            " ",
+            self.log_level_error,
+            self.Logmessage["Call_NG_Method"] %
+            ("_gen_if_condition_fix_message"),
+            __name__)
+        self.common_util_log.logging(
+            " ", self.log_level_debug,
+            "params : xml_obj = %s , operation = %s" % (xml_obj, operation),
+            __name__)
+        return False
+
+
+    @decorater_log
     def _gen_spine_variable_message(self,
                                     xml_obj,
                                     device_info,
@@ -1241,6 +1431,7 @@ class EmSeparateDriver(object):
             operation : Designate "delete" when deleting.
         Return value.
             Creation result : Boolean (Write properly using override method)
+ 
         '''
         self.common_util_log.logging(
             " ",
@@ -1486,7 +1677,7 @@ class EmSeparateDriver(object):
             " ",
             self.log_level_error,
             self.Logmessage["Call_NG_Method"] %
-            ("_gen_acl_filter_message"),
+            ("_gen_acl_filter_variable_message"),
             __name__)
         self.common_util_log.logging(
             " ", self.log_level_debug,
@@ -1494,6 +1685,37 @@ class EmSeparateDriver(object):
             (xml_obj, device_info, ec_message, operation),
             __name__)
         return False
+
+    @decorater_log
+    def _gen_if_condition_variable_message(self,
+                                           xml_obj,
+                                           device_info,
+                                           ec_message,
+                                           operation):
+        '''
+        Variable value to create message (acl-filter) for Netconf.
+            Called out when creating message for acl-filter.(After fixed message has been created.)
+        Parameter:
+            xml_obj : xml object
+            device_info : Device information
+            ec_message : EC message
+            operation : Designate "delete" when deleting.
+        Return value.
+            Creation result : Boolean (Write properly using override method)
+        '''
+        self.common_util_log.logging(
+            " ",
+            self.log_level_error,
+            self.Logmessage["Call_NG_Method"] %
+            ("_gen_if_condition_variable_message"),
+            __name__)
+        self.common_util_log.logging(
+            " ", self.log_level_debug,
+            "params : xml_obj=%s ,device_info=%s ,ec_message=%s operation=%s" %
+            (xml_obj, device_info, ec_message, operation),
+            __name__)
+        return False
+
 
     @decorater_log
     def _validation_spine(self, device_info):
@@ -1656,6 +1878,25 @@ class EmSeparateDriver(object):
         return True
 
     @decorater_log
+    def _validation_if_condition(self, device_info):
+        '''
+        Validation check(  )
+            Called out at the time of  acl_filer validation check
+        Validation check(if_condition)
+            Called out when doing Validation check for acl_filer.
+        Parameter:
+            device_info : Device information
+        Return value :
+            Checked result : Boolean (Should always be "True" unless override occurs.)
+        '''
+        self.common_util_log.logging(
+            " ", self.log_level_debug,
+            "%s validation is ok : device_info = %s" %
+            (self.name_if_condition, device_info), __name__)
+        return True
+
+
+    @decorater_log
     def _parse_receive_info(self, receive_message):
         '''
         Response message analysis(xml)
@@ -1764,7 +2005,7 @@ class EmSeparateDriver(object):
                                    'conf_internal_link_vlan.conf')
         try:
             with open(config_path, 'r') as open_file:
-                conf_list = open_file.readlines()
+                conf_list = open_file.readlines()    
         except IOError:
             raise
 
